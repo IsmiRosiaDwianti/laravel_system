@@ -3,21 +3,21 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\ContactController;
 use App\Services\FonnteService;
-
+use App\Http\Controllers\LogController;
+use App\Http\Controllers\SmokeController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Dashboard
 |--------------------------------------------------------------------------
-|
-| Monitoring System DISKOMINFOTIK Provinsi Lampung
-|
 */
 
-Route::get('/',
-    [DashboardController::class, 'index'])
-    ->name('dashboard');
+Route::get(
+    '/',
+    [DashboardController::class, 'index']
+)->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
@@ -25,29 +25,40 @@ Route::get('/',
 |--------------------------------------------------------------------------
 */
 
-Route::get('/services',
-    [ServiceController::class, 'index'])
-    ->name('services');
+Route::get(
+    '/services',
+    [ServiceController::class, 'index']
+)->name('services');
 
-Route::get('/services/create',
-    [ServiceController::class, 'create'])
-    ->name('services.create');
+Route::get(
+    '/services/create',
+    [ServiceController::class, 'create']
+)->name('services.create');
 
-Route::post('/services/store',
-    [ServiceController::class, 'store'])
-    ->name('services.store');
+Route::post(
+    '/services/store',
+    [ServiceController::class, 'store']
+)->name('services.store');
 
-Route::get('/services/{id}/edit',
-    [ServiceController::class, 'edit'])
-    ->name('services.edit');
+Route::get(
+    '/services/{id}/edit',
+    [ServiceController::class, 'edit']
+)->name('services.edit');
 
-Route::put('/services/{id}',
-    [ServiceController::class, 'update'])
-    ->name('services.update');
+Route::put(
+    '/services/{id}',
+    [ServiceController::class, 'update']
+)->name('services.update');
 
-Route::delete('/services/{id}',
-    [ServiceController::class, 'destroy'])
-    ->name('services.destroy');
+Route::delete(
+    '/services/{id}',
+    [ServiceController::class, 'destroy']
+)->name('services.destroy');
+
+Route::get(
+    '/logs',
+    [LogController::class, 'index']
+)->name('logs');
 
 /*
 |--------------------------------------------------------------------------
@@ -55,8 +66,25 @@ Route::delete('/services/{id}',
 |--------------------------------------------------------------------------
 */
 
-Route::view('/contacts', 'contacts')
-    ->name('contacts');
+Route::get(
+    '/contacts',
+    [ContactController::class, 'index']
+)->name('contacts');
+
+Route::get(
+    '/contacts/create',
+    [ContactController::class, 'create']
+)->name('contacts.create');
+
+Route::post(
+    '/contacts/store',
+    [ContactController::class, 'store']
+)->name('contacts.store');
+
+Route::delete(
+    '/contacts/{id}',
+    [ContactController::class, 'destroy']
+)->name('contacts.destroy');
 
 /*
 |--------------------------------------------------------------------------
@@ -64,15 +92,23 @@ Route::view('/contacts', 'contacts')
 |--------------------------------------------------------------------------
 */
 
-Route::view('/smoke-detector', 'smoke')
-    ->name('smoke');
+Route::get(
+    '/smoke-detector',
+    [SmokeController::class,'index']
+)->name('smoke');
+
+/*
+|--------------------------------------------------------------------------
+| Test WhatsApp Fonnte
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/test-wa', function () {
 
     FonnteService::send(
-        '6282181026804',
+        'nowhatsapp',
         'Test Laravel Monitoring berhasil 🚀'
     );
 
-    return 'WA terkirim';
+    return 'WhatsApp berhasil dikirim';
 });

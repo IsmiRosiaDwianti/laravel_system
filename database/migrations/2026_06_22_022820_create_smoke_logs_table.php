@@ -10,25 +10,26 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::create('smoke_logs', function (Blueprint $table) {
+    {
+        Schema::create('smoke_logs', function (Blueprint $table) {
 
-        $table->id();
+            $table->id();
 
-        $table->foreignId('smoke_device_id')
-              ->constrained()
-              ->onDelete('cascade');
+            $table->foreignId('smoke_device_id')
+                  ->constrained()
+                  ->cascadeOnDelete();
 
-        $table->integer('smoke_value');
+            $table->integer('smoke_value');
 
-        $table->enum('status', [
-            'NORMAL',
-            'DANGER'
-        ]);
+            $table->enum('status', [
+                'NORMAL',
+                'DANGER'
+            ]);
 
-        $table->timestamps();
-    });
-}
+            $table->timestamps();
+        });
+    }
+
     /**
      * Reverse the migrations.
      */

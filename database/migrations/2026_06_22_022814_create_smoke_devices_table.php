@@ -6,32 +6,38 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
-{
-    Schema::create('smoke_devices', function (Blueprint $table) {
+    {
+        Schema::create('smoke_devices', function (Blueprint $table) {
 
-        $table->id();
+            $table->id();
 
-        $table->string('name');
+            $table->string('name');
 
-        $table->string('location');
+            $table->string('location');
 
-        $table->integer('threshold')
-              ->default(400);
+            $table->integer('threshold')
+                  ->default(400);
 
-        $table->boolean('is_active')
-              ->default(true);
+            $table->float('smoke_value')
+                  ->default(0);
 
-        $table->timestamps();
-    });
-}
+            $table->string('status')
+                  ->default('NORMAL');
 
-    /**
-     * Reverse the migrations.
-     */
+            $table->string('device_status')
+                  ->default('OFFLINE');
+
+            $table->timestamp('last_seen_at')
+                  ->nullable();
+
+            $table->boolean('is_active')
+                  ->default(true);
+
+            $table->timestamps();
+        });
+    }
+
     public function down(): void
     {
         Schema::dropIfExists('smoke_devices');
