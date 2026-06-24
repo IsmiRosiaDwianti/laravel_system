@@ -106,7 +106,7 @@ Route::get(
 Route::get('/test-wa', function () {
 
     FonnteService::send(
-        'nowhatsapp',
+        'nomorsaya',
         'Test Laravel Monitoring berhasil 🚀'
     );
 

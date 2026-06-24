@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Service;
 use Illuminate\Http\Request;
+use App\Services\ServiceMonitorService;
 
 class ServiceController extends Controller
 {
@@ -11,7 +12,10 @@ class ServiceController extends Controller
     {
         $services = Service::latest()->get();
 
-        return view('services', compact('services'));
+        return view(
+            'services',
+            compact('services')
+        );
     }
 
     public function create()
@@ -19,7 +23,10 @@ class ServiceController extends Controller
         return view('service_create');
     }
 
-    public function store(Request $request)
+    public function store(
+        Request $request,
+        ServiceMonitorService $monitor
+    )
     {
         $request->validate([
             'name' => 'required',
@@ -27,26 +34,38 @@ class ServiceController extends Controller
             'type' => 'required'
         ]);
 
-        Service::create([
+        $service = Service::create([
             'name' => $request->name,
             'target' => $request->target,
             'type' => $request->type,
             'last_status' => 'UNKNOWN'
         ]);
 
+        $monitor->check($service);
+
         return redirect()
             ->route('services')
-            ->with('success', 'Service berhasil ditambahkan');
+            ->with(
+                'success',
+                'Service berhasil ditambahkan dan langsung dicek'
+            );
     }
 
     public function edit($id)
     {
         $service = Service::findOrFail($id);
 
-        return view('service_edit', compact('service'));
+        return view(
+            'service_edit',
+            compact('service')
+        );
     }
 
-    public function update(Request $request, $id)
+    public function update(
+        Request $request,
+        $id,
+        ServiceMonitorService $monitor
+    )
     {
         $service = Service::findOrFail($id);
 
@@ -62,9 +81,14 @@ class ServiceController extends Controller
             'type' => $request->type
         ]);
 
+        $monitor->check($service);
+
         return redirect()
             ->route('services')
-            ->with('success', 'Service berhasil diupdate');
+            ->with(
+                'success',
+                'Service berhasil diupdate dan langsung dicek'
+            );
     }
 
     public function destroy($id)
@@ -75,6 +99,9 @@ class ServiceController extends Controller
 
         return redirect()
             ->route('services')
-            ->with('success', 'Service berhasil dihapus');
+            ->with(
+                'success',
+                'Service berhasil dihapus'
+            );
     }
 }
