@@ -1,8 +1,72 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Api\SmokeDeviceController;
 use App\Http\Controllers\Api\SmokeReportController;
+
+use App\Http\Controllers\Api\ContactApiController;
+use App\Http\Controllers\Api\ServiceApiController;
+use App\Http\Controllers\Api\LogApiController;
+use App\Http\Controllers\Api\DashboardApiController;
+
+/*
+|--------------------------------------------------------------------------
+| Dashboard API
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/dashboard',
+    [DashboardApiController::class, 'index']
+);
+
+/*
+|--------------------------------------------------------------------------
+| Contact CRUD API
+|--------------------------------------------------------------------------
+*/
+
+Route::apiResource(
+    'contacts',
+    ContactApiController::class
+);
+
+/*
+|--------------------------------------------------------------------------
+| Service CRUD API
+|--------------------------------------------------------------------------
+*/
+
+Route::apiResource(
+    'services',
+    ServiceApiController::class
+);
+
+/*
+|--------------------------------------------------------------------------
+| Manual Check Service
+|--------------------------------------------------------------------------
+*/
+
+Route::post(
+    '/services/{service}/check',
+    [ServiceApiController::class, 'check']
+);
+
+/*
+|--------------------------------------------------------------------------
+| Logs API
+|--------------------------------------------------------------------------
+*/
+
+Route::apiResource(
+    'logs',
+    LogApiController::class
+)->only([
+    'index',
+    'show'
+]);
 
 /*
 |--------------------------------------------------------------------------
