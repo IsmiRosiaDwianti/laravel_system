@@ -15,15 +15,14 @@ return Application::configure(
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-
-        //
-        
+        // ✅ TAMBAHKAN INI - MATIKAN CSRF UNTUK API
+        $middleware->validateCsrfTokens(except: [
+            'api/*', // Matikan CSRF untuk semua route API
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*')
         );
-
     })
     ->create();

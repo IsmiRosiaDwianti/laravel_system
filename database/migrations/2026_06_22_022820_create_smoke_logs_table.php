@@ -15,16 +15,22 @@ return new class extends Migration
 
             $table->id();
 
-            $table->foreignId('smoke_device_id')
-                  ->constrained()
+            // ✅ UBAH: smoke_device_id → device_id
+            $table->foreignId('device_id')
+                  ->constrained('smoke_devices')
                   ->cascadeOnDelete();
 
             $table->integer('smoke_value');
 
+            // ✅ TAMBAHKAN: WARNING
             $table->enum('status', [
                 'NORMAL',
+                'WARNING',    // ← TAMBAHKAN INI
                 'DANGER'
-            ]);
+            ])->default('NORMAL');  // ← TAMBAHKAN DEFAULT
+
+            // ✅ TAMBAHKAN: message
+            $table->text('message')->nullable();
 
             $table->timestamps();
         });
