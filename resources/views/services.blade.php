@@ -1404,9 +1404,8 @@
                             // Nomor urut dengan pagination
                             $no = ($services->currentPage() - 1) * $services->perPage() + $loop->iteration;
                             
-                            // Ambil log terakhir untuk menampilkan waktu terakhir diperiksa
-                            $latestLog = $service->logs()->latest()->first();
-                            $lastChecked = $latestLog?->created_at ?? $service->updated_at;
+                            // 🔥 UPDATE: Pakai last_check_at dari service, bukan dari log
+                            $lastChecked = $service->last_check_at ?? $service->updated_at;
                             
                             // Hitung uptime 30 hari
                             $uptime = $service->uptime ?? 0;
@@ -1445,9 +1444,9 @@
                                 </div>
                             </td>
                             <td>
-                                <!-- Terakhir diperiksa: diffForHumans + jam WIB -->
+                                <!-- 🔥 Terakhir diperiksa: pakai last_check_at -->
                                 <div style="font-size: 12px; color: #6b7280;">
-                                    {{ $lastChecked?->diffForHumans() ?? '-' }}
+                                    {{ $lastChecked ? \Carbon\Carbon::parse($lastChecked)->diffForHumans() : '-' }}
                                 </div>
                                 <div style="font-size: 11px; color: #94a3b8; font-family: 'Courier New', monospace;">
                                     {{ $lastChecked ? \Carbon\Carbon::parse($lastChecked)->setTimezone('Asia/Jakarta')->format('H:i:s') : '-' }}
@@ -1710,17 +1709,15 @@
                     <div class="helper-text">URL lengkap dengan protocol (http:// atau https://) atau alamat IP</div>
                 </div>
 
-                <!-- Field Tipe Monitoring -->
+                <!-- Field Tipe Monitoring - HANYA 2 PILIHAN: HTTP/HTTPS dan PING -->
                 <div class="form-group">
                     <label for="modal_type">
                         Tipe Monitoring
                         <span class="required">*</span>
                     </label>
                     <select name="type" id="modal_type" class="form-control" required>
-                        <option value="http">HTTP</option>
-                        <option value="https">HTTPS</option>
+                        <option value="http">HTTP / HTTPS</option>
                         <option value="ping">PING</option>
-                        <option value="port">PORT</option>
                     </select>
                     <div class="helper-text">Jenis monitoring yang akan digunakan</div>
                 </div>

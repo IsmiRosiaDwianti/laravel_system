@@ -15,11 +15,15 @@ class ServiceLog extends Model
         'is_status_change',
         'previous_status',
         'action',
+        'checked_at', // ✅ TAMBAHKAN INI
     ];
 
     protected $casts = [
         'response_time' => 'float',
         'is_status_change' => 'boolean',
+        'checked_at' => 'datetime', // ✅ TAMBAHKAN INI
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function service()

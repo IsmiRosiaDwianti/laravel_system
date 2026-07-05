@@ -295,14 +295,6 @@
         color: #0f172a;
     }
 
-    .service-name .service-id {
-        font-size: 11px;
-        color: #94a3b8;
-        font-weight: 400;
-        display: block;
-        margin-top: 1px;
-    }
-
     /* Response Time */
     .response-time {
         font-weight: 600;
@@ -326,36 +318,19 @@
         color: #10b981;
     }
 
-    /* Message */
+    /* 🔥 PERBAIKI MESSAGE - TIDAK KEPOTONG */
     .message-cell {
-        max-width: 200px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        max-width: 400px;
+        word-wrap: break-word;
+        white-space: normal;
         font-size: 13px;
         color: #475569;
+        line-height: 1.5;
     }
 
     .message-cell .tooltip {
         position: relative;
         cursor: help;
-    }
-
-    .message-cell .tooltip:hover::after {
-        content: attr(data-full);
-        position: absolute;
-        background: #0f172a;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        white-space: normal;
-        max-width: 300px;
-        z-index: 100;
-        bottom: 100%;
-        left: 0;
-        margin-bottom: 5px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     /* Time */
@@ -533,7 +508,7 @@
         }
 
         .message-cell {
-            max-width: 100px;
+            max-width: 200px;
         }
 
         .perpage-selector {
@@ -581,7 +556,7 @@
         }
 
         .message-cell {
-            max-width: 80px;
+            max-width: 150px;
             font-size: 11px;
         }
 
@@ -621,7 +596,6 @@
             </div>
         </div>
         <div class="header-actions">
-            <!-- Back Button -->
             <a href="{{ route('services') }}" class="btn-primary" style="
                 background: #f1f5f9;
                 color: #475569;
@@ -698,7 +672,7 @@
                         <th style="width: 100px;">Status</th>
                         <th style="width: 80px;">Code</th>
                         <th style="width: 100px;">Response</th>
-                        <th>Message</th>
+                        <th style="min-width: 250px;">Message</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -709,17 +683,30 @@
                             $responseTime = $log->response_time ?? 0;
                             $timeClass = $responseTime < 1 ? 'fast' : ($responseTime < 3 ? '' : 'slow');
                             $codeClass = $log->response_code < 400 ? 'success' : ($log->response_code < 500 ? 'warning' : 'error');
+                            
+                            // 🔥 PERBAIKI MESSAGE AGAR LENGKAP DAN TIDAK KEPOTONG
+                            $message = $log->message ?? '-';
+                            if ($statusLabel == 'UP' && $log->response_code == 200) {
+                                $message = '✅ Server berjalan dengan normal. Service dalam kondisi baik dan merespon dengan cepat.';
+                            } elseif ($statusLabel == 'UP' && $log->response_code == 403) {
+                                $message = '⚠️ Server merespon namun akses ditolak. Periksa kembali hak akses atau autentikasi pada endpoint yang dituju.';
+                            } elseif ($statusLabel == 'UP' && $log->response_code == 404) {
+                                $message = '⚠️ Halaman atau endpoint tidak ditemukan. Periksa kembali URL yang dituju.';
+                            } elseif ($statusLabel == 'WARNING' && $log->response_code == 200) {
+                                $message = '⚠️ Service berjalan namun response time lambat. Perlu dilakukan optimasi performa.';
+                            } elseif ($statusLabel == 'DOWN') {
+                                $message = '❌ Service tidak dapat diakses. Periksa koneksi jaringan atau status server.';
+                            }
                         @endphp
                         <tr>
                             <td>
                                 <span class="time-cell">
-                                    {{ $log->created_at->format('d/m/Y H:i:s') }}
+                                    {{ $log->checked_at ? $log->checked_at->format('d/m/Y H:i:s') : $log->created_at->format('d/m/Y H:i:s') }}
                                 </span>
                             </td>
                             <td>
                                 <div class="service-name">
                                     {{ $log->service->name ?? 'Unknown Service' }}
-                                    <span class="service-id">ID: {{ $log->service_id ?? '-' }}</span>
                                 </div>
                             </td>
                             <td>
@@ -745,8 +732,8 @@
                                 </span>
                             </td>
                             <td>
-                                <div class="message-cell tooltip" data-full="{{ $log->message ?? '-' }}">
-                                    {{ $log->message ?? '-' }}
+                                <div class="message-cell">
+                                    {{ $message }}
                                 </div>
                             </td>
                         </tr>
@@ -821,26 +808,9 @@
 
 <script>
     function changePerPage(value) {
-        // Get current URL
         let url = new URL(window.location.href);
-        // Set or update perPage parameter
         url.searchParams.set('perPage', value);
-        // Redirect to new URL
         window.location.href = url.toString();
     }
-
-    // Tooltip for message cell
-    document.addEventListener('DOMContentLoaded', function() {
-        const tooltips = document.querySelectorAll('.tooltip');
-        tooltips.forEach(el => {
-            el.addEventListener('mouseenter', function(e) {
-                const fullText = this.getAttribute('data-full');
-                if (fullText && fullText.length > 50) {
-                    // Show tooltip
-                    this.title = fullText;
-                }
-            });
-        });
-    });
 </script>
 @endsection

@@ -7,6 +7,7 @@ use App\Models\ServiceLog;
 use App\Models\Contact;
 use Illuminate\Support\Facades\Http;
 use App\Services\FonnteService;
+use Illuminate\Support\Facades\Log;
 
 class ServiceMonitorService
 {
@@ -202,7 +203,6 @@ class ServiceMonitorService
 
     private function checkPing(Service $service)
     {
-        // ... kode checkPing tetap sama ...
         $oldStatus = $service->last_status;
 
         $start = microtime(true);
@@ -226,26 +226,52 @@ class ServiceMonitorService
         $this->saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action);
     }
 
+    /**
+     * 🔥 SAVE RESULT - HANYA BUAT LOG JIKA ADA PERUBAHAN STATUS
+     * Jika status sama, hanya update last_check_at di service
+     */
     private function saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action)
     {
+        // ✅ UPDATE SERVICE (selalu update, meskipun status sama)
         $service->update([
             'last_status' => $status,
             'last_code' => $code,
             'last_response_time' => $time,
-            'last_message' => $detail
+            'last_message' => $detail,
+            'last_check_at' => now(),
         ]);
 
-        ServiceLog::create([
-            'service_id' => $service->id,
-            'status' => $status,
-            'response_code' => $code,
-            'response_time' => $time,
-            'message' => $detail,
-            'action' => $action
-        ]);
-
+        // 🔥 HANYA BUAT LOG JIKA ADA PERUBAHAN STATUS
         if ($oldStatus != $status) {
+            // Buat log baru
+            ServiceLog::create([
+                'service_id' => $service->id,
+                'status' => $status,
+                'response_code' => $code,
+                'response_time' => $time,
+                'message' => $detail,
+                'action' => $action,
+                'checked_at' => now(),
+            ]);
+
+            Log::info("📝 Log dibuat untuk {$service->name}: {$oldStatus} → {$status}");
+
+            // Kirim WhatsApp alert
             $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
+        } else {
+            // ✅ STATUS SAMA: hanya update checked_at di log terakhir
+            $lastLog = ServiceLog::where('service_id', $service->id)
+                ->latest()
+                ->first();
+            
+            if ($lastLog) {
+                $lastLog->update([
+                    'checked_at' => now(),
+                ]);
+                Log::info("🔄 Update check time untuk {$service->name}: status tetap {$status}");
+            }
+            
+            // ❌ TIDAK KIRIM WHATSAPP (karena tidak ada perubahan)
         }
     }
 
