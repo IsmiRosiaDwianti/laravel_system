@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Log;
 
 class ServiceMonitorService
 {
+    // 🔥 FLAG UNTUK CEK JARINGAN (HINDARI SPAM WA)
+    private $networkAlertSent = false;
+
     public function check(Service $service)
     {
         if ($service->type === 'ping') {
@@ -20,10 +23,130 @@ class ServiceMonitorService
         return $this->checkHttp($service);
     }
 
+    /**
+     * 🔥 CEK KONEKSI JARINGAN
+     * Ping ke Google DNS untuk cek internet
+     */
+    private function checkNetworkConnection()
+    {
+        // Coba ping ke Google DNS
+        exec("ping -n 1 8.8.8.8", $output, $status);
+        
+        // Jika gagal, coba ke Cloudflare DNS
+        if ($status !== 0) {
+            exec("ping -n 1 1.1.1.1", $output, $status);
+        }
+        
+        // Jika masih gagal, coba ke Google.com
+        if ($status !== 0) {
+            exec("ping -n 1 google.com", $output, $status);
+        }
+        
+        return $status === 0;
+    }
+
+    /**
+     * 🔥 KIRIM WA JIKA JARINGAN TERPUTUS
+     */
+    private function sendNetworkAlert()
+    {
+        $contacts = Contact::where('is_active', true)->get();
+        
+        if ($contacts->isEmpty()) {
+            return;
+        }
+        
+        $message = 
+"🚨 JARINGAN TERPUTUS!
+
+📡 Tidak ada koneksi internet terdeteksi.
+⏱️ " . now()->format('d-m-Y H:i:s') . "
+
+🔍 TINDAKAN YANG HARUS DILAKUKAN:
+================================
+1️⃣ 📶 CEK MODEM/ROUTER
+   - Apakah lampu indikator menyala?
+   - Restart router/modem
+
+2️⃣ 🔌 CEK KABEL & LISTRIK
+   - Apakah kabel LAN terhubung?
+   - Cek listrik di lokasi
+
+3️⃣ 🌐 CEK PROVIDER
+   - Apakah ada gangguan dari ISP?
+   - Hubungi provider internet
+
+4️⃣ 📱 CEK DEVICE LAIN
+   - Apakah device lain bisa akses internet?
+
+🕐 " . now()->format('d-m-Y H:i:s');
+        
+        foreach ($contacts as $contact) {
+            FonnteService::send($contact->phone, $message);
+            Log::info("📱 WA network alert dikirim ke: {$contact->phone}");
+        }
+    }
+
+    /**
+     * 🔥 KIRIM WA JIKA JARINGAN KEMBALI NORMAL
+     */
+    private function sendNetworkRestoredAlert()
+    {
+        $contacts = Contact::where('is_active', true)->get();
+        
+        if ($contacts->isEmpty()) {
+            return;
+        }
+        
+        $message = 
+"🟢 JARINGAN NORMAL!
+
+📡 Koneksi internet telah kembali normal.
+⏱️ " . now()->format('d-m-Y H:i:s') . "
+
+✅ Semua service akan kembali dipantau secara normal.
+
+🕐 " . now()->format('d-m-Y H:i:s');
+        
+        foreach ($contacts as $contact) {
+            FonnteService::send($contact->phone, $message);
+            Log::info("📱 WA network restored dikirim ke: {$contact->phone}");
+        }
+    }
+
     private function checkHttp(Service $service)
     {
         $oldStatus = $service->last_status;
 
+        // 🔥 CEK JARINGAN DULU
+        $isNetworkConnected = $this->checkNetworkConnection();
+        
+        // Kirim alert jika jaringan mati (hanya 1x)
+        if (!$isNetworkConnected && !$this->networkAlertSent) {
+            $this->sendNetworkAlert();
+            $this->networkAlertSent = true;
+        }
+        
+        // Kirim alert jika jaringan kembali normal
+        if ($isNetworkConnected && $this->networkAlertSent) {
+            $this->sendNetworkRestoredAlert();
+            $this->networkAlertSent = false;
+        }
+
+        // 🔥 JIKA JARINGAN MATI → SKIP CHECK, PERTAHANKAN STATUS LAMA
+        if (!$isNetworkConnected) {
+            Log::info("⏭️ Skip check {$service->name} karena jaringan terputus, status tetap {$oldStatus}");
+            
+            // ✅ UPDATE last_check_at SAJA, TIDAK UBAH STATUS
+            $service->update([
+                'last_check_at' => now(),
+            ]);
+            
+            // ❌ TIDAK BUAT LOG, TIDAK KIRIM WA
+            return;
+        }
+
+        // 🔥 JARINGAN NORMAL → LANJUTKAN CHECK
         try {
             $url = $service->target;
 
@@ -40,15 +163,12 @@ class ServiceMonitorService
             if ($code == 200) {
                 $body = $response->body();
                 
-                // 🔥 Analisis lengkap konten
-                $contentAnalysis = $this->analyzePageContent($body);
-                
-                // 🔥 CEK APAKAH HALAMAN KOSONG (TIDAK ADA KONTEN SAMA SEKALI)
+                // 🔥 CEK APAKAH HALAMAN BENAR-BENAR KOSONG
                 if ($this->isEmptyResponse($body)) {
                     $analysis = [
                         'status' => 'WARNING',
                         'reason' => 'EMPTY_RESPONSE',
-                        'detail' => '📄 Halaman benar-benar kosong (tidak ada konten sama sekali)',
+                        'detail' => '⚠️ Halaman benar-benar kosong (tidak ada teks, gambar, video, atau link sama sekali)',
                         'action' => '📄 Periksa aplikasi, mungkin terjadi error rendering atau data kosong'
                     ];
                     $this->saveResult($service, $oldStatus, $analysis['status'], $code, $time, 
@@ -56,12 +176,14 @@ class ServiceMonitorService
                     return;
                 }
 
-                // 🔥 CEK APAKAH HALAMAN TIDAK PUNYA KONTEN BERMAKNA
+                // 🔥 CEK APAKAH HANYA TAG HTML KOSONG
+                $contentAnalysis = $this->analyzePageContent($body);
+                
                 if (!$contentAnalysis['has_content']) {
                     $analysis = [
                         'status' => 'WARNING',
                         'reason' => 'NO_MEANINGFUL_CONTENT',
-                        'detail' => '⚠️ Halaman tidak memiliki konten bermakna (hanya tag HTML kosong)',
+                        'detail' => '⚠️ Halaman hanya berisi tag HTML kosong, tidak ada konten bermakna',
                         'action' => '📄 Periksa aplikasi, mungkin halaman error atau maintenance'
                     ];
                     $this->saveResult($service, $oldStatus, $analysis['status'], $code, $time, 
@@ -69,8 +191,26 @@ class ServiceMonitorService
                     return;
                 }
 
-                // 🔥 HALAMAN NORMAL DENGAN KONTEN
-                $detail = $this->buildContentDetail($contentAnalysis);
+                // 🔥 HALAMAN NORMAL
+                $detail = '✅ Service berjalan normal';
+                
+                $info = [];
+                if ($contentAnalysis['has_text']) {
+                    $info[] = number_format($contentAnalysis['text_length']) . ' karakter';
+                }
+                if ($contentAnalysis['has_images']) {
+                    $info[] = $contentAnalysis['image_count'] . ' gambar';
+                }
+                if ($contentAnalysis['has_videos']) {
+                    $info[] = $contentAnalysis['video_count'] . ' video';
+                }
+                if ($contentAnalysis['has_links']) {
+                    $info[] = $contentAnalysis['link_count'] . ' link';
+                }
+                
+                if (!empty($info)) {
+                    $detail .= ' (' . implode(', ', $info) . ')';
+                }
                 
                 $analysis = [
                     'status' => 'UP',
@@ -84,7 +224,6 @@ class ServiceMonitorService
                 return;
             }
 
-            // JIKA RESPONSE BUKAN 200
             $analysis = $this->analyzeResponse($code, $time);
 
         } catch (\Exception $e) {
@@ -97,10 +236,6 @@ class ServiceMonitorService
                          $analysis['reason'], $analysis['detail'], $analysis['action']);
     }
 
-    /**
-     * 🔥 ANALISIS LENGKAP KONTEN HALAMAN
-     * Mendeteksi: gambar, video, teks, link, dan konten bermakna
-     */
     private function analyzePageContent($body)
     {
         $result = [
@@ -116,12 +251,10 @@ class ServiceMonitorService
             'details' => []
         ];
 
-        // 1. 🔍 CEK GAMBAR
         preg_match_all('/<img[^>]+>/i', $body, $imgMatches);
         $result['image_count'] = count($imgMatches[0]);
         $result['has_images'] = $result['image_count'] > 0;
 
-        // 2. 🔍 CEK VIDEO (tag video, iframe youtube, vimeo)
         $videoPatterns = [
             '/<video[^>]+>/i',
             '/<iframe[^>]*youtube[^>]*>/i',
@@ -135,24 +268,20 @@ class ServiceMonitorService
         }
         $result['has_videos'] = $result['video_count'] > 0;
 
-        // 3. 🔍 CEK TEKS (minimal 50 karakter)
         $text = strip_tags($body);
         $text = preg_replace('/\s+/', '', $text);
         $result['text_length'] = strlen($text);
-        $result['has_text'] = $result['text_length'] > 50;
+        $result['has_text'] = $result['text_length'] > 0;
 
-        // 4. 🔍 CEK LINK
         preg_match_all('/<a[^>]+href=["\']([^"\']+)["\'][^>]*>/i', $body, $linkMatches);
         $result['link_count'] = count($linkMatches[0]);
         $result['has_links'] = $result['link_count'] > 0;
 
-        // 5. 🔍 KESIMPULAN ADA KONTEN ATAU TIDAK
         $result['has_content'] = $result['has_images'] || 
                                  $result['has_videos'] || 
                                  $result['has_text'] || 
                                  $result['has_links'];
 
-        // 6. 📝 BUAT DETAIL
         if ($result['has_images']) {
             $result['details'][] = "🖼️ {$result['image_count']} gambar";
         }
@@ -160,7 +289,7 @@ class ServiceMonitorService
             $result['details'][] = "🎬 {$result['video_count']} video";
         }
         if ($result['has_text']) {
-            $result['details'][] = "📝 " . number_format($result['text_length']) . " karakter teks";
+            $result['details'][] = "📝 " . number_format($result['text_length']) . " karakter";
         }
         if ($result['has_links']) {
             $result['details'][] = "🔗 {$result['link_count']} link";
@@ -169,32 +298,6 @@ class ServiceMonitorService
         return $result;
     }
 
-    /**
-     * 🔥 BUILD DETAIL KONTEN UNTUK PESAN
-     */
-    private function buildContentDetail($analysis)
-    {
-        if (empty($analysis['details'])) {
-            return '⚠️ Halaman tidak memiliki konten yang terdeteksi';
-        }
-
-        $detail = '✅ Halaman memiliki konten: ' . implode(', ', $analysis['details']);
-        
-        // Tambahan informasi
-        if ($analysis['has_images'] && !$analysis['has_text']) {
-            $detail .= ' (⚠️ Hanya gambar, tidak ada teks)';
-        }
-        
-        if ($analysis['has_text'] && !$analysis['has_images'] && !$analysis['has_videos']) {
-            $detail .= ' (📄 Hanya teks, tidak ada media)';
-        }
-
-        return $detail;
-    }
-
-    /**
-     * Cek apakah response body benar-benar kosong
-     */
     private function isEmptyResponse($body)
     {
         $cleaned = preg_replace('/\s+/', '', strip_tags($body));
@@ -205,6 +308,29 @@ class ServiceMonitorService
     {
         $oldStatus = $service->last_status;
 
+        // 🔥 CEK JARINGAN DULU
+        $isNetworkConnected = $this->checkNetworkConnection();
+        
+        if (!$isNetworkConnected && !$this->networkAlertSent) {
+            $this->sendNetworkAlert();
+            $this->networkAlertSent = true;
+        }
+        
+        if ($isNetworkConnected && $this->networkAlertSent) {
+            $this->sendNetworkRestoredAlert();
+            $this->networkAlertSent = false;
+        }
+
+        // 🔥 JIKA JARINGAN MATI → SKIP CHECK
+        if (!$isNetworkConnected) {
+            Log::info("⏭️ Skip ping check {$service->name} karena jaringan terputus, status tetap {$oldStatus}");
+            $service->update([
+                'last_check_at' => now(),
+            ]);
+            return;
+        }
+
+        // 🔥 JARINGAN NORMAL → LANJUTKAN CHECK
         $start = microtime(true);
         exec("ping -n 1 " . escapeshellarg($service->target), $output, $result);
         $time = round(microtime(true) - $start, 2);
@@ -226,13 +352,8 @@ class ServiceMonitorService
         $this->saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action);
     }
 
-    /**
-     * 🔥 SAVE RESULT - HANYA BUAT LOG JIKA ADA PERUBAHAN STATUS
-     * Jika status sama, hanya update last_check_at di service
-     */
     private function saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action)
     {
-        // ✅ UPDATE SERVICE (selalu update, meskipun status sama)
         $service->update([
             'last_status' => $status,
             'last_code' => $code,
@@ -241,9 +362,7 @@ class ServiceMonitorService
             'last_check_at' => now(),
         ]);
 
-        // 🔥 HANYA BUAT LOG JIKA ADA PERUBAHAN STATUS
         if ($oldStatus != $status) {
-            // Buat log baru
             ServiceLog::create([
                 'service_id' => $service->id,
                 'status' => $status,
@@ -256,10 +375,8 @@ class ServiceMonitorService
 
             Log::info("📝 Log dibuat untuk {$service->name}: {$oldStatus} → {$status}");
 
-            // Kirim WhatsApp alert
             $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
         } else {
-            // ✅ STATUS SAMA: hanya update checked_at di log terakhir
             $lastLog = ServiceLog::where('service_id', $service->id)
                 ->latest()
                 ->first();
@@ -270,12 +387,9 @@ class ServiceMonitorService
                 ]);
                 Log::info("🔄 Update check time untuk {$service->name}: status tetap {$status}");
             }
-            
-            // ❌ TIDAK KIRIM WHATSAPP (karena tidak ada perubahan)
         }
     }
 
-    // ==================== ANALYZE RESPONSE ====================
     private function analyzeResponse($code, $time)
     {
         if ($code == 200) {

@@ -115,6 +115,7 @@
         height: 10px;
         border-radius: 50%;
         display: inline-block;
+        transition: all 0.3s ease;
     }
 
     .status-esp .dot.online {
@@ -211,6 +212,7 @@
         justify-content: center;
         font-size: 30px;
         flex-shrink: 0;
+        transition: all 0.5s ease;
     }
 
     .smoke-status-left .smoke-icon.normal {
@@ -252,6 +254,7 @@
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
+        transition: all 0.5s ease;
     }
 
     .smoke-status-left .smoke-info .status-label.normal {
@@ -284,6 +287,7 @@
         line-height: 1;
         white-space: nowrap;
         min-width: 100px;
+        transition: color 0.5s ease;
     }
 
     .smoke-status-right .smoke-value small {
@@ -337,6 +341,15 @@
         color: #94a3b8;
         margin-top: 4px;
         font-weight: 500;
+    }
+
+    .last-update-time {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 4px;
+        width: 100%;
+        text-align: right;
+        font-style: italic;
     }
 
     /* ================= TABLE LOGS ================= */
@@ -581,6 +594,32 @@
         color: #94a3b8;
     }
 
+    /* ================= PERPAGE SELECTOR ================= */
+    .perpage-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .perpage-selector select {
+        padding: 4px 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        background: white;
+        font-size: 13px;
+        color: #0f172a;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    .perpage-selector select:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
     /* ================= RESPONSIVE ================= */
     @media (max-width: 768px) {
         .smoke-container { padding: 16px; }
@@ -625,6 +664,13 @@
             padding: 6px 14px;
             font-size: 12px;
         }
+        .perpage-selector {
+            font-size: 12px;
+        }
+        .perpage-selector select {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
     }
 
     @media (max-width: 480px) {
@@ -647,6 +693,13 @@
             font-size: 11px;
         }
         .btn-download-csv span { display: none; }
+        .perpage-selector {
+            font-size: 11px;
+        }
+        .perpage-selector select {
+            padding: 3px 6px;
+            font-size: 11px;
+        }
     }
 </style>
 
@@ -669,9 +722,9 @@
             @php
                 $isOnline = ($onlineCount ?? 0) > 0;
             @endphp
-            <div class="status-esp">
-                <span class="dot {{ $isOnline ? 'online' : 'offline' }}"></span>
-                ESP Status: {{ $isOnline ? 'ONLINE' : 'OFFLINE' }}
+            <div class="status-esp" id="espStatus">
+                <span class="dot {{ $isOnline ? 'online' : 'offline' }}" id="espDot"></span>
+                ESP Status: <span id="espStatusText">{{ $isOnline ? 'ONLINE' : 'OFFLINE' }}</span>
             </div>
         </div>
     </div>
@@ -687,9 +740,9 @@
         $percentage = min(($smokeValue / $maxPpm) * 100, 100);
     @endphp
 
-    <div class="smoke-status-card">
+    <div class="smoke-status-card" id="smokeStatusCard">
         <div class="smoke-status-left">
-            <div class="smoke-icon {{ $statusClass }}">
+            <div class="smoke-icon {{ $statusClass }}" id="smokeIcon">
                 @if($smokeStatus == 'danger') 🔥
                 @elseif($smokeStatus == 'warning') ⚠️
                 @else ✅
@@ -699,25 +752,26 @@
                 <h3>Kadar Asap</h3>
                 <p>
                     Status:
-                    <span class="status-label {{ $statusClass }}">
+                    <span class="status-label {{ $statusClass }}" id="statusLabel">
                         {{ $statusLabel }}
                     </span>
                 </p>
             </div>
         </div>
         <div class="smoke-status-right">
-            <div class="smoke-value {{ $statusClass }}">
+            <div class="smoke-value {{ $statusClass }}" id="smokeValue">
                 {{ number_format($smokeValue, 0) }}<small> ppm</small>
             </div>
             <div class="smoke-bar-container">
                 <div class="bar-track">
-                    <div class="bar-fill {{ $statusClass }}" style="width: {{ $percentage }}%;"></div>
+                    <div class="bar-fill {{ $statusClass }}" id="smokeBar" style="width: {{ $percentage }}%;"></div>
                 </div>
                 <div class="bar-label">
                     <span>0 ppm</span>
                     <span style="color: #dc2626; font-weight: 600;">⚠️ {{ $maxPpm }} ppm</span>
                 </div>
             </div>
+            <div class="last-update-time" id="lastUpdateTime">🔄 Terakhir update: {{ now()->format('H:i:s') }}</div>
         </div>
     </div>
 
@@ -725,9 +779,22 @@
     <div class="table-container">
         <div class="table-header">
             <h2>📋 Riwayat Log Smoke Detector</h2>
-            <span class="table-info">
-                Total <strong>{{ $smokeLogs->total() }}</strong> logs
-            </span>
+            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <!-- 🔥 PERPAGE SELECTOR -->
+                <div class="perpage-selector">
+                    <label for="perPage">Tampilkan:</label>
+                    <select id="perPage" onchange="changePerPage(this.value)">
+                        <option value="10" {{ request('perPage') == 10 ? 'selected' : '' }}>10</option>
+                        <option value="20" {{ request('perPage') == 20 ? 'selected' : '' }}>20</option>
+                        <option value="50" {{ request('perPage') == 50 ? 'selected' : '' }}>50</option>
+                        <option value="100" {{ request('perPage') == 100 ? 'selected' : '' }}>100</option>
+                    </select>
+                    <span>data</span>
+                </div>
+                <span class="table-info">
+                    Total <strong id="totalLogs">{{ $smokeLogs->total() }}</strong> logs
+                </span>
+            </div>
         </div>
 
         <div class="table-scroll">
@@ -740,14 +807,15 @@
                         <th>Keterangan</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="logTableBody">
                     @forelse($smokeLogs as $log)
                         @php
                             $statusClass = strtolower($log->status ?? 'normal');
                             $valueClass = $log->status == 'DANGER' ? 'danger' : ($log->status == 'WARNING' ? 'warning' : 'normal');
                             $statusIcon = $log->status == 'DANGER' ? '🔴' : ($log->status == 'WARNING' ? '🟡' : '🟢');
+                            $logMessage = $log->status == 'DANGER' ? '🔥 Asap tinggi! Periksa segera!' : ($log->status == 'WARNING' ? '⚠️ Asap mulai terdeteksi, waspada!' : '✅ Kondisi aman, tidak ada asap');
                         @endphp
-                        <tr>
+                        <tr data-log-id="{{ $log->id }}">
                             <td>
                                 <span class="time-cell">
                                     {{ $log->created_at->setTimezone('Asia/Jakarta')->format('d/m/Y H:i:s') }}
@@ -766,13 +834,7 @@
                             </td>
                             <td>
                                 <div class="message-cell">
-                                    @if($log->status == 'DANGER')
-                                        🔥 Asap tinggi! Periksa segera!
-                                    @elseif($log->status == 'WARNING')
-                                        ⚠️ Asap mulai terdeteksi, waspada!
-                                    @else
-                                        ✅ Kondisi aman, tidak ada asap
-                                    @endif
+                                    {{ $logMessage }}
                                 </div>
                             </td>
                         </tr>
@@ -814,48 +876,198 @@
 
 <!-- ================= SCRIPT ================= -->
 <script>
-    // ================= AUTO REFRESH (30 DETIK) =================
-    (function() {
-        'use strict';
-        
-        const REFRESH_INTERVAL = 30; // 30 detik
-        let seconds = REFRESH_INTERVAL;
-        let countdownElement = document.getElementById('countdownTimer');
-        let refreshTimer = null;
-        
-        function updateCountdown() {
-            seconds--;
-            
-            if (countdownElement) {
-                const secs = seconds.toString().padStart(2, '0');
-                countdownElement.textContent = `0:${secs}`;
-                
-                countdownElement.className = 'countdown';
-                if (seconds < 5) {
-                    countdownElement.classList.add('danger');
-                } else if (seconds < 10) {
-                    countdownElement.classList.add('warning');
+    // ================= AUTO REFRESH DATA ESP (TANPA RELOAD) =================
+    const REFRESH_INTERVAL = 30;
+    let countdownSeconds = REFRESH_INTERVAL;
+    let countdownElement = document.getElementById('countdownTimer');
+    let lastLogCount = {{ $smokeLogs->total() }};
+
+    // ================= AMBIL DATA STATUS ESP =================
+    function fetchLatestSmokeData() {
+        fetch('/api/smoke/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateSmokeDisplay(data.data);
                 }
-            }
+            })
+            .catch(error => console.error('Error fetching smoke data:', error));
+    }
+
+    // ================= AMBIL LOG TERBARU =================
+    function fetchLatestLogs() {
+        fetch('/api/smoke/logs?limit=10')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data.length > 0) {
+                    updateLogTable(data.data);
+                    // Update total log jika ada data baru
+                    if (data.total > lastLogCount) {
+                        document.getElementById('totalLogs').textContent = data.total;
+                        lastLogCount = data.total;
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching logs:', error));
+    }
+
+    // ================= UPDATE TAMPILAN SMOKE =================
+    function updateSmokeDisplay(data) {
+        const ppm = data.ppm || 0;
+        const status = data.status || 'NORMAL';
+        const statusClass = data.status_class || 'normal';
+        const deviceStatus = data.device_status || 'OFFLINE';
+
+        // Update PPM
+        const smokeValueElement = document.getElementById('smokeValue');
+        if (smokeValueElement) {
+            smokeValueElement.innerHTML = numberFormat(ppm) + '<small> ppm</small>';
+            smokeValueElement.className = 'smoke-value ' + statusClass.toLowerCase();
+        }
+
+        // Update Status Label
+        const statusLabelElement = document.getElementById('statusLabel');
+        if (statusLabelElement) {
+            const statusIcon = status === 'DANGER' ? '🔴' : (status === 'WARNING' ? '🟡' : '🟢');
+            const statusText = status === 'DANGER' ? 'BAHAYA' : (status === 'WARNING' ? 'WARNING' : 'NORMAL');
+            statusLabelElement.textContent = statusIcon + ' ' + statusText;
+            statusLabelElement.className = 'status-label ' + statusClass.toLowerCase();
+        }
+
+        // Update Icon
+        const smokeIcon = document.getElementById('smokeIcon');
+        if (smokeIcon) {
+            smokeIcon.textContent = status === 'DANGER' ? '🔥' : (status === 'WARNING' ? '⚠️' : '✅');
+            smokeIcon.className = 'smoke-icon ' + statusClass.toLowerCase();
+        }
+
+        // Update Progress Bar
+        const maxPpm = 1000;
+        const percentage = Math.min((ppm / maxPpm) * 100, 100);
+        const barFill = document.getElementById('smokeBar');
+        if (barFill) {
+            barFill.style.width = percentage + '%';
+            barFill.className = 'bar-fill ' + statusClass.toLowerCase();
+        }
+
+        // Update ESP Status
+        const espDot = document.getElementById('espDot');
+        const espStatusText = document.getElementById('espStatusText');
+        if (espDot && espStatusText) {
+            const isOnline = deviceStatus === 'ONLINE';
+            espDot.className = 'dot ' + (isOnline ? 'online' : 'offline');
+            espStatusText.textContent = isOnline ? 'ONLINE' : 'OFFLINE';
+        }
+
+        // Update Last Update Time
+        const lastUpdateElement = document.getElementById('lastUpdateTime');
+        if (lastUpdateElement) {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+                           now.getMinutes().toString().padStart(2, '0') + ':' +
+                           now.getSeconds().toString().padStart(2, '0');
+            lastUpdateElement.textContent = '🔄 Terakhir update: ' + timeStr;
+        }
+    }
+
+    // ================= UPDATE TABEL LOG =================
+    function updateLogTable(logs) {
+        const tbody = document.getElementById('logTableBody');
+        if (!tbody) return;
+
+        // Cek apakah ada data baru dengan ID berbeda
+        const existingIds = Array.from(tbody.querySelectorAll('tr[data-log-id]')).map(tr => parseInt(tr.dataset.logId));
+        const newLogs = logs.filter(log => !existingIds.includes(log.id));
+
+        if (newLogs.length === 0) return;
+
+        // Tambahkan log baru ke atas tabel (prepend)
+        newLogs.forEach(log => {
+            const row = document.createElement('tr');
+            row.dataset.logId = log.id;
+            const statusClass = log.status ? log.status.toLowerCase() : 'normal';
+            const statusIcon = log.status === 'DANGER' ? '🔴' : (log.status === 'WARNING' ? '🟡' : '🟢');
+            const logMessage = log.status === 'DANGER' ? '🔥 Asap tinggi! Periksa segera!' : 
+                              (log.status === 'WARNING' ? '⚠️ Asap mulai terdeteksi, waspada!' : '✅ Kondisi aman, tidak ada asap');
             
-            if (seconds <= 0) {
-                window.location.reload();
-                return;
+            row.innerHTML = `
+                <td><span class="time-cell">${formatDate(log.created_at)}</span></td>
+                <td><span class="value-cell ${statusClass}">${numberFormat(log.ppm)} <span style="font-size:10px;font-weight:400;color:#94a3b8;">ppm</span></span></td>
+                <td><span class="status-badge ${statusClass}">${statusIcon} ${log.status || 'NORMAL'}</span></td>
+                <td><div class="message-cell">${logMessage}</div></td>
+            `;
+            
+            // Prepend ke tbody
+            tbody.insertBefore(row, tbody.firstChild);
+            
+            // Hapus baris paling bawah jika lebih dari 10
+            while (tbody.children.length > 10) {
+                tbody.removeChild(tbody.lastChild);
             }
-        }
-        
-        function startCountdown() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-            }
-            seconds = REFRESH_INTERVAL;
-            updateCountdown();
-            refreshTimer = setInterval(updateCountdown, 1000);
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            startCountdown();
         });
-    })();
+    }
+
+    // ================= HELPER FUNCTIONS =================
+    function numberFormat(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const date = new Date(dateStr);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        return day + '/' + month + '/' + year + ' ' + hours + ':' + minutes + ':' + seconds;
+    }
+
+    // ================= COUNTDOWN TIMER =================
+    function updateCountdown() {
+        countdownSeconds--;
+        
+        if (countdownElement) {
+            const secs = countdownSeconds.toString().padStart(2, '0');
+            countdownElement.textContent = '0:' + secs;
+            
+            countdownElement.className = 'countdown';
+            if (countdownSeconds < 5) {
+                countdownElement.classList.add('danger');
+            } else if (countdownSeconds < 10) {
+                countdownElement.classList.add('warning');
+            }
+        }
+        
+        if (countdownSeconds <= 0) {
+            countdownSeconds = REFRESH_INTERVAL;
+            fetchLatestSmokeData();
+            fetchLatestLogs();
+        }
+    }
+
+    // ================= JALANKAN SAAT HALAMAN DIMUAT =================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ambil data pertama kali
+        fetchLatestSmokeData();
+        
+        // Jalankan countdown setiap detik
+        setInterval(updateCountdown, 1000);
+        
+        // Refresh data setiap 30 detik (cadangan)
+        setInterval(function() {
+            fetchLatestSmokeData();
+            fetchLatestLogs();
+        }, REFRESH_INTERVAL * 1000);
+    });
+
+    // ================= PERPAGE =================
+    function changePerPage(value) {
+        let url = new URL(window.location.href);
+        url.searchParams.set('perPage', value);
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }
 </script>
 @endsection

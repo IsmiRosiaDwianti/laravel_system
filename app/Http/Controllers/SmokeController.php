@@ -175,7 +175,7 @@ class SmokeController extends Controller
 
             // 🔥 SIMPAN LOG
             $log = SmokeLog::create([
-                'device_id' => $device->id,
+                'smoke_device_id' => $device->id,
                 'smoke_value' => $ppm,
                 'status' => $status,
                 'message' => $message,
@@ -362,7 +362,7 @@ class SmokeController extends Controller
     /**
      * ============================================================
      *  📜 GET LOGS HISTORY (GET /api/smoke/logs)
-     * ============================================================
+     *  ============================================================
      */
     public function getLogs(Request $request)
     {
@@ -406,7 +406,7 @@ class SmokeController extends Controller
     /**
      * ============================================================
      *  📊 API: Ambil data smoke terbaru (untuk chart real-time)
-     * ============================================================
+     *  ============================================================
      */
     public function getLatestData()
     {
@@ -442,7 +442,7 @@ class SmokeController extends Controller
     /**
      * ============================================================
      *  📊 API: Ambil status terbaru semua device
-     * ============================================================
+     *  ============================================================
      */
     public function getDeviceStatus()
     {
@@ -499,7 +499,7 @@ class SmokeController extends Controller
     /**
      * ============================================================
      *  🔥 UPDATE THRESHOLD (Opsional: via API)
-     * ============================================================
+     *  ============================================================
      */
     public function updateThreshold(Request $request)
     {

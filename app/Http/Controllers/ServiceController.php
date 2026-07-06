@@ -51,16 +51,42 @@ class ServiceController extends Controller
     }
 
     /**
+     * 🔥 PERBAIKI URL: Tambahkan https:// jika tidak ada
+     */
+    private function fixUrl($url)
+    {
+        // Jika tidak diawali http:// atau https://, tambahkan https://
+        if (!preg_match('/^https?:\/\/.+/', $url)) {
+            return 'https://' . $url;
+        }
+        return $url;
+    }
+
+    /**
      * Store a newly created service in storage.
+     * 🔥 DITAMBAHKAN: Validasi URL harus diawali http:// atau https://
      */
     public function store(Request $request, ServiceMonitorService $monitor)
     {
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'target' => 'required|string|max:255',
+                'target' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    // 🔥 VALIDASI: PAKAI CLOSURE
+                    function ($attribute, $value, $fail) {
+                        if (!preg_match('/^https?:\/\/.+/', $value)) {
+                            $fail('Format URL tidak valid. Harus diawali dengan http:// atau https://');
+                        }
+                    },
+                ],
                 'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
             ]);
+
+            // 🔥 PERBAIKI URL (tambahkan https:// jika perlu)
+            $validated['target'] = $this->fixUrl($validated['target']);
 
             // ✅ CEK APAKAH TARGET SUDAH ADA
             $existingTarget = Service::where('target', $validated['target'])->first();
@@ -125,6 +151,7 @@ class ServiceController extends Controller
 
     /**
      * Update the specified service in storage.
+     * 🔥 DITAMBAHKAN: Validasi URL harus diawali http:// atau https://
      */
     public function update(Request $request, $id, ServiceMonitorService $monitor)
     {
@@ -133,9 +160,22 @@ class ServiceController extends Controller
 
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'target' => 'required|string|max:255',
+                'target' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    // 🔥 VALIDASI: PAKAI CLOSURE
+                    function ($attribute, $value, $fail) {
+                        if (!preg_match('/^https?:\/\/.+/', $value)) {
+                            $fail('Format URL tidak valid. Harus diawali dengan http:// atau https://');
+                        }
+                    },
+                ],
                 'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
             ]);
+
+            // 🔥 PERBAIKI URL (tambahkan https:// jika perlu)
+            $validated['target'] = $this->fixUrl($validated['target']);
 
             // ✅ CEK APAKAH TARGET SUDAH ADA (kecuali dirinya sendiri)
             $existingTarget = Service::where('target', $validated['target'])
@@ -234,7 +274,7 @@ class ServiceController extends Controller
                         'last_response_code' => $latestLog?->response_code,
                         'last_response_time' => $latestLog?->response_time,
                         'last_message' => $latestLog?->message ?? '-',
-                        'last_action' => $action, // 🔥 TAMBAHKAN
+                        'last_action' => $action,
                         'last_checked_at' => $latestLog?->created_at?->format('d/m/Y H:i:s') ?? $service->updated_at?->format('d/m/Y H:i:s'),
                         'created_at' => $service->created_at?->format('d/m/Y H:i:s'),
                         'updated_at' => $service->updated_at?->format('d/m/Y H:i:s'),
@@ -245,7 +285,7 @@ class ServiceController extends Controller
                                 'response_code' => $log->response_code,
                                 'response_time' => $log->response_time,
                                 'message' => $log->message,
-                                'action' => $log->action ?? '-', // 🔥 TAMBAHKAN
+                                'action' => $log->action ?? '-',
                                 'created_at' => $log->created_at->format('d/m/Y H:i:s')
                             ];
                         })
@@ -841,6 +881,238 @@ class ServiceController extends Controller
 
         } catch (\Exception $e) {
             throw new \Exception('Gagal generate PDF: ' . $e->getMessage());
+        }
+    }
+
+    // ================================================================
+    // 📡 API METHODS (Untuk Postman / Mobile App)
+    // ================================================================
+
+    /**
+     * ============================================================
+     *  📡 API: GET ALL SERVICES
+     *  ============================================================
+     *  🔗 URL: GET /api/services
+     *  🔑 Butuh Auth (session)
+     *  📦 Query Params: ?per_page=10&page=1
+     * ============================================================
+     */
+    public function apiIndex(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 10);
+            
+            $services = Service::orderBy('created_at', 'desc')
+                ->paginate($perPage);
+            
+            // Hitung uptime untuk setiap service
+            foreach ($services as $service) {
+                $service->uptime = $this->calculateUptime($service->id, 30);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $services->items(),
+                'pagination' => [
+                    'total' => $services->total(),
+                    'per_page' => $services->perPage(),
+                    'current_page' => $services->currentPage(),
+                    'last_page' => $services->lastPage(),
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data service: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: GET SERVICE DETAIL
+     *  ============================================================
+     *  🔗 URL: GET /api/services/{id}
+     *  🔑 Butuh Auth (session)
+     * ============================================================
+     */
+    public function apiShow($id)
+    {
+        try {
+            $service = Service::with(['logs' => function($query) {
+                $query->latest()->limit(5);
+            }])->findOrFail($id);
+            
+            $service->uptime = $this->calculateUptime($service->id, 30);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $service
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Service tidak ditemukan: ' . $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: CREATE SERVICE
+     *  ============================================================
+     *  🔗 URL: POST /api/services
+     *  🔑 Butuh Auth (session)
+     *  📦 Body: { "name": "...", "target": "...", "type": "http" }
+     * ============================================================
+     */
+    public function apiStore(Request $request, ServiceMonitorService $monitor)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'target' => 'required|string|max:255',
+                'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
+            ]);
+
+            // Cek target sudah ada
+            if (Service::where('target', $validated['target'])->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Target URL/IP "' . $validated['target'] . '" sudah digunakan'
+                ], 422);
+            }
+
+            // Cek nama sudah ada
+            if (Service::where('name', $validated['name'])->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nama service "' . $validated['name'] . '" sudah digunakan'
+                ], 422);
+            }
+
+            $service = Service::create([
+                'name' => $validated['name'],
+                'target' => $validated['target'],
+                'type' => $validated['type'],
+                'last_status' => 'UNKNOWN'
+            ]);
+
+            // Check service
+            $monitor->check($service);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service berhasil ditambahkan',
+                'data' => $service
+            ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan service: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: UPDATE SERVICE
+     *  ============================================================
+     *  🔗 URL: PUT /api/services/{id}
+     *  🔑 Butuh Auth (session)
+     *  📦 Body: { "name": "...", "target": "...", "type": "http" }
+     * ============================================================
+     */
+    public function apiUpdate(Request $request, $id, ServiceMonitorService $monitor)
+    {
+        try {
+            $service = Service::findOrFail($id);
+
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'target' => 'required|string|max:255',
+                'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
+            ]);
+
+            // Cek target sudah ada (kecuali dirinya sendiri)
+            if (Service::where('target', $validated['target'])->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Target URL/IP "' . $validated['target'] . '" sudah digunakan'
+                ], 422);
+            }
+
+            // Cek nama sudah ada (kecuali dirinya sendiri)
+            if (Service::where('name', $validated['name'])->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nama service "' . $validated['name'] . '" sudah digunakan'
+                ], 422);
+            }
+
+            $service->update([
+                'name' => $validated['name'],
+                'target' => $validated['target'],
+                'type' => $validated['type']
+            ]);
+
+            // Check service
+            $monitor->check($service);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service berhasil diupdate',
+                'data' => $service
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupdate service: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: DELETE SERVICE
+     *  ============================================================
+     *  🔗 URL: DELETE /api/services/{id}
+     *  🔑 Butuh Auth (session)
+     * ============================================================
+     */
+    public function apiDestroy($id)
+    {
+        try {
+            $service = Service::findOrFail($id);
+            $serviceName = $service->name;
+            $service->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service "' . $serviceName . '" berhasil dihapus'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus service: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

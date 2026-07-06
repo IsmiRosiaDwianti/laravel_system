@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SmokeLog extends Model
 {
     protected $fillable = [
-        'device_id',           // ✅ PASTIKAN device_id (bukan smoke_device_id)
+        'smoke_device_id',           // ✅ PASTIKAN device_id (bukan smoke_device_id)
         'smoke_value',
         'status',
         'message',
@@ -20,7 +20,7 @@ class SmokeLog extends Model
     // ✅ Relasi ke SmokeDevice
     public function device()
     {
-        return $this->belongsTo(SmokeDevice::class, 'device_id'); // ✅ PASTIKAN device_id
+        return $this->belongsTo(SmokeDevice::class, 'smoke_device_id'); // ✅ PASTIKAN device_id
     }
 
     // ... (method lainnya tetap sama)

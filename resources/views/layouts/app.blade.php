@@ -7,6 +7,7 @@
     <title>Monitoring System DISKOMINFOTIK</title>
 
     <style>
+        /* ====================== SEMUA STYLE YANG SUDAH ADA ====================== */
         * {
             margin: 0;
             padding: 0;
@@ -20,10 +21,7 @@
             min-height: 100vh;
         }
 
-        /* ======================
-           SIDEBAR - BIRU TUA PEMERINTAH
-        ====================== */
-
+        /* ====================== SIDEBAR ====================== */
         .sidebar {
             position: fixed;
             left: 0;
@@ -39,10 +37,6 @@
             box-shadow: 4px 0 20px rgba(15, 43, 75, 0.3);
             border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
-
-        /* ======================
-           HEADER SIDEBAR
-        ====================== */
 
         .sidebar-header {
             padding: 28px 24px 24px;
@@ -85,10 +79,6 @@
             letter-spacing: 0.5px;
             color: #94b8d9;
         }
-
-        /* ======================
-           NAVIGATION SIDEBAR
-        ====================== */
 
         .sidebar-nav {
             padding: 16px 16px 24px;
@@ -136,10 +126,6 @@
             color: #60a5fa;
         }
 
-        /* ======================
-           ACTIVE MENU
-        ====================== */
-
         .sidebar a.active {
             background: rgba(37, 99, 235, 0.2);
             color: #60a5fa;
@@ -162,14 +148,6 @@
             border-radius: 0 3px 3px 0;
         }
 
-        .sidebar a.active:hover {
-            background: rgba(37, 99, 235, 0.25);
-        }
-
-        /* ======================
-           SCROLLBAR SIDEBAR
-        ====================== */
-
         .sidebar::-webkit-scrollbar {
             width: 4px;
         }
@@ -183,10 +161,7 @@
             border-radius: 10px;
         }
 
-        /* ======================
-           MAIN CONTENT
-        ====================== */
-
+        /* ====================== MAIN CONTENT ====================== */
         .main {
             margin-left: 270px;
             padding: 24px 32px 32px;
@@ -195,10 +170,7 @@
             background: #f0f4f8;
         }
 
-        /* ======================
-           TOP BAR
-        ====================== */
-
+        /* ====================== TOP BAR ====================== */
         .topbar {
             background: #ffffff;
             border-radius: 16px;
@@ -209,11 +181,6 @@
             align-items: center;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
             border: 1px solid #e8edf5;
-            transition: all 0.3s ease;
-        }
-
-        .topbar:hover {
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
         }
 
         .topbar .page-title {
@@ -253,10 +220,6 @@
             font-weight: 400;
         }
 
-        .topbar .page-title .breadcrumb span {
-            color: #64748b;
-        }
-
         .topbar .right-section {
             display: flex;
             align-items: center;
@@ -283,10 +246,7 @@
             color: #3b82f6;
         }
 
-        /* ======================
-           USER DROPDOWN
-        ====================== */
-
+        /* ====================== USER DROPDOWN ====================== */
         .user-dropdown {
             position: relative;
             display: inline-block;
@@ -390,10 +350,7 @@
             text-align: center;
         }
 
-        /* ======================
-           TOMBOL REFRESH
-        ====================== */
-
+        /* ====================== TOMBOL REFRESH ====================== */
         .btn-refresh {
             background: #f8fafc;
             border: 1px solid #e8edf5;
@@ -432,82 +389,167 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* ======================
-           CONTENT WRAPPER
-        ====================== */
-
+        /* ====================== CONTENT WRAPPER ====================== */
         .content-wrapper {
             background: #ffffff;
             border-radius: 16px;
             padding: 28px;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
             border: 1px solid #e8edf5;
-            transition: all 0.3s ease;
         }
 
-        .content-wrapper:hover {
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        /* ====================== NETWORK ALERT ====================== */
+        .network-alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: slideDown 0.5s ease;
+            max-width: 90%;
+            backdrop-filter: blur(10px);
         }
 
+        .network-alert.show {
+            display: flex;
+        }
+
+        .network-alert.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .network-alert.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .network-alert .alert-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .network-alert .alert-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .network-alert .alert-title {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .network-alert .alert-message {
+            font-weight: 400;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .network-alert .alert-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: inherit;
+            opacity: 0.6;
+            padding: 0 4px;
+            transition: opacity 0.2s ease;
+            margin-left: auto;
+        }
+
+        .network-alert .alert-close:hover {
+            opacity: 1;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+        }
+
+        .network-alert.hide {
+            animation: slideUp 0.5s ease forwards;
+        }
+
+        /* ====================== RESPONSIVE ====================== */
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
-
-        /* ======================
-           RESPONSIVE
-        ====================== */
 
         @media (max-width: 1024px) {
             .sidebar {
                 width: 80px;
             }
-
             .sidebar-header {
                 padding: 16px 12px;
             }
-
             .sidebar .logo {
                 justify-content: center;
             }
-
             .sidebar .logo .logo-text h2,
             .sidebar .logo .logo-text .subtitle,
             .sidebar .nav-label,
             .sidebar a span {
                 display: none;
             }
-
             .sidebar .logo .logo-image {
                 width: 40px;
                 height: 40px;
             }
-
             .sidebar a {
                 justify-content: center;
                 padding: 12px;
                 font-size: 18px;
             }
-
             .sidebar a i {
                 font-size: 20px;
                 width: auto;
                 margin: 0;
             }
-
             .sidebar a.active::before {
                 display: none;
             }
-
             .sidebar a.active {
                 box-shadow: none;
                 background: rgba(37, 99, 235, 0.25);
             }
-
             .main {
                 margin-left: 80px;
                 padding: 20px 24px;
             }
-
             .topbar .page-title h1 {
                 font-size: 17px;
+            }
+            .network-alert {
+                top: 10px;
+                padding: 12px 18px;
+                font-size: 13px;
+                width: 95%;
             }
         }
 
@@ -526,29 +568,24 @@
                 border-right: none;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             }
-
             .sidebar-header {
                 padding: 12px 16px;
                 border-bottom: none;
                 flex: 1;
                 background: transparent;
             }
-
             .sidebar .logo .logo-text h2 {
                 display: block;
                 font-size: 14px;
             }
-
             .sidebar .logo .logo-text .subtitle {
                 display: block;
                 font-size: 10px;
             }
-
             .sidebar .logo .logo-image {
                 width: 36px;
                 height: 36px;
             }
-
             .sidebar-nav {
                 padding: 8px 12px 12px;
                 display: flex;
@@ -556,49 +593,46 @@
                 gap: 2px;
                 width: 100%;
             }
-
             .sidebar .nav-label {
                 display: none;
             }
-
             .sidebar a {
                 padding: 8px 14px;
                 font-size: 13px;
                 margin-bottom: 0;
                 flex: 0 0 auto;
             }
-
             .sidebar a span {
                 display: inline;
             }
-
             .sidebar a i {
                 font-size: 14px;
                 width: 18px;
             }
-
             .sidebar a.active::before {
                 display: none;
             }
-
             .main {
                 margin-left: 0;
                 padding: 16px;
             }
-
             .topbar {
                 flex-direction: column;
                 align-items: stretch;
                 gap: 12px;
                 padding: 16px 20px;
             }
-
             .topbar .page-title h1 {
                 font-size: 17px;
             }
-
             .topbar .right-section {
                 justify-content: space-between;
+            }
+            .network-alert {
+                top: 10px;
+                padding: 12px 16px;
+                font-size: 13px;
+                width: 95%;
             }
         }
 
@@ -606,72 +640,48 @@
             .main {
                 padding: 12px;
             }
-
             .topbar {
                 padding: 14px 16px;
             }
-
             .topbar .page-title h1 {
                 font-size: 15px;
             }
-
             .topbar .page-title .breadcrumb {
                 font-size: 11px;
             }
-
             .topbar .right-section .time {
                 font-size: 11px;
                 padding: 4px 10px;
                 min-width: 80px;
             }
-
             .btn-refresh {
                 padding: 6px 12px;
                 font-size: 12px;
             }
-
             .btn-refresh span {
                 display: none;
             }
-
             .content-wrapper {
                 padding: 16px;
             }
-
-            .sidebar .logo .logo-image {
-                width: 32px;
-                height: 32px;
+            .network-alert {
+                top: 8px;
+                padding: 10px 14px;
+                font-size: 12px;
+                width: 97%;
+                border-radius: 8px;
             }
-
-            .sidebar .logo .logo-text h2 {
+            .network-alert .alert-icon {
+                font-size: 16px;
+            }
+            .network-alert .alert-title {
                 font-size: 12px;
             }
-
-            .sidebar .logo .logo-text .subtitle {
-                font-size: 9px;
+            .network-alert .alert-message {
+                font-size: 11px;
             }
-
-            .sidebar a {
-                padding: 6px 10px;
-                font-size: 12px;
-            }
-
-            .sidebar a span {
-                display: none;
-            }
-
-            .sidebar a i {
-                font-size: 14px;
-                width: auto;
-            }
-
-            .sidebar-nav {
-                gap: 0;
-            }
-
-            .user-dropdown .dropdown-menu {
-                right: -20px;
-                min-width: 160px;
+            .network-alert .alert-close {
+                font-size: 18px;
             }
         }
     </style>
@@ -686,9 +696,17 @@
 
 <body>
 
-<!-- ======================
-     SIDEBAR - BIRU TUA
-====================== -->
+<!-- ====================== NETWORK ALERT ====================== -->
+<div class="network-alert" id="networkAlert">
+    <span class="alert-icon" id="alertIcon">⚠️</span>
+    <div class="alert-content">
+        <span class="alert-title" id="alertTitle">Jaringan Terputus!</span>
+        <span class="alert-message" id="alertMessage">Tidak ada koneksi internet. Periksa router/modem Anda.</span>
+    </div>
+    <button class="alert-close" onclick="closeNetworkAlert()">&times;</button>
+</div>
+
+<!-- ====================== SIDEBAR ====================== -->
 <div class="sidebar">
     <div class="sidebar-header">
         <div class="logo">
@@ -732,9 +750,7 @@
     </div>
 </div>
 
-<!-- ======================
-     MAIN CONTENT
-====================== -->
+<!-- ====================== MAIN CONTENT ====================== -->
 <div class="main">
     <!-- Top Bar -->
     <div class="topbar">
@@ -762,7 +778,7 @@
                 <span>Refresh</span>
             </button>
 
-            <!-- ====================== USER DROPDOWN ====================== -->
+            <!-- USER DROPDOWN -->
             <div class="user-dropdown">
                 <div class="avatar" onclick="toggleDropdown()">
                     <i class="fas fa-user"></i>
@@ -780,7 +796,6 @@
                     </form>
                 </div>
             </div>
-            <!-- ====================== END USER DROPDOWN ====================== -->
         </div>
     </div>
 
@@ -800,49 +815,94 @@
         }, 500);
     }
 
-    // ====================== UPDATE TIME CONSISTENTLY ======================
+    // ====================== UPDATE TIME ======================
     function updateTime() {
         const now = new Date();
-        
-        // Format waktu dengan padding 2 digit
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const timeString = `${hours}:${minutes} WIB`;
-        
-        // Update elemen waktu
         const timeDisplay = document.getElementById('timeDisplay');
         if (timeDisplay) {
             timeDisplay.textContent = timeString;
         }
     }
 
-    // ====================== UPDATE DATE ======================
     function updateDate() {
         const now = new Date();
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         const dateString = now.toLocaleDateString('id-ID', options);
-        
         const dateElement = document.getElementById('currentDate');
         if (dateElement) {
             dateElement.textContent = dateString;
         }
     }
 
-    // ====================== INITIALIZATION ======================
-    // Update waktu setiap detik untuk konsistensi
-    updateTime();
-    updateDate();
-    
-    // Set interval setiap 10 detik untuk memastikan waktu selalu akurat
-    setInterval(updateTime, 10000);
-    
-    // Update date setiap menit (meskipun jarang berubah)
-    setInterval(updateDate, 60000);
+    // ====================== NETWORK ALERT ======================
+    let networkAlertShown = false;
+    let networkAlertTimer = null;
+
+    function showNetworkAlert(isConnected) {
+        const alert = document.getElementById('networkAlert');
+        const icon = document.getElementById('alertIcon');
+        const title = document.getElementById('alertTitle');
+        const message = document.getElementById('alertMessage');
+
+        if (!alert) return;
+
+        alert.classList.remove('show', 'hide', 'error', 'success');
+
+        if (isConnected) {
+            icon.textContent = '🟢';
+            title.textContent = 'Jaringan Normal';
+            message.textContent = 'Koneksi internet telah pulih. Semua sistem berjalan normal.';
+            alert.className = 'network-alert success';
+            networkAlertShown = false;
+        } else {
+            icon.textContent = '🚨';
+            title.textContent = 'Jaringan Terputus!';
+            message.textContent = 'Tidak ada koneksi internet. Periksa router/modem dan kabel jaringan.';
+            alert.className = 'network-alert error';
+            networkAlertShown = true;
+        }
+
+        alert.classList.add('show');
+
+        clearTimeout(networkAlertTimer);
+        networkAlertTimer = setTimeout(function() {
+            closeNetworkAlert();
+        }, 10000);
+    }
+
+    function closeNetworkAlert() {
+        const alert = document.getElementById('networkAlert');
+        if (alert) {
+            alert.classList.add('hide');
+            setTimeout(function() {
+                alert.classList.remove('show', 'hide');
+            }, 500);
+        }
+        clearTimeout(networkAlertTimer);
+    }
+
+    function checkNetworkStatus() {
+        fetch('/api/network/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const isConnected = data.connected;
+                    if (isConnected && networkAlertShown) {
+                        showNetworkAlert(true);
+                    } else if (!isConnected && !networkAlertShown) {
+                        showNetworkAlert(false);
+                    }
+                }
+            })
+            .catch(function() {
+                if (!networkAlertShown) {
+                    showNetworkAlert(false);
+                }
+            });
+    }
 
     // ====================== USER DROPDOWN ======================
     function toggleDropdown() {
@@ -850,7 +910,6 @@
         dropdown.classList.toggle('show');
     }
 
-    // Tutup dropdown jika klik di luar
     document.addEventListener('click', function(event) {
         const dropdown = document.getElementById('userDropdown');
         const avatar = document.querySelector('.user-dropdown .avatar');
@@ -859,7 +918,6 @@
         }
     });
 
-    // Tutup dropdown dengan tombol ESC
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             const dropdown = document.getElementById('userDropdown');
@@ -869,8 +927,23 @@
         }
     });
 
-    console.log('✅ Monitoring System DISKOMINFOTIK Loaded');
-    console.log('🕐 Waktu saat ini:', document.getElementById('timeDisplay')?.textContent || '--:-- WIB');
+    // ====================== INITIALIZATION ======================
+    document.addEventListener('DOMContentLoaded', function() {
+        updateTime();
+        updateDate();
+        setInterval(updateTime, 10000);
+        setInterval(updateDate, 60000);
+
+        // Cek status jaringan pertama kali
+        setTimeout(function() {
+            checkNetworkStatus();
+        }, 1000);
+
+        // Cek setiap 30 detik
+        setInterval(checkNetworkStatus, 1000);
+
+        console.log('✅ Monitoring System DISKOMINFOTIK Loaded');
+    });
 </script>
 
 </body> 

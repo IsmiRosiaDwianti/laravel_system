@@ -359,7 +359,6 @@
         flex-wrap: wrap;
     }
 
-    /* PerPage Selector - untuk memilih jumlah data per halaman */
     .perpage-selector {
         display: flex;
         align-items: center;
@@ -665,7 +664,153 @@
         color: #94a3b8;
     }
 
-    /* ================= MODAL ================= */
+    /* ================= CUSTOM MODAL ================= */
+    .custom-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.25s ease;
+    }
+    .custom-modal-overlay.active { display: flex; }
+
+    .custom-modal {
+        background: white;
+        border-radius: 20px;
+        max-width: 450px;
+        width: 92%;
+        overflow: hidden;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+    }
+
+    .custom-modal-header {
+        padding: 24px 28px 16px;
+        text-align: center;
+    }
+
+    .custom-modal-header .modal-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        margin: 0 auto 12px;
+    }
+
+    .custom-modal-header .modal-icon.warning {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .custom-modal-header .modal-icon.danger {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .custom-modal-header .modal-icon.success {
+        background: #d1fae5;
+        color: #059669;
+    }
+
+    .custom-modal-header .modal-icon.info {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .custom-modal-header h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 6px;
+    }
+
+    .custom-modal-header p {
+        font-size: 14px;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .custom-modal-body {
+        padding: 0 28px 20px;
+    }
+
+    .custom-modal-body .highlight-name {
+        font-weight: 700;
+        color: #0f172a;
+        background: #f1f5f9;
+        padding: 2px 10px;
+        border-radius: 4px;
+    }
+
+    .custom-modal-footer {
+        padding: 16px 28px 24px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        border-top: 1px solid #f1f5f9;
+        background: #fafbfc;
+    }
+
+    .custom-modal-footer .btn-modal {
+        padding: 10px 28px;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .custom-modal-footer .btn-modal:hover {
+        transform: translateY(-2px);
+    }
+
+    .custom-modal-footer .btn-cancel {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    .custom-modal-footer .btn-cancel:hover {
+        background: #e5e7eb;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .custom-modal-footer .btn-confirm {
+        background: #dc2626;
+        color: white;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+    }
+
+    .custom-modal-footer .btn-confirm:hover {
+        background: #b91c1c;
+        box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+    }
+
+    /* Disabled state untuk button modal */
+    .btn-modal:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    /* ================= MODAL FORM ================= */
     .modal-overlay {
         display: none;
         position: fixed;
@@ -740,6 +885,11 @@
         color: #0f172a;
     }
 
+    .modal-close:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
     .modal-body {
         padding: 24px;
         max-height: 55vh;
@@ -763,6 +913,19 @@
         gap: 12px;
         background: #fafbfc;
         border-radius: 0 0 16px 16px;
+    }
+
+    .modal-footer .btn-cancel-modal:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .modal-footer .btn-submit-modal:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
     }
 
     /* ================= DETAIL ================= */
@@ -849,7 +1012,6 @@
         font-weight: 400;
     }
 
-    /* ================= EMPTY MESSAGE STYLE ================= */
     .detail-message.empty-message {
         border-left-color: #f59e0b;
         background: #fffbeb;
@@ -860,7 +1022,6 @@
         font-size: 16px;
     }
 
-    /* ================= ACTION ITEM ================= */
     .detail-action {
         background: #eff6ff;
         border: 1px solid #93c5fd;
@@ -1127,6 +1288,12 @@
         transform: translateY(-1px);
     }
 
+    .btn-cancel-modal:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
     /* ================= EMPTY STATE ================= */
     .empty-state {
         text-align: center;
@@ -1308,11 +1475,27 @@
 
 <div class="service-container">
     <!-- ================= TOAST CONTAINER ================= -->
-    <!-- Tempat notifikasi pop-up (success/error/warning/info) -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- ================= CUSTOM CONFIRM MODAL ================= -->
+    <div class="custom-modal-overlay" id="customConfirmModal">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="modal-icon" id="confirmIcon">⚠️</div>
+                <h3 id="confirmTitle">Konfirmasi</h3>
+                <p id="confirmMessage">Apakah Anda yakin?</p>
+            </div>
+            <div class="custom-modal-body">
+                <p id="confirmDetail" style="font-size: 14px; color: #475569; text-align: center;"></p>
+            </div>
+            <div class="custom-modal-footer">
+                <button class="btn-modal btn-cancel" onclick="closeConfirmModal()">✕ Batal</button>
+                <button class="btn-modal btn-confirm" id="confirmBtn" onclick="executeConfirm()">✔ Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= HEADER ================= -->
-    <!-- Bagian header halaman dengan judul dan tombol tambah service -->
     <div class="service-header">
         <div class="header-left">
             <div class="header-icon">⚙️</div>
@@ -1322,7 +1505,6 @@
             </div>
         </div>
         <div class="header-actions">
-            <!-- Tombol untuk membuka modal tambah service -->
             <button class="btn-primary" onclick="openCreateModal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                     <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
@@ -1333,7 +1515,6 @@
     </div>
 
     <!-- ================= STATS ================= -->
-    <!-- Statistik ringkasan: Total, UP, WARNING, DOWN -->
     <div class="stats-bar">
         <div class="stat-item">
             <span class="stat-number purple">{{ $totalServices ?? 0 }}</span>
@@ -1354,13 +1535,10 @@
     </div>
 
     <!-- ================= TABLE ================= -->
-    <!-- Tabel daftar service dengan pagination dan perPage selector -->
     <div class="table-container">
         <div class="table-header">
             <h2>📋 Daftar Service</h2>
-            <!-- Bagian kanan header: PerPage Selector + Info Total -->
             <div class="table-header-right">
-                <!-- PerPage Selector: Untuk memilih jumlah data per halaman -->
                 <div class="perpage-selector">
                     <label for="perPage">Tampilkan:</label>
                     <select id="perPage" onchange="changePerPage(this.value)">
@@ -1371,7 +1549,6 @@
                     </select>
                     <span>data</span>
                 </div>
-                <!-- Info total data -->
                 <span class="table-info">
                     Menampilkan <strong>{{ $services->firstItem() ?? 0 }}</strong> - <strong>{{ $services->lastItem() ?? 0 }}</strong> dari <strong>{{ $services->total() }}</strong> service
                 </span>
@@ -1394,28 +1571,19 @@
                 <tbody>
                     @forelse($services as $index => $service)
                         @php
-                            // Warna avatar berdasarkan indeks
                             $colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6', 'color-7', 'color-8'];
                             $colorClass = $colors[$index % count($colors)];
-                            // Inisial nama untuk avatar
                             $initials = strtoupper(substr($service->name, 0, 2));
-                            // Status service
                             $statusLabel = $service->last_status ?? 'UNKNOWN';
-                            // Nomor urut dengan pagination
                             $no = ($services->currentPage() - 1) * $services->perPage() + $loop->iteration;
-                            
-                            // 🔥 UPDATE: Pakai last_check_at dari service, bukan dari log
                             $lastChecked = $service->last_check_at ?? $service->updated_at;
-                            
-                            // Hitung uptime 30 hari
                             $uptime = $service->uptime ?? 0;
-                            $uptimeColor = $uptime >= 99 ? 'green' : ($uptime >= 95 ? 'yellow' : 'red');
+                            $uptimeColor = $uptime >= 70 ? 'green' : ($uptime >= 50 ? 'yellow' : 'red');
                         @endphp
                         <tr>
                             <td><span class="service-no">{{ $no }}</span></td>
                             <td>
                                 <div class="service-info">
-                                    <!-- Avatar dengan inisial nama -->
                                     <div class="service-avatar {{ $colorClass }}">{{ $initials }}</div>
                                     <div>
                                         <div class="service-name">{{ $service->name }}</div>
@@ -1425,7 +1593,6 @@
                             </td>
                             <td><span class="service-target">{{ $service->target }}</span></td>
                             <td>
-                                <!-- Status badge dengan warna sesuai status -->
                                 @if($statusLabel == 'UP')
                                     <span class="status-badge up"><span class="status-dot"></span> UP</span>
                                 @elseif($statusLabel == 'DOWN')
@@ -1437,14 +1604,12 @@
                                 @endif
                             </td>
                             <td>
-                                <!-- Uptime 30 hari dengan progress bar -->
                                 <div class="uptime-value {{ $uptimeColor }}">{{ number_format($uptime, 2) }}%</div>
                                 <div class="uptime-bar">
                                     <div class="uptime-fill {{ $uptimeColor }}" style="width: {{ $uptime }}%;"></div>
                                 </div>
                             </td>
                             <td>
-                                <!-- 🔥 Terakhir diperiksa: pakai last_check_at -->
                                 <div style="font-size: 12px; color: #6b7280;">
                                     {{ $lastChecked ? \Carbon\Carbon::parse($lastChecked)->diffForHumans() : '-' }}
                                 </div>
@@ -1453,27 +1618,23 @@
                                 </div>
                             </td>
                             <td>
-                                <!-- Tombol aksi: Detail, Download PDF, Edit, Hapus, Check Now -->
                                 <div class="action-buttons">
                                     <button onclick="openDetailModal({{ $service->id }})" class="btn-action btn-detail" title="Detail">👁️ Detail</button>
                                     <button onclick="openDownloadModal({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-download" title="Download Laporan PDF">📥 PDF</button>
                                     <button onclick="openEditModal({{ $service->id }})" class="btn-action btn-edit" title="Edit">✏️ Edit</button>
-                                    <button onclick="deleteService({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-delete" title="Hapus">🗑️ Hapus</button>
-                                    <button onclick="checkService({{ $service->id }})" class="btn-check" title="Check Now">🔄</button>
+                                    <button onclick="confirmDelete({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-delete" title="Hapus">🗑️ Hapus</button>
+                                    <button onclick="checkService({{ $service->id }})" class="btn-check" title="Check Now" id="checkBtn{{ $service->id }}">🔄</button>
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <!-- Tampilan jika tidak ada data -->
                         <tr>
                             <td colspan="7">
                                 <div class="empty-state">
                                     <span class="empty-icon">📭</span>
                                     <h3>Belum Ada Service</h3>
                                     <p>Mulai dengan menambahkan service pertama Anda</p>
-                                    <button onclick="openCreateModal()" class="btn-empty-primary">
-                                        + Tambah Service
-                                    </button>
+                                    <button onclick="openCreateModal()" class="btn-empty-primary">+ Tambah Service</button>
                                 </div>
                             </td>
                         </tr>
@@ -1482,34 +1643,24 @@
             </table>
         </div>
 
-        <!-- ================= PAGINATION ================= -->
-        <!-- Pagination: Menampilkan navigasi halaman dengan maksimal 10 link -->
         @if(method_exists($services, 'hasPages') && $services->hasPages())
         <div class="pagination-wrapper">
             <div class="pagination-info">
                 Menampilkan <strong>{{ $services->firstItem() ?? 0 }}</strong> - <strong>{{ $services->lastItem() ?? 0 }}</strong> dari <strong>{{ $services->total() }}</strong> data
             </div>
             <div class="pagination-links">
-                <!-- Tombol Previous -->
                 @if($services->onFirstPage())
                     <span class="page-link disabled">‹</span>
                 @else
                     <a href="{{ $services->previousPageUrl() }}" class="page-link">‹</a>
                 @endif
 
-                <!-- Pagination Links - Maksimal 10 link (5 sebelum + 5 setelah halaman aktif) -->
                 @php
-                    // Hitung range halaman yang akan ditampilkan (maksimal 10)
                     $currentPage = $services->currentPage();
                     $lastPage = $services->lastPage();
-                    $windowSize = 5; // Jumlah halaman di kiri dan kanan
-                    
-                    // Tentukan halaman pertama yang ditampilkan
+                    $windowSize = 5;
                     $start = max(1, $currentPage - $windowSize);
-                    // Tentukan halaman terakhir yang ditampilkan
                     $end = min($lastPage, $currentPage + $windowSize);
-                    
-                    // Jika total halaman lebih dari 10, kita perlu menyesuaikan
                     if ($end - $start + 1 < 10) {
                         if ($start == 1) {
                             $end = min($lastPage, 10);
@@ -1520,7 +1671,6 @@
                     }
                 @endphp
 
-                <!-- Tampilkan link ke halaman 1 jika tidak termasuk dalam range -->
                 @if($start > 1)
                     <a href="{{ $services->url(1) }}" class="page-link">1</a>
                     @if($start > 2)
@@ -1528,7 +1678,6 @@
                     @endif
                 @endif
 
-                <!-- Loop halaman yang akan ditampilkan -->
                 @foreach(range($start, $end) as $page)
                     @if($page == $services->currentPage())
                         <span class="page-link active">{{ $page }}</span>
@@ -1537,7 +1686,6 @@
                     @endif
                 @endforeach
 
-                <!-- Tampilkan link ke halaman terakhir jika tidak termasuk dalam range -->
                 @if($end < $lastPage)
                     @if($end < $lastPage - 1)
                         <span class="page-dots">…</span>
@@ -1545,7 +1693,6 @@
                     <a href="{{ $services->url($lastPage) }}" class="page-link">{{ $lastPage }}</a>
                 @endif
 
-                <!-- Tombol Next -->
                 @if($services->hasMorePages())
                     <a href="{{ $services->nextPageUrl() }}" class="page-link">›</a>
                 @else
@@ -1557,8 +1704,7 @@
     </div>
 </div>
 
-<!-- ================= AUTO REFRESH TIMER (POJOK KANAN BAWAH) ================= -->
-<!-- Timer countdown auto refresh setiap 5 menit -->
+<!-- ================= AUTO REFRESH TIMER ================= -->
 <div class="auto-refresh-timer" id="autoRefreshTimer">
     <span class="icon">🔄</span>
     <span class="label">Refresh</span>
@@ -1566,7 +1712,6 @@
 </div>
 
 <!-- ================= MODAL DETAIL ================= -->
-<!-- Modal untuk menampilkan detail service -->
 <div class="modal-overlay" id="detailModal" onclick="if(event.target === this) closeDetailModal()">
     <div class="modal-content">
         <div class="modal-header">
@@ -1577,7 +1722,6 @@
             <button class="modal-close" onclick="closeDetailModal()">&times;</button>
         </div>
         <div class="modal-body" id="detailModalBody">
-            <!-- Loading state -->
             <div style="text-align: center; padding: 40px 0; color: #6b7280;">
                 <span style="font-size: 32px; display: block; margin-bottom: 8px;">⏳</span>
                 <p>Memuat data...</p>
@@ -1585,15 +1729,12 @@
         </div>
         <div class="modal-footer">
             <button class="btn-cancel-modal" onclick="closeDetailModal()">✕ Tutup</button>
-            <button class="btn-submit-modal" onclick="refreshDetail()" style="background: linear-gradient(135deg, #059669, #10b981);">
-                🔄 Refresh
-            </button>
+            <button class="btn-submit-modal" onclick="refreshDetail()" style="background: linear-gradient(135deg, #059669, #10b981);">🔄 Refresh</button>
         </div>
     </div>
 </div>
 
 <!-- ================= MODAL DOWNLOAD ================= -->
-<!-- Modal untuk download laporan PDF -->
 <div class="modal-overlay" id="downloadModal" onclick="if(event.target === this) closeDownloadModal()">
     <div class="modal-content">
         <div class="modal-header">
@@ -1604,7 +1745,6 @@
             <button class="modal-close" onclick="closeDownloadModal()">&times;</button>
         </div>
         <div class="modal-body" id="downloadModalBody">
-            <!-- Informasi service -->
             <div class="download-service-info">
                 <div class="service-name-display" id="downloadServiceName">Memuat...</div>
                 <div class="service-meta">
@@ -1613,7 +1753,6 @@
                 </div>
             </div>
 
-            <!-- Pilihan periode -->
             <div class="form-group">
                 <label>Periode Laporan</label>
                 <div class="download-period" id="periodSelector">
@@ -1626,7 +1765,6 @@
                 <div class="helper-text">Pilih rentang waktu laporan</div>
             </div>
 
-            <!-- Pilihan tanggal custom -->
             <div class="form-group">
                 <label>Tanggal Kustom</label>
                 <div class="download-date-range">
@@ -1642,7 +1780,6 @@
                 <div class="helper-text">Atau pilih tanggal secara manual</div>
             </div>
 
-            <!-- Loading indicator -->
             <div id="downloadLoading" style="display: none; text-align: center; padding: 20px;">
                 <span style="font-size: 24px; display: block; margin-bottom: 8px;">⏳</span>
                 <p style="color: #6b7280;">Sedang memproses laporan PDF...</p>
@@ -1650,15 +1787,12 @@
         </div>
         <div class="modal-footer">
             <button class="btn-cancel-modal" onclick="closeDownloadModal()">✕ Batal</button>
-            <button class="btn-download-modal" id="btnDownloadNow" onclick="downloadReport()">
-                📥 Download PDF
-            </button>
+            <button class="btn-download-modal" id="btnDownloadNow" onclick="downloadReport()">📥 Download PDF</button>
         </div>
     </div>
 </div>
 
 <!-- ================= MODAL CREATE / EDIT ================= -->
-<!-- Modal untuk tambah dan edit service -->
 <div class="modal-overlay" id="serviceModal" onclick="if(event.target === this) closeModal()">
     <div class="modal-content">
         <div class="modal-header">
@@ -1666,16 +1800,14 @@
                 <span class="modal-icon" id="modalIcon">➕</span>
                 <span id="modalTitle">Tambah Service</span>
             </h2>
-            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <button class="modal-close" id="modalCloseBtn" onclick="closeModal()">&times;</button>
         </div>
         <div class="modal-body">
             <form id="serviceForm" method="POST">
                 @csrf
-                <!-- Method spoofing untuk PUT/DELETE -->
                 <input type="hidden" name="_method" id="formMethod" value="POST">
                 <input type="hidden" name="service_id" id="serviceId" value="">
 
-                <!-- Field Nama Service -->
                 <div class="form-group">
                     <label for="modal_name">
                         Nama Service
@@ -1692,7 +1824,6 @@
                     <div class="helper-text">Nama yang mudah diingat untuk service ini</div>
                 </div>
 
-                <!-- Field Target URL / IP -->
                 <div class="form-group">
                     <label for="modal_target">
                         Target URL / IP
@@ -1709,7 +1840,6 @@
                     <div class="helper-text">URL lengkap dengan protocol (http:// atau https://) atau alamat IP</div>
                 </div>
 
-                <!-- Field Tipe Monitoring - HANYA 2 PILIHAN: HTTP/HTTPS dan PING -->
                 <div class="form-group">
                     <label for="modal_type">
                         Tipe Monitoring
@@ -1724,35 +1854,72 @@
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn-cancel-modal" onclick="closeModal()">✕ Batal</button>
+            <button class="btn-cancel-modal" id="btnCancelModal" onclick="closeModal()">✕ Batal</button>
             <button class="btn-submit-modal" id="btnSubmitModal" onclick="submitForm()">💾 Simpan Service</button>
         </div>
     </div>
 </div>
 
-<!-- ================= SCRIPT ================= -->
 <script>
-    // ================= AUTO REFRESH (5 MENIT) =================
-    // Timer countdown untuk auto refresh halaman setiap 5 menit
+    // ================= CONFIRM MODAL =================
+    let confirmCallback = null;
+    let confirmData = null;
+
+    function confirmDelete(id, name) {
+        confirmData = { id: id, name: name };
+        document.getElementById('confirmIcon').className = 'modal-icon danger';
+        document.getElementById('confirmIcon').textContent = '🗑️';
+        document.getElementById('confirmTitle').textContent = 'Hapus Service';
+        document.getElementById('confirmMessage').textContent = 'Apakah Anda yakin ingin menghapus service ini?';
+        document.getElementById('confirmDetail').innerHTML = 'Service <span class="highlight-name">' + name + '</span> akan dihapus secara permanen.';
+        document.getElementById('confirmBtn').textContent = '🗑️ Ya, Hapus';
+        document.getElementById('confirmBtn').className = 'btn-modal btn-confirm';
+        document.getElementById('customConfirmModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        confirmCallback = function() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/services/' + id;
+            form.innerHTML = `
+                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="_method" value="DELETE">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        };
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('customConfirmModal').classList.remove('active');
+        document.body.style.overflow = '';
+        confirmCallback = null;
+        confirmData = null;
+    }
+
+    function executeConfirm() {
+        if (confirmCallback) {
+            confirmCallback();
+        }
+        closeConfirmModal();
+    }
+
+    // ================= AUTO REFRESH =================
     (function() {
         'use strict';
         
-        const REFRESH_INTERVAL = 300; // 5 menit = 300 detik
+        const REFRESH_INTERVAL = 300;
         let seconds = REFRESH_INTERVAL;
         let countdownElement = document.getElementById('countdownTimer');
         let refreshTimer = null;
         
-        // Fungsi update countdown setiap detik
         function updateCountdown() {
             seconds--;
-            
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
             
             if (countdownElement) {
                 countdownElement.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-                
-                // Ubah warna saat mendekati refresh
                 countdownElement.className = 'countdown';
                 if (seconds < 10) {
                     countdownElement.classList.add('danger');
@@ -1761,14 +1928,12 @@
                 }
             }
             
-            // Refresh otomatis jika waktu habis
             if (seconds <= 0) {
                 window.location.reload();
                 return;
             }
         }
         
-        // Mulai countdown
         function startCountdown() {
             if (refreshTimer) {
                 clearInterval(refreshTimer);
@@ -1778,19 +1943,16 @@
             refreshTimer = setInterval(updateCountdown, 1000);
         }
         
-        // Start saat halaman dimuat
         document.addEventListener('DOMContentLoaded', function() {
             startCountdown();
         });
         
-        // Pause saat modal terbuka
         document.addEventListener('modalOpened', function() {
             if (refreshTimer) {
                 clearInterval(refreshTimer);
             }
         });
         
-        // Lanjutkan saat modal ditutup
         document.addEventListener('modalClosed', function() {
             startCountdown();
         });
@@ -1803,7 +1965,6 @@
 
     // ================= EVENT LISTENER =================
     document.addEventListener('DOMContentLoaded', function() {
-        // Tampilkan toast dari session
         @if(session('success'))
             showToast('success', 'Berhasil!', '{{ session('success') }}');
         @endif
@@ -1817,17 +1978,14 @@
             showToast('info', 'Info', '{{ session('info') }}');
         @endif
 
-        // Set default date untuk download
         const today = new Date();
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        
         document.getElementById('dateFrom').value = weekAgo.toISOString().split('T')[0];
         document.getElementById('dateTo').value = today.toISOString().split('T')[0];
     });
 
     // ================= TOAST =================
-    // Fungsi menampilkan notifikasi pop-up
     function showToast(type, title, message) {
         const container = document.getElementById('toastContainer');
         const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
@@ -1844,7 +2002,6 @@
         `;
 
         container.appendChild(toast);
-        // Auto hilang setelah 5 detik
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.classList.add('hide');
@@ -1853,10 +2010,17 @@
         }, 5000);
     }
 
-    // ================= CHECK SERVICE =================
-    // Fungsi untuk check service secara manual (via AJAX)
+    // ================= CHECK SERVICE (CEPAT) =================
     function checkService(id) {
-        const btn = document.querySelector(`[onclick*="checkService(${id})"]`);
+        const btn = document.getElementById('checkBtn' + id);
+        
+        // 🔥 CEK JARINGAN CEPAT PAKAI navigator.onLine
+        if (!navigator.onLine) {
+            showToast('error', 'Jaringan Terputus!', 'Tidak ada koneksi internet. Periksa router/modem Anda.');
+            return;
+        }
+        
+        // ✅ JARINGAN NORMAL → LANJUTKAN CHECK
         if (btn) {
             btn.disabled = true;
             btn.textContent = '⏳';
@@ -1884,7 +2048,7 @@
             }
         })
         .catch(error => {
-            showToast('error', 'Error!', 'Terjadi kesalahan: ' + error.message);
+            showToast('error', 'Jaringan Terputus!', 'Tidak ada koneksi internet. Periksa router/modem Anda.');
             if (btn) {
                 btn.disabled = false;
                 btn.textContent = '🔄';
@@ -1893,35 +2057,25 @@
     }
 
     // ================= PERPAGE =================
-    // Fungsi untuk mengubah jumlah data per halaman
     function changePerPage(value) {
         let url = new URL(window.location.href);
         url.searchParams.set('perPage', value);
-        url.searchParams.set('page', '1'); // Reset ke halaman pertama
+        url.searchParams.set('page', '1');
         window.location.href = url.toString();
     }
 
     // ================= DETAIL MODAL =================
-    // Buka modal detail service
     function openDetailModal(id) {
         currentDetailId = id;
         const modal = document.getElementById('detailModal');
         const body = document.getElementById('detailModalBody');
-        
-        body.innerHTML = `
-            <div style="text-align: center; padding: 40px 0; color: #6b7280;">
-                <span style="font-size: 32px; display: block; margin-bottom: 8px;">⏳</span>
-                <p>Memuat data...</p>
-            </div>
-        `;
-        
+        body.innerHTML = `<div style="text-align: center; padding: 40px 0; color: #6b7280;"><span style="font-size: 32px; display: block; margin-bottom: 8px;">⏳</span><p>Memuat data...</p></div>`;
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         document.dispatchEvent(new Event('modalOpened'));
         fetchDetailData(id);
     }
 
-    // Fetch data detail dari server
     function fetchDetailData(id) {
         fetch(`/services/${id}/detail`, {
             headers: {
@@ -1954,7 +2108,6 @@
         });
     }
 
-    // Render detail service ke modal
     function renderDetail(service) {
         const body = document.getElementById('detailModalBody');
         document.getElementById('detailModalTitle').textContent = `📊 Detail Service: ${service.name}`;
@@ -1965,13 +2118,9 @@
         const responseTime = service.last_response_time ?? 0;
         const timeClass = responseTime < 1 ? 'fast' : (responseTime < 3 ? 'medium' : 'slow');
         const codeClass = responseCode < 400 ? 'success' : (responseCode < 500 ? 'warning' : 'error');
-
-        // Ambil action dari service
         const action = service.last_action || '-';
         const isNoAction = action === '-';
         const isEmptyAction = action.includes('kosong') || action.includes('EMPTY');
-
-        // Cek apakah ini pesan halaman kosong
         const message = service.last_message || '-';
         const isEmptyPage = message.includes('konten kosong') || message.includes('EMPTY_RESPONSE');
 
@@ -1981,26 +2130,11 @@
                 <div class="detail-item full-width" style="background: #f1f5f9; border-color: #d1d5db;">
                     <div class="detail-label">Statistik Monitoring</div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; margin-top: 8px;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 18px; font-weight: 700; color: #4f46e5;">${service.stats.total_checks || 0}</div>
-                            <div style="font-size: 10px; color: #6b7280;">Total Check</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 18px; font-weight: 700; color: #059669;">${service.stats.up_count || 0}</div>
-                            <div style="font-size: 10px; color: #6b7280;">UP</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 18px; font-weight: 700; color: #d97706;">${service.stats.warning_count || 0}</div>
-                            <div style="font-size: 10px; color: #6b7280;">WARNING</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 18px; font-weight: 700; color: #dc2626;">${service.stats.down_count || 0}</div>
-                            <div style="font-size: 10px; color: #6b7280;">DOWN</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 18px; font-weight: 700; color: #7c3aed;">${service.stats.uptime_percentage_30d || 0}%</div>
-                            <div style="font-size: 10px; color: #6b7280;">Uptime 30d</div>
-                        </div>
+                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #4f46e5;">${service.stats.total_checks || 0}</div><div style="font-size: 10px; color: #6b7280;">Total Check</div></div>
+                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #059669;">${service.stats.up_count || 0}</div><div style="font-size: 10px; color: #6b7280;">UP</div></div>
+                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #d97706;">${service.stats.warning_count || 0}</div><div style="font-size: 10px; color: #6b7280;">WARNING</div></div>
+                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #dc2626;">${service.stats.down_count || 0}</div><div style="font-size: 10px; color: #6b7280;">DOWN</div></div>
+                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #7c3aed;">${service.stats.uptime_percentage_30d || 0}%</div><div style="font-size: 10px; color: #6b7280;">Uptime 30d</div></div>
                     </div>
                 </div>
             `;
@@ -2012,76 +2146,21 @@
 
         body.innerHTML = `
             <div class="detail-grid">
-                <div class="detail-item">
-                    <div class="detail-label">Nama Service</div>
-                    <div class="detail-value">${service.name}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Tipe</div>
-                    <div class="detail-value">${service.type?.toUpperCase() || '-'}</div>
-                </div>
-                <div class="detail-item full-width">
-                    <div class="detail-label">Target URL / IP</div>
-                    <div class="detail-value" style="font-family: 'SF Mono', 'Courier New', monospace; font-size: 14px; word-break: break-all;">
-                        ${service.target}
-                    </div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Status</div>
-                    <div class="detail-value">
-                        <span class="status-badge ${statusClass}">
-                            <span class="status-dot"></span>
-                            ${statusBadge}
-                        </span>
-                    </div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Response Code</div>
-                    <div class="detail-value">
-                        <span class="response-code ${codeClass}">${responseCode}</span>
-                    </div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Response Time</div>
-                    <div class="detail-value">
-                        <span class="response-time ${timeClass}">
-                            ${Number(responseTime).toFixed(2)} <span style="font-size: 12px; color: #6b7280;">s</span>
-                        </span>
-                    </div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Terakhir Diperiksa</div>
-                    <div class="detail-value">
-                        <span class="detail-timestamp">${service.last_checked_at || service.updated_at || '-'}</span>
-                    </div>
-                </div>
-                <div class="detail-item full-width">
-                    <div class="detail-label">Pesan</div>
-                    <div class="detail-message ${messageClass}">${message}</div>
-                </div>
-                <!-- TINDAKAN / ACTION -->
-                <div class="detail-action">
-                    <div class="detail-label">🔧 Tindakan yang Disarankan</div>
-                    <div class="detail-value">
-                        <span class="action-badge ${actionClass}">
-                            ${actionBadgeText}
-                        </span>
-                    </div>
-                </div>
+                <div class="detail-item"><div class="detail-label">Nama Service</div><div class="detail-value">${service.name}</div></div>
+                <div class="detail-item"><div class="detail-label">Tipe</div><div class="detail-value">${service.type?.toUpperCase() || '-'}</div></div>
+                <div class="detail-item full-width"><div class="detail-label">Target URL / IP</div><div class="detail-value" style="font-family: 'SF Mono', 'Courier New', monospace; font-size: 14px; word-break: break-all;">${service.target}</div></div>
+                <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}"><span class="status-dot"></span> ${statusBadge}</span></div></div>
+                <div class="detail-item"><div class="detail-label">Response Code</div><div class="detail-value"><span class="response-code ${codeClass}">${responseCode}</span></div></div>
+                <div class="detail-item"><div class="detail-label">Response Time</div><div class="detail-value"><span class="response-time ${timeClass}">${Number(responseTime).toFixed(2)} <span style="font-size: 12px; color: #6b7280;">s</span></span></div></div>
+                <div class="detail-item"><div class="detail-label">Terakhir Diperiksa</div><div class="detail-value"><span class="detail-timestamp">${service.last_checked_at || service.updated_at || '-'}</span></div></div>
+                <div class="detail-item full-width"><div class="detail-label">Pesan</div><div class="detail-message ${messageClass}">${message}</div></div>
+                <div class="detail-action"><div class="detail-label">🔧 Tindakan yang Disarankan</div><div class="detail-value"><span class="action-badge ${actionClass}">${actionBadgeText}</span></div></div>
                 ${statsHtml}
-                <div class="detail-item full-width" style="background: #f1f5f9; border-color: #d1d5db;">
-                    <div class="detail-label">Informasi Tambahan</div>
-                    <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: #4b5563;">
-                        <span><strong>ID:</strong> ${service.id}</span>
-                        <span><strong>Dibuat:</strong> ${service.created_at || '-'}</span>
-                        <span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span>
-                    </div>
-                </div>
+                <div class="detail-item full-width" style="background: #f1f5f9; border-color: #d1d5db;"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: #4b5563;"><span><strong>ID:</strong> ${service.id}</span><span><strong>Dibuat:</strong> ${service.created_at || '-'}</span><span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span></div></div>
             </div>
         `;
     }
 
-    // Refresh detail
     function refreshDetail() {
         if (currentDetailId) {
             fetchDetailData(currentDetailId);
@@ -2089,7 +2168,6 @@
         }
     }
 
-    // Tutup modal detail
     function closeDetailModal() {
         document.getElementById('detailModal').classList.remove('active');
         document.body.style.overflow = '';
@@ -2098,7 +2176,6 @@
     }
 
     // ================= DOWNLOAD MODAL =================
-    // Buka modal download PDF
     function openDownloadModal(id, name) {
         currentDownloadId = id;
         const modal = document.getElementById('downloadModal');
@@ -2123,7 +2200,6 @@
             document.getElementById('downloadServiceType').textContent = '📌 -';
         });
         
-        // Reset ke default 7 hari
         document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelector('.period-btn[data-period="7"]').classList.add('active');
         selectedPeriod = 7;
@@ -2140,7 +2216,6 @@
         document.dispatchEvent(new Event('modalOpened'));
     }
 
-    // Pilih periode laporan
     function selectPeriod(element, days) {
         document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
         element.classList.add('active');
@@ -2153,7 +2228,6 @@
         document.getElementById('dateTo').value = today.toISOString().split('T')[0];
     }
 
-    // Download laporan PDF
     function downloadReport() {
         const dateFrom = document.getElementById('dateFrom').value;
         const dateTo = document.getElementById('dateTo').value;
@@ -2191,7 +2265,6 @@
         }, 3000);
     }
 
-    // Tutup modal download
     function closeDownloadModal() {
         document.getElementById('downloadModal').classList.remove('active');
         document.body.style.overflow = '';
@@ -2200,10 +2273,18 @@
     }
 
     // ================= CREATE / EDIT MODAL =================
-    // Buka modal tambah service
     function openCreateModal() {
         const modal = document.getElementById('serviceModal');
         const form = document.getElementById('serviceForm');
+        const closeBtn = document.getElementById('modalCloseBtn');
+        const cancelBtn = document.getElementById('btnCancelModal');
+        const submitBtn = document.getElementById('btnSubmitModal');
+        
+        closeBtn.disabled = false;
+        cancelBtn.disabled = false;
+        submitBtn.disabled = false;
+        submitBtn.textContent = '💾 Simpan Service';
+        submitBtn.className = 'btn-submit-modal';
         
         form.reset();
         document.getElementById('serviceId').value = '';
@@ -2212,10 +2293,7 @@
         
         document.getElementById('modalTitle').textContent = 'Tambah Service';
         document.getElementById('modalIcon').textContent = '➕';
-        const btn = document.getElementById('btnSubmitModal');
-        btn.textContent = '💾 Simpan Service';
-        btn.className = 'btn-submit-modal';
-        btn.disabled = false;
+        document.getElementById('modalIcon').style.background = 'linear-gradient(135deg, #4f46e5, #7c3aed)';
         
         document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
         document.querySelectorAll('.error-message').forEach(el => el.remove());
@@ -2226,7 +2304,6 @@
         setTimeout(() => document.getElementById('modal_name').focus(), 100);
     }
 
-    // Buka modal edit service (fetch data via AJAX)
     function openEditModal(id) {
         fetch(`/services/${id}/edit`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -2237,6 +2314,15 @@
                 const service = data.data;
                 const modal = document.getElementById('serviceModal');
                 const form = document.getElementById('serviceForm');
+                const closeBtn = document.getElementById('modalCloseBtn');
+                const cancelBtn = document.getElementById('btnCancelModal');
+                const submitBtn = document.getElementById('btnSubmitModal');
+                
+                closeBtn.disabled = false;
+                cancelBtn.disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.textContent = '💾 Update Service';
+                submitBtn.className = 'btn-submit-modal edit-mode';
                 
                 document.getElementById('modal_name').value = service.name;
                 document.getElementById('modal_target').value = service.target;
@@ -2247,10 +2333,7 @@
                 
                 document.getElementById('modalTitle').textContent = 'Edit Service';
                 document.getElementById('modalIcon').textContent = '✏️';
-                const btn = document.getElementById('btnSubmitModal');
-                btn.textContent = '💾 Update Service';
-                btn.className = 'btn-submit-modal edit-mode';
-                btn.disabled = false;
+                document.getElementById('modalIcon').style.background = 'linear-gradient(135deg, #d97706, #b45309)';
                 
                 document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
                 document.querySelectorAll('.error-message').forEach(el => el.remove());
@@ -2264,23 +2347,26 @@
         .catch(() => showToast('error', 'Gagal!', 'Gagal mengambil data service'));
     }
 
-    // Tutup modal create/edit
     function closeModal() {
+        document.getElementById('modalCloseBtn').disabled = false;
+        document.getElementById('btnCancelModal').disabled = false;
+        document.getElementById('btnSubmitModal').disabled = false;
+        
         document.getElementById('serviceModal').classList.remove('active');
         document.body.style.overflow = '';
         document.dispatchEvent(new Event('modalClosed'));
     }
 
-    // Submit form create/edit
     function submitForm() {
         const form = document.getElementById('serviceForm');
-        const btn = document.getElementById('btnSubmitModal');
+        const submitBtn = document.getElementById('btnSubmitModal');
+        const cancelBtn = document.getElementById('btnCancelModal');
+        const closeBtn = document.getElementById('modalCloseBtn');
         const name = document.getElementById('modal_name');
         const target = document.getElementById('modal_target');
         
         let hasError = false;
         
-        // Validasi nama
         if (name.value.trim() === '') {
             showFieldError(name, 'Nama service wajib diisi');
             hasError = true;
@@ -2291,7 +2377,6 @@
             removeFieldError(name);
         }
         
-        // Validasi target
         if (target.value.trim() === '') {
             showFieldError(target, 'Target URL / IP wajib diisi');
             hasError = true;
@@ -2301,13 +2386,14 @@
         
         if (hasError) return;
         
-        btn.disabled = true;
-        btn.textContent = '⏳ Menyimpan...';
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Menyimpan...';
+        cancelBtn.disabled = true;
+        closeBtn.disabled = true;
+        
         form.submit();
     }
 
-    // ================= FIELD ERROR =================
-    // Tampilkan error di field form
     function showFieldError(input, message) {
         input.classList.add('error');
         let errorDiv = input.parentElement.querySelector('.error-message');
@@ -2320,38 +2406,20 @@
         errorDiv.innerHTML = '⚠️ ' + message;
     }
 
-    // Hilangkan error di field form
     function removeFieldError(input) {
         input.classList.remove('error');
         const errorDiv = input.parentElement.querySelector('.error-message');
         if (errorDiv) errorDiv.remove();
     }
 
-    // ================= DELETE =================
-    // Konfirmasi dan hapus service
-    function deleteService(id, name) {
-        if (confirm(`Apakah Anda yakin ingin menghapus service "${name}"?`)) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/services/${id}`;
-            form.innerHTML = `
-                <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="_method" value="DELETE">
-            `;
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
-
     // ================= KEYBOARD SHORTCUTS =================
     document.addEventListener('keydown', function(e) {
-        // ESC: Tutup semua modal
         if (e.key === 'Escape') {
             closeModal();
             closeDetailModal();
             closeDownloadModal();
+            closeConfirmModal();
         }
-        // Ctrl+Enter: Submit form
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             const modal = document.getElementById('serviceModal');
             if (modal.classList.contains('active')) {
@@ -2362,7 +2430,6 @@
     });
 
     // ================= REAL-TIME VALIDATION =================
-    // Validasi nama saat input
     document.getElementById('modal_name').addEventListener('input', function() {
         if (this.value.trim() !== '' && this.value.length >= 3) {
             this.classList.remove('error');
@@ -2370,7 +2437,6 @@
         }
     });
 
-    // Validasi target saat input
     document.getElementById('modal_target').addEventListener('input', function() {
         if (this.value.trim() !== '') {
             this.classList.remove('error');
