@@ -398,7 +398,7 @@
             border: 1px solid #e8edf5;
         }
 
-        /* ====================== NETWORK ALERT ====================== */
+        /* ====================== NETWORK ALERT (TOP BAR) ====================== */
         .network-alert {
             position: fixed;
             top: 20px;
@@ -416,22 +416,28 @@
             animation: slideDown 0.5s ease;
             max-width: 90%;
             backdrop-filter: blur(10px);
+            border: 2px solid;
         }
 
         .network-alert.show {
             display: flex;
         }
 
+        /* 🔥 HILANGKAN ANIMASI SLIDE UP - LANGSUNG HILANG */
+        .network-alert.hide {
+            display: none !important;
+        }
+
         .network-alert.error {
             background: #fee2e2;
             color: #991b1b;
-            border: 1px solid #fca5a5;
+            border-color: #fca5a5;
         }
 
         .network-alert.success {
             background: #d1fae5;
             color: #065f46;
-            border: 1px solid #6ee7b7;
+            border-color: #6ee7b7;
         }
 
         .network-alert .alert-icon {
@@ -462,10 +468,11 @@
             font-size: 22px;
             cursor: pointer;
             color: inherit;
-            opacity: 0.6;
+            opacity: 0.5;
             padding: 0 4px;
             transition: opacity 0.2s ease;
             margin-left: auto;
+            line-height: 1;
         }
 
         .network-alert .alert-close:hover {
@@ -481,21 +488,6 @@
                 transform: translateX(-50%) translateY(0);
                 opacity: 1;
             }
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateX(-50%) translateY(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(-50%) translateY(-100px);
-                opacity: 0;
-            }
-        }
-
-        .network-alert.hide {
-            animation: slideUp 0.5s ease forwards;
         }
 
         /* ====================== RESPONSIVE ====================== */
@@ -710,7 +702,7 @@
 <div class="sidebar">
     <div class="sidebar-header">
         <div class="logo">
-            <img src="{{ asset('images/Logo.png') }}" 
+            <img src="{{ asset('images/download.jpg') }}" 
                  alt="DISKOMINFOTIK" 
                  class="logo-image">
             <div class="logo-text">
@@ -809,10 +801,14 @@
     // ====================== REFRESH ======================
     function refreshPage() {
         const btn = document.querySelector('.btn-refresh svg');
-        btn.classList.add('spinning');
-        setTimeout(function() {
+        if (btn) {
+            btn.classList.add('spinning');
+            setTimeout(function() {
+                location.reload();
+            }, 500);
+        } else {
             location.reload();
-        }, 500);
+        }
     }
 
     // ====================== UPDATE TIME ======================
@@ -840,6 +836,9 @@
     // ====================== NETWORK ALERT ======================
     let networkAlertShown = false;
     let networkAlertTimer = null;
+    let isNetworkConnected = true;
+    let isAlertManuallyClosed = false;
+    let lastNetworkStatus = true;
 
     function showNetworkAlert(isConnected) {
         const alert = document.getElementById('networkAlert');
@@ -849,65 +848,128 @@
 
         if (!alert) return;
 
+        // 🔥 Jika user sudah close manual, jangan tampilkan alert apapun di halaman ini
+        if (isAlertManuallyClosed) {
+            console.log('📡 Alert sudah ditutup manual, tidak ditampilkan lagi di halaman ini');
+            return;
+        }
+
+        // Reset class
         alert.classList.remove('show', 'hide', 'error', 'success');
 
         if (isConnected) {
+            // 🔥 Jaringan Normal - tampilkan alert hijau
             icon.textContent = '🟢';
-            title.textContent = 'Jaringan Normal';
+            title.textContent = '✅ Jaringan Normal';
             message.textContent = 'Koneksi internet telah pulih. Semua sistem berjalan normal.';
             alert.className = 'network-alert success';
-            networkAlertShown = false;
+            networkAlertShown = true;
+            alert.classList.add('show');
+
+            // Auto close setelah 5 detik
+            clearTimeout(networkAlertTimer);
+            networkAlertTimer = setTimeout(function() {
+                closeNetworkAlert();
+            }, 5000);
+
         } else {
+            // 🔥 Jaringan Terputus - tampilkan alert merah
             icon.textContent = '🚨';
-            title.textContent = 'Jaringan Terputus!';
+            title.textContent = '⚠️ Jaringan Terputus!';
             message.textContent = 'Tidak ada koneksi internet. Periksa router/modem dan kabel jaringan.';
             alert.className = 'network-alert error';
             networkAlertShown = true;
+            alert.classList.add('show');
+
+            // Auto close setelah 15 detik (jika tidak di-close manual)
+            clearTimeout(networkAlertTimer);
+            networkAlertTimer = setTimeout(function() {
+                if (!isAlertManuallyClosed) {
+                    closeNetworkAlert();
+                }
+            }, 15000);
         }
-
-        alert.classList.add('show');
-
-        clearTimeout(networkAlertTimer);
-        networkAlertTimer = setTimeout(function() {
-            closeNetworkAlert();
-        }, 10000);
     }
 
+    // 🔥 CLOSE ALERT - LANGSUNG HILANG TANPA ANIMASI
     function closeNetworkAlert() {
         const alert = document.getElementById('networkAlert');
-        if (alert) {
-            alert.classList.add('hide');
-            setTimeout(function() {
-                alert.classList.remove('show', 'hide');
-            }, 500);
-        }
+
+        if (!alert) return;
+
+        // 🔥 Tandai user sudah close manual (berlaku untuk semua alert)
+        isAlertManuallyClosed = true;
+
+        // 🔥 LANGSUNG HILANGKAN - TANPA ANIMASI
+        alert.classList.remove('show', 'hide', 'error', 'success');
+        alert.style.display = 'none';
+        networkAlertShown = false;
+        
         clearTimeout(networkAlertTimer);
     }
 
     function checkNetworkStatus() {
-        fetch('/api/network/status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const isConnected = data.connected;
-                    if (isConnected && networkAlertShown) {
-                        showNetworkAlert(true);
-                    } else if (!isConnected && !networkAlertShown) {
+        fetch('/api/network/status', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Cache-Control': 'no-cache, no-store, must-revalidate'
+            },
+            cache: 'no-store'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const currentStatus = data.connected;
+                
+                // 🔥 CEK PERUBAHAN STATUS
+                if (currentStatus !== lastNetworkStatus) {
+                    lastNetworkStatus = currentStatus;
+                    isNetworkConnected = currentStatus;
+                    
+                    // 🔥 Reset flag manual close saat status berubah
+                    isAlertManuallyClosed = false;
+                    
+                    if (!currentStatus) {
+                        // Terhubung → Terputus
+                        console.log('📡 Network: CONNECTED → DISCONNECTED');
                         showNetworkAlert(false);
+                    } else {
+                        // Terputus → Terhubung
+                        console.log('📡 Network: DISCONNECTED → CONNECTED');
+                        showNetworkAlert(true);
                     }
                 }
-            })
-            .catch(function() {
+            }
+        })
+        .catch(function(error) {
+            console.error('Error checking network:', error);
+            
+            // 🔥 Jika fetch gagal, anggap jaringan terputus
+            if (lastNetworkStatus !== false) {
+                lastNetworkStatus = false;
+                isNetworkConnected = false;
+                // 🔥 Reset flag manual close saat jaringan terputus
+                isAlertManuallyClosed = false;
                 if (!networkAlertShown) {
                     showNetworkAlert(false);
                 }
-            });
+            }
+        });
     }
 
     // ====================== USER DROPDOWN ======================
     function toggleDropdown() {
         const dropdown = document.getElementById('userDropdown');
-        dropdown.classList.toggle('show');
+        if (dropdown) {
+            dropdown.classList.toggle('show');
+        }
     }
 
     document.addEventListener('click', function(event) {
@@ -924,6 +986,9 @@
             if (dropdown) {
                 dropdown.classList.remove('show');
             }
+            if (networkAlertShown) {
+                closeNetworkAlert();
+            }
         }
     });
 
@@ -934,15 +999,18 @@
         setInterval(updateTime, 10000);
         setInterval(updateDate, 60000);
 
-        // Cek status jaringan pertama kali
+        // 🔥 CEK STATUS AWAL
         setTimeout(function() {
             checkNetworkStatus();
         }, 1000);
 
-        // Cek setiap 30 detik
-        setInterval(checkNetworkStatus, 1000);
+        // 🔥 CEK SETIAP 3 DETIK
+        setInterval(checkNetworkStatus, 3000);
 
         console.log('✅ Monitoring System DISKOMINFOTIK Loaded');
+        console.log('📡 Network status check interval: 3 seconds');
+        console.log('📡 Close alert dengan klik X (langsung hilang)');
+        console.log('📡 Alert akan muncul lagi jika pindah halaman atau status berubah');
     });
 </script>
 

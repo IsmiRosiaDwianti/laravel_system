@@ -24,110 +24,82 @@ class ServiceMonitorService
     }
 
     /**
-     * 🔥 CEK KONEKSI JARINGAN
-     * Ping ke Google DNS untuk cek internet
+     * 🔥 CEK KONEKSI JARINGAN (CEPAT & AKURAT)
+     * - Cek DNS terlebih dahulu (0.1-0.5 detik)
+     * - Fallback ke HTTP request jika DNS gagal (1-2 detik)
+     * 
+     * 🔥 PUBLIC AGAR BISA DIPANGGIL DARI NETWORK CONTROLLER
      */
-    private function checkNetworkConnection()
+    public function checkNetworkConnection()
     {
-        // Coba ping ke Google DNS
-        exec("ping -n 1 8.8.8.8", $output, $status);
-        
-        // Jika gagal, coba ke Cloudflare DNS
-        if ($status !== 0) {
-            exec("ping -n 1 1.1.1.1", $output, $status);
+        // 🔥 CEK DNS DULU (TERCEPAT)
+        if (checkdnsrr('google.com', 'A')) {
+            Log::info('Network check: Connected via DNS');
+            return true;
         }
         
-        // Jika masih gagal, coba ke Google.com
-        if ($status !== 0) {
-            exec("ping -n 1 google.com", $output, $status);
+        // 🔥 FALLBACK 1: HTTP REQUEST (LEBIH AKURAT)
+        try {
+            $response = Http::timeout(3)->get('https://www.google.com');
+            if ($response->successful()) {
+                Log::info('Network check: Connected via HTTP');
+                return true;
+            }
+        } catch (\Exception $e) {
+            Log::info('Network check: HTTP failed - ' . $e->getMessage());
         }
         
-        return $status === 0;
+        // 🔥 FALLBACK 2: CEK 8.8.8.8
+        try {
+            $response = Http::timeout(3)->get('http://8.8.8.8');
+            if ($response->successful()) {
+                Log::info('Network check: Connected via 8.8.8.8');
+                return true;
+            }
+        } catch (\Exception $e) {
+            Log::info('Network check: 8.8.8.8 failed');
+        }
+        
+        Log::info('Network check: DISCONNECTED');
+        return false;
     }
 
     /**
-     * 🔥 KIRIM WA JIKA JARINGAN TERPUTUS
+     * 🔥 HANYA LOG KE FILE, TIDAK KIRIM WA (hanya alert di web)
      */
     private function sendNetworkAlert()
     {
-        $contacts = Contact::where('is_active', true)->get();
+        // 🔥 HANYA LOG, TIDAK KIRIM WA
+        Log::info('📡 Network alert: Jaringan terputus - ' . now()->format('d-m-Y H:i:s'));
         
-        if ($contacts->isEmpty()) {
-            return;
-        }
-        
-        $message = 
-"🚨 JARINGAN TERPUTUS!
-
-📡 Tidak ada koneksi internet terdeteksi.
-⏱️ " . now()->format('d-m-Y H:i:s') . "
-
-🔍 TINDAKAN YANG HARUS DILAKUKAN:
-================================
-1️⃣ 📶 CEK MODEM/ROUTER
-   - Apakah lampu indikator menyala?
-   - Restart router/modem
-
-2️⃣ 🔌 CEK KABEL & LISTRIK
-   - Apakah kabel LAN terhubung?
-   - Cek listrik di lokasi
-
-3️⃣ 🌐 CEK PROVIDER
-   - Apakah ada gangguan dari ISP?
-   - Hubungi provider internet
-
-4️⃣ 📱 CEK DEVICE LAIN
-   - Apakah device lain bisa akses internet?
-
-🕐 " . now()->format('d-m-Y H:i:s');
-        
-        foreach ($contacts as $contact) {
-            FonnteService::send($contact->phone, $message);
-            Log::info("📱 WA network alert dikirim ke: {$contact->phone}");
-        }
+        // ❌ TIDAK ADA KIRIM WA
     }
 
     /**
-     * 🔥 KIRIM WA JIKA JARINGAN KEMBALI NORMAL
+     * 🔥 HANYA LOG KE FILE, TIDAK KIRIM WA (hanya alert di web)
      */
     private function sendNetworkRestoredAlert()
     {
-        $contacts = Contact::where('is_active', true)->get();
+        // 🔥 HANYA LOG, TIDAK KIRIM WA
+        Log::info('📡 Network alert: Jaringan kembali normal - ' . now()->format('d-m-Y H:i:s'));
         
-        if ($contacts->isEmpty()) {
-            return;
-        }
-        
-        $message = 
-"🟢 JARINGAN NORMAL!
-
-📡 Koneksi internet telah kembali normal.
-⏱️ " . now()->format('d-m-Y H:i:s') . "
-
-✅ Semua service akan kembali dipantau secara normal.
-
-🕐 " . now()->format('d-m-Y H:i:s');
-        
-        foreach ($contacts as $contact) {
-            FonnteService::send($contact->phone, $message);
-            Log::info("📱 WA network restored dikirim ke: {$contact->phone}");
-        }
+        // ❌ TIDAK ADA KIRIM WA
     }
 
     private function checkHttp(Service $service)
     {
         $oldStatus = $service->last_status;
 
-        // 🔥 CEK JARINGAN DULU
+        // 🔥 CEK JARINGAN DULU (SUDAH CEPAT)
         $isNetworkConnected = $this->checkNetworkConnection();
         
-        // Kirim alert jika jaringan mati (hanya 1x)
+        // Kirim alert jika jaringan mati (hanya 1x) - TAPI TIDAK KIRIM WA
         if (!$isNetworkConnected && !$this->networkAlertSent) {
             $this->sendNetworkAlert();
             $this->networkAlertSent = true;
         }
         
-        // Kirim alert jika jaringan kembali normal
+        // Kirim alert jika jaringan kembali normal - TAPI TIDAK KIRIM WA
         if ($isNetworkConnected && $this->networkAlertSent) {
             $this->sendNetworkRestoredAlert();
             $this->networkAlertSent = false;
@@ -168,8 +140,8 @@ class ServiceMonitorService
                     $analysis = [
                         'status' => 'WARNING',
                         'reason' => 'EMPTY_RESPONSE',
-                        'detail' => '⚠️ Halaman benar-benar kosong (tidak ada teks, gambar, video, atau link sama sekali)',
-                        'action' => '📄 Periksa aplikasi, mungkin terjadi error rendering atau data kosong'
+                        'detail' => 'Halaman kosong (tidak ada konten)',
+                        'action' => 'Periksa aplikasi, kemungkinan error rendering'
                     ];
                     $this->saveResult($service, $oldStatus, $analysis['status'], $code, $time, 
                                      $analysis['reason'], $analysis['detail'], $analysis['action']);
@@ -183,8 +155,8 @@ class ServiceMonitorService
                     $analysis = [
                         'status' => 'WARNING',
                         'reason' => 'NO_MEANINGFUL_CONTENT',
-                        'detail' => '⚠️ Halaman hanya berisi tag HTML kosong, tidak ada konten bermakna',
-                        'action' => '📄 Periksa aplikasi, mungkin halaman error atau maintenance'
+                        'detail' => 'Halaman hanya HTML kosong, tidak ada konten',
+                        'action' => 'Periksa aplikasi, kemungkinan maintenance/error'
                     ];
                     $this->saveResult($service, $oldStatus, $analysis['status'], $code, $time, 
                                      $analysis['reason'], $analysis['detail'], $analysis['action']);
@@ -192,7 +164,7 @@ class ServiceMonitorService
                 }
 
                 // 🔥 HALAMAN NORMAL
-                $detail = '✅ Service berjalan normal';
+                $detail = 'Service berjalan normal';
                 
                 $info = [];
                 if ($contentAnalysis['has_text']) {
@@ -346,7 +318,7 @@ class ServiceMonitorService
             $code = 'N/A';
             $reason = 'PING_FAILED';
             $detail = 'Host tidak merespon ping';
-            $action = '📡 Cek koneksi jaringan atau pastikan device menyala';
+            $action = 'Cek koneksi jaringan atau pastikan device menyala';
         }
 
         $this->saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action);
@@ -392,118 +364,43 @@ class ServiceMonitorService
 
     private function analyzeResponse($code, $time)
     {
-        if ($code == 200) {
-            if ($time > 3) {
-                return [
-                    'status' => 'WARNING',
-                    'reason' => 'SLOW_RESPONSE',
-                    'detail' => "Response lambat ({$time}s)",
-                    'action' => '🐌 Optimasi performa server (cache, database, kode)'
-                ];
+        // 🔥 MAP STATUS CODE KE PESAN SIMPEL
+        $statusMap = [
+            200 => ['status' => 'UP', 'reason' => 'OK', 'detail' => 'Service berjalan normal', 'action' => '-'],
+            301 => ['status' => 'UP', 'reason' => 'HTTP_301', 'detail' => 'Redirect permanen', 'action' => 'Update URL endpoint'],
+            302 => ['status' => 'UP', 'reason' => 'HTTP_302', 'detail' => 'Redirect sementara', 'action' => 'Periksa redirect'],
+            401 => ['status' => 'UP', 'reason' => 'HTTP_401', 'detail' => 'Unauthorized - Login diperlukan', 'action' => 'Cek API Key/Token'],
+            403 => ['status' => 'UP', 'reason' => 'HTTP_403', 'detail' => 'Forbidden - Akses ditolak', 'action' => 'Cek izin akses / IP whitelist'],
+            404 => ['status' => 'WARNING', 'reason' => 'HTTP_404', 'detail' => 'Halaman tidak ditemukan', 'action' => 'Periksa URL endpoint'],
+            405 => ['status' => 'WARNING', 'reason' => 'HTTP_405', 'detail' => 'Method HTTP tidak diizinkan', 'action' => 'Ganti method HTTP (GET/POST/PUT)'],
+            429 => ['status' => 'WARNING', 'reason' => 'HTTP_429', 'detail' => 'Too Many Requests - Rate limit', 'action' => 'Kurangi frekuensi request'],
+            500 => ['status' => 'DOWN', 'reason' => 'HTTP_500', 'detail' => 'Internal Server Error', 'action' => 'Cek log server, periksa kode aplikasi'],
+            502 => ['status' => 'DOWN', 'reason' => 'HTTP_502', 'detail' => 'Bad Gateway', 'action' => 'Periksa proxy / load balancer'],
+            503 => ['status' => 'DOWN', 'reason' => 'HTTP_503', 'detail' => 'Service Unavailable', 'action' => 'Cek maintenance / scale up resource'],
+            504 => ['status' => 'DOWN', 'reason' => 'HTTP_504', 'detail' => 'Gateway Timeout', 'action' => 'Optimasi response time server'],
+        ];
+
+        // 🔥 CEK APAKAH CODE ADA DI MAP
+        if (isset($statusMap[$code])) {
+            $result = $statusMap[$code];
+            
+            // Tambahkan info waktu jika slow response
+            if ($code == 200 && $time > 3) {
+                $result['status'] = 'WARNING';
+                $result['reason'] = 'SLOW_RESPONSE';
+                $result['detail'] = "Response lambat ({$time}s)";
+                $result['action'] = 'Optimasi performa server (cache, database)';
             }
-            return [
-                'status' => 'UP',
-                'reason' => 'OK',
-                'detail' => 'Service normal',
-                'action' => '-'
-            ];
+            
+            return $result;
         }
 
-        if ($code == 301 || $code == 302) {
-            return [
-                'status' => 'UP',
-                'reason' => "HTTP_{$code}",
-                'detail' => $code == 301 ? 'Moved Permanently' : 'Found - Redirect sementara',
-                'action' => $code == 301 ? '🔄 Update URL endpoint' : '🔍 Periksa redirect'
-            ];
-        }
-
-        if ($code == 401) {
-            return [
-                'status' => 'UP',
-                'reason' => 'HTTP_401',
-                'detail' => 'Unauthorized - Perlu login/autentikasi',
-                'action' => '🔐 Pastikan kredensial (API Key/Token) benar'
-            ];
-        }
-
-        if ($code == 403) {
-            return [
-                'status' => 'UP',
-                'reason' => 'HTTP_403',
-                'detail' => 'Forbidden - Akses ditolak oleh server',
-                'action' => '🔑 Periksa izin akses, API Key, atau IP whitelist'
-            ];
-        }
-
-        if ($code == 404) {
-            return [
-                'status' => 'WARNING',
-                'reason' => 'HTTP_404',
-                'detail' => 'Not Found - Halaman/endpoint tidak ditemukan',
-                'action' => '🔍 Periksa URL endpoint, pastikan path benar'
-            ];
-        }
-
-        if ($code == 405) {
-            return [
-                'status' => 'WARNING',
-                'reason' => 'HTTP_405',
-                'detail' => 'Method Not Allowed - Method HTTP tidak diizinkan',
-                'action' => '🔧 Ganti method HTTP (GET/POST/PUT) sesuai endpoint'
-            ];
-        }
-
-        if ($code == 429) {
-            return [
-                'status' => 'WARNING',
-                'reason' => 'HTTP_429',
-                'detail' => 'Too Many Requests - Server overload atau rate limit',
-                'action' => '⏳ Kurangi frekuensi request atau tambah interval'
-            ];
-        }
-
-        if ($code == 500) {
-            return [
-                'status' => 'DOWN',
-                'reason' => 'HTTP_500',
-                'detail' => 'Internal Server Error - Error di sisi server',
-                'action' => '💥 Periksa log error server, cek kode aplikasi'
-            ];
-        }
-
-        if ($code == 502) {
-            return [
-                'status' => 'DOWN',
-                'reason' => 'HTTP_502',
-                'detail' => 'Bad Gateway - Proxy/gateway menerima respons invalid',
-                'action' => '🌉 Periksa proxy, load balancer, atau gateway'
-            ];
-        }
-
-        if ($code == 503) {
-            return [
-                'status' => 'DOWN',
-                'reason' => 'HTTP_503',
-                'detail' => 'Service Unavailable - Server maintenance atau overload',
-                'action' => '🔧 Cek maintenance server, scale up resource'
-            ];
-        }
-
-        if ($code == 504) {
-            return [
-                'status' => 'DOWN',
-                'reason' => 'HTTP_504',
-                'detail' => 'Gateway Timeout - Proxy/gateway timeout',
-                'action' => '⏱️ Cek performa server, optimasi response time'
-            ];
-        }
-
+        // 🔥 DEFAULT UNKNOWN
         return [
             'status' => 'WARNING',
             'reason' => 'HTTP_ERROR',
             'detail' => "HTTP {$code} - Kode tidak dikenal",
-            'action' => '🔧 Periksa dokumentasi API atau hubungi admin'
+            'action' => 'Periksa dokumentasi API'
         ];
     }
 
@@ -514,8 +411,8 @@ class ServiceMonitorService
         if (str_contains($msg, 'timed out')) {
             return [
                 'reason' => 'TIMEOUT',
-                'detail' => 'Server terlalu lama merespon (timeout)',
-                'action' => '⏱️ Cek performa server, optimasi query, tambah timeout'
+                'detail' => 'Server timeout - terlalu lama merespon',
+                'action' => 'Optimasi performa server, tambah timeout'
             ];
         }
 
@@ -523,7 +420,7 @@ class ServiceMonitorService
             return [
                 'reason' => 'CONNECTION_REFUSED',
                 'detail' => 'Koneksi ditolak - Port tidak terbuka',
-                'action' => '🔌 Server mati, service belum berjalan, atau firewall blocking'
+                'action' => 'Server mati / firewall blocking / service belum jalan'
             ];
         }
 
@@ -531,23 +428,23 @@ class ServiceMonitorService
             return [
                 'reason' => 'DNS_ERROR',
                 'detail' => 'DNS tidak ditemukan - Domain tidak terdaftar',
-                'action' => '🌐 Periksa DNS, domain, atau koneksi internet'
+                'action' => 'Periksa DNS / domain / koneksi internet'
             ];
         }
 
         if (str_contains($msg, 'ssl') || str_contains($msg, 'certificate')) {
             return [
                 'reason' => 'SSL_ERROR',
-                'detail' => 'SSL/TLS Certificate Error - Sertifikat tidak valid',
-                'action' => '🔒 Periksa sertifikat SSL, perbarui jika expired'
+                'detail' => 'SSL/TLS Certificate Error',
+                'action' => 'Periksa sertifikat SSL, perbarui jika expired'
             ];
         }
 
         if (str_contains($msg, 'no route to host')) {
             return [
                 'reason' => 'NO_ROUTE_TO_HOST',
-                'detail' => 'Tidak ada route ke host - Jaringan terputus',
-                'action' => '🌐 Cek koneksi jaringan, firewall, atau routing'
+                'detail' => 'Tidak ada route ke host',
+                'action' => 'Cek koneksi jaringan / firewall / routing'
             ];
         }
 
@@ -555,42 +452,44 @@ class ServiceMonitorService
             return [
                 'reason' => 'NETWORK_UNREACHABLE',
                 'detail' => 'Jaringan tidak dapat dijangkau',
-                'action' => '🌐 Cek koneksi internet dan jaringan lokal'
+                'action' => 'Cek koneksi internet dan jaringan lokal'
             ];
         }
 
         return [
             'reason' => 'UNKNOWN',
             'detail' => $message,
-            'action' => '🔧 Periksa service secara manual, cek log server'
+            'action' => 'Periksa service secara manual, cek log server'
         ];
     }
 
+    /**
+     * 🔥 KIRIM WA - HANYA UNTUK SERVICE (DOWN, WARNING, UP)
+     * PESAN SIMPEL & RINGKAS
+     */
     private function sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action)
     {
         $contacts = Contact::where('is_active', true)->get();
 
+        if ($contacts->isEmpty()) {
+            Log::warning('⚠️ Tidak ada kontak aktif untuk kirim WA service alert');
+            return;
+        }
+
+        // 🔥 FORMAT PESAN BERDASARKAN STATUS
         if ($status == 'DOWN') {
             $message = 
 "🔴 SERVICE DOWN
 
-📌 Nama Service : {$service->name}
-🔗 URL : {$service->target}
+📌 {$service->name}
+🔗 {$service->target}
 
-⚠️ Status : DOWN
-📟 Code : {$code}
+Status : DOWN
+Code   : {$code}
+Waktu  : {$time}s
 
-❌ Penyebab :
-{$reason}
-
-💡 Detail :
-{$detail}
-
-🔧 Tindakan :
-{$action}
-
-⏱️ Response :
-{$time}s
+💡 {$detail}
+🔧 {$action}
 
 🕐 " . now()->format('d-m-Y H:i:s');
 
@@ -598,41 +497,41 @@ class ServiceMonitorService
             $message = 
 "🟠 SERVICE WARNING
 
-📌 Nama Service : {$service->name}
-🔗 URL : {$service->target}
+📌 {$service->name}
+🔗 {$service->target}
 
-📟 Code : {$code}
+Status : WARNING
+Code   : {$code}
+Waktu  : {$time}s
 
-❌ Penyebab :
-{$reason}
-
-💡 Detail :
-{$detail}
-
-🔧 Tindakan :
-{$action}
-
-⏱️ Response :
-{$time}s
+💡 {$detail}
+🔧 {$action}
 
 🕐 " . now()->format('d-m-Y H:i:s');
 
         } else {
+            // 🔥 STATUS UP - PESAN SINGKAT
             $message = 
 "🟢 SERVICE NORMAL
 
-📌 Nama Service : {$service->name}
-🔗 URL : {$service->target}
+📌 {$service->name}
+🔗 {$service->target}
 
-✅ Status : UP
-📟 Code : {$code}
-⏱️ Response : {$time}s
+Status : UP
+Code   : {$code}
+Waktu  : {$time}s
 
 🕐 " . now()->format('d-m-Y H:i:s');
         }
 
+        // 🔥 KIRIM KE SEMUA KONTAK AKTIF
         foreach ($contacts as $contact) {
-            FonnteService::send($contact->phone, $message);
+            $result = FonnteService::send($contact->phone, $message);
+            if ($result) {
+                Log::info("📱 WA service alert dikirim ke: {$contact->phone} - {$status}");
+            } else {
+                Log::error("❌ Gagal kirim WA service alert ke: {$contact->phone}");
+            }
         }
     }
 }

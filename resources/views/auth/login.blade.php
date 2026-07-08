@@ -628,7 +628,7 @@
         <!-- ====================== LOGO ====================== -->
         <div class="login-logo">
             <div class="logo-wrapper">
-                <img src="{{ asset('images/Logo.png') }}" 
+                <img src="{{ asset('images/download.jpg') }}" 
                      alt="WASKITA" 
                      class="logo-image">
             </div>

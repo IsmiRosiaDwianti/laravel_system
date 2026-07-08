@@ -8,6 +8,7 @@ use App\Services\FonnteService;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\SmokeController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\NetworkController; // 🔥 TAMBAHKAN INI
 
 /*
 |--------------------------------------------------------------------------
@@ -85,6 +86,13 @@ Route::middleware('auth')->group(function () {
     */
     Route::get('/smoke-detector', [SmokeController::class, 'index'])->name('smoke');
     Route::get('/smoke-detector/export', [SmokeController::class, 'export'])->name('smoke.export');
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 NETWORK STATUS API (TAMBAHKAN INI)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/api/network/status', [NetworkController::class, 'status'])->name('api.network.status');
 });
 
 /*

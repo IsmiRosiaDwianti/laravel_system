@@ -11,13 +11,15 @@ use Illuminate\Support\Facades\Log;
 
 class EspMonitorService
 {
+    // 🔥 KONFIGURASI THRESHOLD
+    private const WARNING_THRESHOLD = 200;
+    private const DANGER_THRESHOLD = 500;
+
     /**
      * CEK STATUS ESP - Apakah mengirim data dalam 2 menit terakhir
-     * Sinkron dengan dashboard (2 menit)
      */
     public function checkEspStatus()
     {
-        // 🔥 Ambil semua device
         $devices = SmokeDevice::all();
 
         if ($devices->isEmpty()) {
@@ -30,18 +32,19 @@ class EspMonitorService
             $isOnline = $device->last_seen_at &&
                         Carbon::parse($device->last_seen_at)->diffInMinutes(now()) < 2;
 
-            // 🔥 UPDATE STATUS DI DATABASE (sinkron dengan dashboard)
+            // 🔥 UPDATE STATUS DI DATABASE
             $device->device_status = $isOnline ? 'ONLINE' : 'OFFLINE';
             $device->save();
 
+            // 🔥 CEK SMOKE LEVEL (TERPISAH DARI OFFLINE)
+            $this->checkSmokeLevel($device);
+
             // Jika OFFLINE (tidak kirim data > 2 menit)
             if (!$isOnline) {
-                // Ambil data terakhir dari device ini
-                $lastLog = SmokeLog::where('device_id', $device->id)
+                $lastLog = SmokeLog::where('smoke_device_id', $device->id)
                     ->orderBy('created_at', 'desc')
                     ->first();
 
-                // Hitung sudah berapa menit tidak kirim data
                 $lastSeen = $device->last_seen_at
                     ? Carbon::parse($device->last_seen_at)
                     : null;
@@ -50,29 +53,25 @@ class EspMonitorService
                     ? $lastSeen->diffInMinutes(now())
                     : 'TIDAK ADA DATA';
 
-                // 🔥 CEK APAKAH SUDAH PERNAH KIRIM ALERT SEBELUMNYA
-                // Cek log terakhir untuk device ini (hindari spam)
-                $lastAlertLog = SmokeLog::where('device_id', $device->id)
+                // CEK APAKAH SUDAH PERNAH KIRIM ALERT SEBELUMNYA
+                $lastAlertLog = SmokeLog::where('smoke_device_id', $device->id)
                     ->where('message', 'LIKE', '%OFFLINE%')
                     ->orderBy('created_at', 'desc')
                     ->first();
 
-                // Jika belum pernah kirim alert atau sudah lebih dari 30 menit
                 $shouldSendAlert = true;
                 if ($lastAlertLog) {
                     $lastAlertTime = Carbon::parse($lastAlertLog->created_at);
                     $minutesSinceLastAlert = $lastAlertTime->diffInMinutes(now());
                     
-                    // Jika alert terakhir kurang dari 30 menit, skip (hindari spam)
                     if ($minutesSinceLastAlert < 30) {
                         $shouldSendAlert = false;
-                        Log::info("⏳ Skip alert untuk {$device->name}, terakhir kirim {$minutesSinceLastAlert} menit lalu");
+                        Log::info("⏳ Skip offline alert untuk {$device->name}, terakhir kirim {$minutesSinceLastAlert} menit lalu");
                     }
                 }
 
-                // Kirim alert jika memenuhi syarat
                 if ($shouldSendAlert) {
-                    $this->sendEspAlert($device, $lastLog, $minutesDiff);
+                    $this->sendEspOfflineAlert($device, $minutesDiff);
                 }
             }
         }
@@ -81,9 +80,151 @@ class EspMonitorService
     }
 
     /**
-     * KIRIM ALERT ESP VIA WHATSAPP
+     * 🔥 CEK SMOKE LEVEL DAN KIRIM WA JIKA MELEBIHI THRESHOLD
      */
-    private function sendEspAlert($device, $lastLog = null, $minutesDiff)
+    private function checkSmokeLevel($device)
+    {
+        $smokeValue = $device->smoke_value ?? 0;
+        
+        // Tentukan status
+        if ($smokeValue >= self::DANGER_THRESHOLD) {
+            $status = 'DANGER';
+            $message = "Asap TINGGI! {$smokeValue} ppm - Segera periksa!";
+        } elseif ($smokeValue >= self::WARNING_THRESHOLD) {
+            $status = 'WARNING';
+            $message = "Asap terdeteksi! {$smokeValue} ppm - Waspada!";
+        } else {
+            $status = 'NORMAL';
+            $message = "Kondisi aman ({$smokeValue} ppm)";
+        }
+
+        // 🔥 SIMPAN STATUS SEBELUMNYA (untuk cek perubahan)
+        $oldStatus = $device->status ?? 'NORMAL';
+
+        // 🔥 UPDATE DEVICE
+        $device->status = $status;
+        $device->save();
+
+        // 🔥 CEK APAKAH STATUS BERUBAH
+        if ($oldStatus !== $status) {
+            // Simpan log
+            SmokeLog::create([
+                'smoke_device_id' => $device->id,
+                'smoke_value' => $smokeValue,
+                'status' => $status,
+                'message' => $message,
+            ]);
+
+            Log::info("📝 Smoke log: {$device->name} - {$oldStatus} → {$status} ({$smokeValue} ppm)");
+
+            // 🔥 KIRIM WA JIKA STATUS BERUBAH KE WARNING ATAU DANGER
+            if ($status === 'WARNING' || $status === 'DANGER') {
+                $this->sendSmokeAlert($device, $smokeValue, $status);
+            }
+            
+            // 🔥 KIRIM WA JIKA STATUS KEMBALI NORMAL
+            if ($status === 'NORMAL' && ($oldStatus === 'WARNING' || $oldStatus === 'DANGER')) {
+                $this->sendSmokeNormalAlert($device, $smokeValue);
+            }
+        } else {
+            // 🔥 STATUS SAMA → UPDATE WAKTU LOG TERAKHIR
+            $lastLog = SmokeLog::where('smoke_device_id', $device->id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            if ($lastLog) {
+                $lastLog->update([
+                    'smoke_value' => $smokeValue,
+                    'message' => $message,
+                    'updated_at' => Carbon::now(),
+                ]);
+                Log::info("⏱️ Update smoke log: {$device->name} - {$status} ({$smokeValue} ppm)");
+            }
+        }
+    }
+
+    /**
+     * 🔥 KIRIM WA ALERT SMOKE (WARNING/DANGER)
+     */
+    private function sendSmokeAlert($device, $smokeValue, $status)
+    {
+        $contacts = Contact::where('is_active', true)->get();
+
+        if ($contacts->isEmpty()) {
+            Log::warning('⚠️ Tidak ada kontak aktif untuk kirim WA smoke alert');
+            return;
+        }
+
+        $deviceStatus = $device->device_status ?? 'UNKNOWN';
+
+        if ($status === 'DANGER') {
+            $icon = '🔴';
+            $title = '🚨 DANGER! ASAP TINGGI!';
+            $tindakan = "1️⃣ 🏃 SEGERA EVAKUASI!\n2️⃣ 🔥 Matikan sumber api / listrik\n3️⃣ 🚒 Hubungi petugas pemadam\n4️⃣ 🚪 Buka ventilasi / pintu";
+        } else {
+            $icon = '🟡';
+            $title = '⚠️ PERINGATAN ASAP!';
+            $tindakan = "1️⃣ 🔍 Periksa sumber asap\n2️⃣ 💨 Buka ventilasi / jendela\n3️⃣ 🧯 Siapkan APAR jika diperlukan\n4️⃣ 📱 Pantau terus kondisi asap";
+        }
+
+        $message = "{$icon} {$title}
+
+📊 {$smokeValue} ppm
+📟 {$deviceStatus}
+
+⚠️ Status : {$status}
+
+🔍 TINDAKAN:
+{$tindakan}
+
+🕐 " . Carbon::now()->format('d-m-Y H:i:s');
+
+        foreach ($contacts as $contact) {
+            $result = FonnteService::send($contact->phone, $message);
+            if ($result) {
+                Log::info("📱 WA smoke alert dikirim ke: {$contact->phone} - {$status}");
+            } else {
+                Log::error("❌ Gagal kirim WA smoke alert ke: {$contact->phone}");
+            }
+        }
+    }
+
+    /**
+     * 🔥 KIRIM WA KETIKA SMOKE KEMBALI NORMAL
+     */
+    private function sendSmokeNormalAlert($device, $smokeValue)
+    {
+        $contacts = Contact::where('is_active', true)->get();
+
+        if ($contacts->isEmpty()) {
+            Log::warning('⚠️ Tidak ada kontak aktif untuk kirim WA smoke normal alert');
+            return;
+        }
+
+        $message = "🟢 SMOKE NORMAL
+
+📊 {$smokeValue} ppm
+
+✅ Status : NORMAL (Aman)
+
+💡 Kondisi asap telah kembali normal.
+
+🕐 " . Carbon::now()->format('d-m-Y H:i:s');
+
+        foreach ($contacts as $contact) {
+            $result = FonnteService::send($contact->phone, $message);
+            if ($result) {
+                Log::info("📱 WA smoke normal alert dikirim ke: {$contact->phone}");
+            } else {
+                Log::error("❌ Gagal kirim WA smoke normal alert ke: {$contact->phone}");
+            }
+        }
+    }
+
+    /**
+     * 🔥 KIRIM ALERT ESP OFFLINE - PESAN SINGKAT
+     */
+    private function sendEspOfflineAlert($device, $minutesDiff)
     {
         $contacts = Contact::where('is_active', true)->get();
 
@@ -92,77 +233,30 @@ class EspMonitorService
             return;
         }
 
-        // Data terakhir
-        $lastSmoke = $lastLog ? $lastLog->smoke_value : 'N/A';
-        $lastStatus = $lastLog ? $lastLog->status : 'N/A';
-        $lastTime = $device->last_seen_at
-            ? Carbon::parse($device->last_seen_at)->format('d-m-Y H:i:s')
-            : 'TIDAK ADA DATA';
-
-        $deviceName = $device->name ?? 'ESP-' . $device->id;
-        $deviceLocation = $device->location ?? 'Tidak diketahui';
-
-        // 🔥 CEK LEVEL ASAP SAAT OFFLINE
-        $smokeLevel = $device->smoke_value ?? 0;
-        $smokeStatus = '';
-        if ($smokeLevel >= 500) {
-            $smokeStatus = '🔴 DANGER (Asap Tinggi!)';
-        } elseif ($smokeLevel >= 200) {
-            $smokeStatus = '🟡 WARNING (Asap Terdeteksi!)';
-        } else {
-            $smokeStatus = '🟢 NORMAL';
-        }
-
         $message = "⚠️ ESP OFFLINE!
 
-📡 Nama Device : {$deviceName}
-📍 Lokasi : {$deviceLocation}
-⏱️ Terakhir kirim: {$lastTime}
-⌛ Sudah: {$minutesDiff} MENIT tidak ada data!
+📡 ESP tidak mengirim data selama {$minutesDiff} menit.
 
-📊 Data Terakhir:
-├─ Asap: {$lastSmoke} ppm
-├─ Status Asap: {$smokeStatus}
-└─ Status Device: {$lastStatus}
-
-🔍 TINDAKAN YANG HARUS DILAKUKAN:
-================================
-1️⃣ 🔌 CEK ESP
-   - Apakah ESP menyala?
-   - Cek LED indikator power
-   - Reset ESP (tekan tombol reset)
-
-2️⃣ 📶 CEK WIFI
-   - Apakah ESP terhubung ke WiFi?
-   - Cek sinyal WiFi di lokasi ESP
-   - Restart router jika perlu
-
-3️⃣ 🌐 CEK INTERNET & LISTRIK
-   - Apakah internet berjalan normal?
-   - Cek listrik di lokasi ESP
-   - Cek router/modem menyala?
-
-4️⃣ 🔑 KEMUNGKINAN PERGANTIAN PASSWORD WIFI
-   - Apakah baru ganti password WiFi?
-   - Update password WiFi di ESP
-   - Rekonfigurasi koneksi WiFi ESP
+🔍 Cek:
+1️⃣ Power ESP
+2️⃣ Koneksi WiFi
+3️⃣ Internet & listrik
 
 🕐 " . Carbon::now()->format('d-m-Y H:i:s');
 
-        // Kirim ke semua kontak aktif
         foreach ($contacts as $contact) {
             $result = FonnteService::send($contact->phone, $message);
             if ($result) {
-                Log::info("📱 WA ESP alert dikirim ke: {$contact->phone} - {$deviceName}");
+                Log::info("📱 WA ESP offline alert dikirim ke: {$contact->phone}");
             } else {
-                Log::error("❌ Gagal kirim WA ESP alert ke: {$contact->phone}");
+                Log::error("❌ Gagal kirim WA ESP offline alert ke: {$contact->phone}");
             }
         }
 
-        // 🔥 SIMPAN LOG ALERT (untuk tracking spam)
+        // 🔥 SIMPAN LOG ALERT
         try {
             SmokeLog::create([
-                'device_id' => $device->id,
+                'smoke_device_id' => $device->id,
                 'smoke_value' => $device->smoke_value ?? 0,
                 'status' => 'OFFLINE',
                 'message' => "🚨 ALERT: ESP OFFLINE selama {$minutesDiff} menit",
@@ -173,7 +267,7 @@ class EspMonitorService
     }
 
     /**
-     * GET STATUS ESP (untuk command atau debugging)
+     * GET STATUS ESP (untuk debugging)
      */
     public function getEspStatus()
     {
@@ -192,15 +286,14 @@ class EspMonitorService
             $isOnline = $device->last_seen_at &&
                         Carbon::parse($device->last_seen_at)->diffInMinutes(now()) < 2;
 
-            $lastLog = SmokeLog::where('device_id', $device->id)
+            $lastLog = SmokeLog::where('smoke_device_id', $device->id)
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-            // Tentukan status asap
             $smokeValue = $device->smoke_value ?? 0;
-            if ($smokeValue >= 500) {
+            if ($smokeValue >= self::DANGER_THRESHOLD) {
                 $smokeStatus = 'DANGER';
-            } elseif ($smokeValue >= 200) {
+            } elseif ($smokeValue >= self::WARNING_THRESHOLD) {
                 $smokeStatus = 'WARNING';
             } else {
                 $smokeStatus = 'NORMAL';
@@ -251,7 +344,6 @@ class EspMonitorService
         $isOnline = $device->last_seen_at &&
                     Carbon::parse($device->last_seen_at)->diffInMinutes(now()) < 2;
 
-        // Update status
         $device->device_status = $isOnline ? 'ONLINE' : 'OFFLINE';
         $device->save();
 

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SmokeLog extends Model
 {
     protected $fillable = [
-        'smoke_device_id',           // ✅ PASTIKAN device_id (bukan smoke_device_id)
+        'smoke_device_id',           // ✅ PASTIKAN smoke_device_id (bukan device_id)
         'smoke_value',
         'status',
         'message',

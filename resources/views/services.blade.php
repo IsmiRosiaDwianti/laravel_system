@@ -2124,21 +2124,7 @@
         const message = service.last_message || '-';
         const isEmptyPage = message.includes('konten kosong') || message.includes('EMPTY_RESPONSE');
 
-        let statsHtml = '';
-        if (service.stats) {
-            statsHtml = `
-                <div class="detail-item full-width" style="background: #f1f5f9; border-color: #d1d5db;">
-                    <div class="detail-label">Statistik Monitoring</div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; margin-top: 8px;">
-                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #4f46e5;">${service.stats.total_checks || 0}</div><div style="font-size: 10px; color: #6b7280;">Total Check</div></div>
-                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #059669;">${service.stats.up_count || 0}</div><div style="font-size: 10px; color: #6b7280;">UP</div></div>
-                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #d97706;">${service.stats.warning_count || 0}</div><div style="font-size: 10px; color: #6b7280;">WARNING</div></div>
-                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #dc2626;">${service.stats.down_count || 0}</div><div style="font-size: 10px; color: #6b7280;">DOWN</div></div>
-                        <div style="text-align: center;"><div style="font-size: 18px; font-weight: 700; color: #7c3aed;">${service.stats.uptime_percentage_30d || 0}%</div><div style="font-size: 10px; color: #6b7280;">Uptime 30d</div></div>
-                    </div>
-                </div>
-            `;
-        }
+        // 🔥 STATISTIK MONITORING TELAH DIHAPUS
 
         const messageClass = isEmptyPage ? 'empty-message' : '';
         const actionClass = isEmptyAction ? 'empty-action' : (isNoAction ? 'no-action' : '');
@@ -2155,7 +2141,6 @@
                 <div class="detail-item"><div class="detail-label">Terakhir Diperiksa</div><div class="detail-value"><span class="detail-timestamp">${service.last_checked_at || service.updated_at || '-'}</span></div></div>
                 <div class="detail-item full-width"><div class="detail-label">Pesan</div><div class="detail-message ${messageClass}">${message}</div></div>
                 <div class="detail-action"><div class="detail-label">🔧 Tindakan yang Disarankan</div><div class="detail-value"><span class="action-badge ${actionClass}">${actionBadgeText}</span></div></div>
-                ${statsHtml}
                 <div class="detail-item full-width" style="background: #f1f5f9; border-color: #d1d5db;"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: #4b5563;"><span><strong>ID:</strong> ${service.id}</span><span><strong>Dibuat:</strong> ${service.created_at || '-'}</span><span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span></div></div>
             </div>
         `;
