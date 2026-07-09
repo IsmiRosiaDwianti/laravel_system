@@ -138,17 +138,33 @@ class DashboardController extends Controller
             $currentSmoke->addDay();
         }
 
-        // ==================== ESP STATUS (SEDERHANA) ====================
+        // ==================== ESP STATUS ====================
         // Ambil semua smoke device
         $smokeDevices = SmokeDevice::all();
         
         // Cek apakah ada device yang online (kirim data dalam 2 menit terakhir)
         $onlineCount = 0;
+        $lastSmokeValue = 0;
+        $lastSmokeStatus = 'NORMAL';
+        $lastSeenAt = null;
+        $deviceName = 'ESP32-Smoke';
+        
         foreach ($smokeDevices as $device) {
             if ($device->last_seen_at && Carbon::parse($device->last_seen_at)->diffInMinutes(now()) < 2) {
                 $onlineCount++;
             }
+            
+            // Ambil data terakhir
+            $lastSmokeValue = $device->smoke_value ?? 0;
+            $lastSmokeStatus = $device->status ?? 'NORMAL';
+            $lastSeenAt = $device->last_seen_at;
+            $deviceName = $device->name ?? 'ESP32-Smoke';
         }
+
+        // Tentukan status ESP untuk dashboard
+        $espStatus = $onlineCount > 0 ? 'ONLINE' : 'OFFLINE';
+        $espStatusClass = $onlineCount > 0 ? 'online' : 'offline';
+        $espStatusLabel = $onlineCount > 0 ? '🟢 ONLINE' : '🔴 OFFLINE';
 
         // ==================== KIRIM KE VIEW ====================
         return view(
@@ -165,7 +181,14 @@ class DashboardController extends Controller
                 'uptimeOverall',       // Uptime keseluruhan (bobot)
                 'smokeLabels',
                 'smokeData',
-                'onlineCount'
+                'onlineCount',
+                'espStatus',
+                'espStatusClass',
+                'espStatusLabel',
+                'lastSmokeValue',
+                'lastSmokeStatus',
+                'lastSeenAt',
+                'deviceName'
             )
         );
     }

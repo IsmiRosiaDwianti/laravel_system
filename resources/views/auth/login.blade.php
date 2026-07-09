@@ -199,26 +199,15 @@
             margin-top: 4px;
         }
 
-        .login-logo h1 {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            font-family: 'Poppins', 'Inter', sans-serif;
-            color: #0f172a;
-            margin: 0;
-            line-height: 1.2;
-        }
-
-        /* ====================== TAGLINE DENGAN GARIS ====================== */
+        /* 🔥 HANYA TAGLINE, TANPA NAMA */
         .login-logo .tagline {
-            font-size: 12px;
-            color: #94a3b8;
-            font-weight: 400;
-            letter-spacing: 4px;
+            font-size: 14px;
+            color: #0f172a;
+            font-weight: 600;
+            letter-spacing: 6px;
             text-transform: uppercase;
             font-family: 'Poppins', 'Inter', sans-serif;
-            margin-top: 6px;
+            margin-top: 8px;
             position: relative;
             display: inline-block;
         }
@@ -228,20 +217,20 @@
             content: '';
             position: absolute;
             top: 50%;
-            width: 25px;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #94a3b8);
+            width: 30px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #6366f1);
         }
 
         .login-logo .tagline::before {
-            right: calc(100% + 12px);
+            right: calc(100% + 16px);
             transform: translateY(-50%);
         }
 
         .login-logo .tagline::after {
-            left: calc(100% + 12px);
+            left: calc(100% + 16px);
             transform: translateY(-50%);
-            background: linear-gradient(90deg, #94a3b8, transparent);
+            background: linear-gradient(90deg, #6366f1, transparent);
         }
 
         .login-logo .tagline span {
@@ -532,19 +521,14 @@
                 padding: 10px;
             }
 
-            .login-logo h1 {
-                font-size: 22px;
-                letter-spacing: 2px;
-            }
-
             .login-logo .tagline {
-                font-size: 10px;
-                letter-spacing: 2px;
+                font-size: 12px;
+                letter-spacing: 4px;
             }
 
             .login-logo .tagline::before,
             .login-logo .tagline::after {
-                width: 12px;
+                width: 15px;
             }
 
             .form-options {
@@ -629,11 +613,11 @@
         <div class="login-logo">
             <div class="logo-wrapper">
                 <img src="{{ asset('images/download.jpg') }}" 
-                     alt="WASKITA" 
+                     alt="Logo" 
                      class="logo-image">
             </div>
             <div class="brand-text">
-                <h1>WASKITA</h1>
+                <!-- 🔥 TANPA NAMA, HANYA TAGLINE -->
                 <p class="tagline">Monitoring <span>System</span></p>
             </div>
         </div>
@@ -702,7 +686,7 @@
         </form>
 
         <div class="login-footer">
-            <p>© {{ date('Y') }} WASKITA Monitoring System</p>
+            <p>© {{ date('Y') }} Monitoring System</p>
             <div class="version">Version 1.0.0</div>
         </div>
 

@@ -183,7 +183,7 @@ class SmokeController extends Controller
 
             // 🔥 KIRIM WA JIKA STATUS BERUBAH (NORMAL → WARNING/DANGER)
             if ($oldStatus != $status) {
-                $this->sendSmokeAlert($device, $ppm, $status, $oldStatus);
+                $this->sendSmokeAlert($device, $ppm, $status);
             }
 
             // 🔥 LOG KE FILE (untuk debugging)
@@ -224,9 +224,10 @@ class SmokeController extends Controller
     /**
      * ============================================================
      *  🔥 KIRIM WHATSAPP ALERT UNTUK ASAP (WARNING/DANGER)
-     *  ============================================================
+     *  PESAN SINGKAT & RINGKAS
+     * ============================================================
      */
-    private function sendSmokeAlert($device, $ppm, $status, $oldStatus)
+    private function sendSmokeAlert($device, $ppm, $status)
     {
         $contacts = Contact::where('is_active', true)->get();
 
@@ -235,52 +236,34 @@ class SmokeController extends Controller
             return;
         }
 
-        // 🔥 BUAT PESAN BERDASARKAN STATUS
+        // 🔥 PESAN SINGKAT
         if ($status == 'DANGER') {
             $message = 
 "🔴 DANGER! ASAP TINGGI!
 
-📡 Device : {$device->name}
-📍 Lokasi : {$device->location}
-📊 Nilai Asap : {$ppm} ppm
+📊 Nilai Asap  {$ppm} ppm
+⚠️ Status : DANGER
 
-⚠️ Status : DANGER (Berbahaya!)
-🔄 Sebelumnya : {$oldStatus}
-
-🔍 TINDAKAN YANG HARUS DILAKUKAN:
-================================
-1️⃣ 🏃 SEGERA EVAKUASI!
-2️⃣ 🔥 Matikan sumber api / listrik
-3️⃣ 🚒 Hubungi petugas pemadam
-4️⃣ 🚪 Buka ventilasi / pintu
-
-📱 Jangan panik! Tetap tenang dan evakuasi dengan aman!
-
-🕐 " . now()->format('d-m-Y H:i:s');
-
-        } elseif ($status == 'WARNING') {
-            $message = 
-"🟡 PERINGATAN ASAP!
-
-📡 Device : {$device->name}
-📍 Lokasi : {$device->location}
-📊 Nilai Asap : {$ppm} ppm
-
-⚠️ Status : WARNING (Waspada!)
-🔄 Sebelumnya : {$oldStatus}
-
-🔍 TINDAKAN YANG HARUS DILAKUKAN:
-================================
-1️⃣ 🔍 Periksa sumber asap
-2️⃣ 💨 Buka ventilasi / jendela
-3️⃣ 🧯 Siapkan APAR jika diperlukan
-4️⃣ 📱 Pantau terus kondisi asap
+🔍 TINDAKAN:
+1️⃣  SEGERA EVAKUASI!
+2️⃣  Matikan sumber api / listrik
+3️⃣  Hubungi petugas pemadam
 
 🕐 " . now()->format('d-m-Y H:i:s');
 
         } else {
-            // NORMAL (tidak kirim WA)
-            return;
+            $message = 
+"🟡 PERINGATAN ASAP!
+
+📊 Nilai Asap  {$ppm} ppm
+⚠️ Status : WARNING
+
+🔍 TINDAKAN:
+1️⃣  Periksa sumber asap
+2️⃣  Buka ventilasi / jendela
+3️⃣  Siapkan APAR
+
+🕐 " . now()->format('d-m-Y H:i:s');
         }
 
         // 🔥 KIRIM KE SEMUA KONTAK AKTIF

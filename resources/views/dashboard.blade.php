@@ -841,6 +841,48 @@
     .chart-card:nth-child(1) { animation-delay: 0.35s; }
     .chart-card:nth-child(2) { animation-delay: 0.40s; }
 
+    /* ================= AUTO REFRESH TIMER ================= */
+    .auto-refresh-timer {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(10, 46, 92, 0.85);
+        color: white;
+        padding: 8px 14px;
+        border-radius: 8px;
+        z-index: 99999;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        user-select: none;
+        cursor: default;
+    }
+
+    .auto-refresh-timer .icon { font-size: 14px; }
+    .auto-refresh-timer .label { opacity: 0.7; font-size: 10px; }
+    .auto-refresh-timer .countdown {
+        font-weight: 700;
+        font-size: 14px;
+        min-width: 40px;
+        text-align: center;
+        color: #6ee7b7;
+    }
+    .auto-refresh-timer .countdown.warning { color: #fcd34d; }
+    .auto-refresh-timer .countdown.danger {
+        color: #fca5a5;
+        animation: blink 0.5s infinite;
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+
     /* ================= RESPONSIVE ================= */
     @media (max-width: 1024px) {
         .stats-grid {
@@ -951,6 +993,17 @@
             font-size: 9px;
             padding: 3px 10px;
         }
+
+        .auto-refresh-timer {
+            bottom: 10px;
+            right: 10px;
+            padding: 6px 12px;
+            font-size: 10px;
+        }
+        .auto-refresh-timer .countdown {
+            font-size: 12px;
+            min-width: 30px;
+        }
     }
 
     @media (max-width: 480px) {
@@ -1049,6 +1102,9 @@
         $down = $down ?? 0;
         $onlineCount = $onlineCount ?? 0;
         $services = $services ?? collect();
+        $lastSmokeValue = $lastSmokeValue ?? 0;
+        $lastSmokeStatus = $lastSmokeStatus ?? 'NORMAL';
+        $lastSeenAt = $lastSeenAt ?? null;
     @endphp
 
     <div class="stats-grid">
@@ -1101,22 +1157,40 @@
         </div>
 
         <!-- ================= ESP STATUS ================= -->
-        <div class="stat-card esp">
+        <div class="stat-card esp" id="espCard">
             <div class="stat-header">
                 <h3>ESP Status</h3>
                 <i class="fas fa-microchip"></i>
             </div>
-            <div class="stat-value" style="font-size: 1.6rem; display: flex; align-items: center; gap: 8px;">
+            <div class="stat-value" id="espStatusDisplay" style="font-size: 1.6rem; display: flex; align-items: center; gap: 8px;">
                 @php
                     $isOnline = ($onlineCount ?? 0) > 0;
                     $espDisplayStatus = $isOnline ? 'ONLINE' : 'OFFLINE';
                 @endphp
-                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; 
+                <span id="espDot" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; 
                     @if($espDisplayStatus == 'ONLINE') background: #10b981; box-shadow: 0 0 20px rgba(16,185,129,0.4);
                     @else background: #ef4444; box-shadow: 0 0 20px rgba(239,68,68,0.4);
                     @endif
                 "></span>
-                {{ $espDisplayStatus }}
+                <span id="espStatusText">{{ $espDisplayStatus }}</span>
+            </div>
+            <div class="stat-label" id="espLastSeen">
+                @if($isOnline && $lastSeenAt)
+                    ✅ Terakhir: {{ \Carbon\Carbon::parse($lastSeenAt)->diffForHumans() }}
+                @else
+                    ❌ Tidak ada data (offline)
+                @endif
+            </div>
+            <div class="stat-label" style="margin-top: 4px; font-size: 11px; color: #94a3b8;">
+                📊 PPM: <strong id="espPpm">{{ $lastSmokeValue }} ppm</strong>
+                | Status: <span id="espSmokeStatus" class="status-badge {{ strtolower($lastSmokeStatus) }}" style="font-size: 10px; padding: 2px 10px; border-radius: 12px; 
+                    @if($lastSmokeStatus == 'DANGER') background: #fee2e2; color: #991b1b;
+                    @elseif($lastSmokeStatus == 'WARNING') background: #fef3c7; color: #92400e;
+                    @else background: #d1fae5; color: #065f46;
+                    @endif
+                ">
+                    {{ $lastSmokeStatus }}
+                </span>
             </div>
         </div>
     </div>
@@ -1222,6 +1296,13 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- ================= AUTO REFRESH TIMER ================= -->
+<div class="auto-refresh-timer" id="autoRefreshTimer">
+    <span class="icon">🔄</span>
+    <span class="label">Refresh</span>
+    <span class="countdown" id="countdownTimer">0:30</span>
 </div>
 
 <!-- ================= MODAL SERVICE ================= -->
@@ -1524,13 +1605,102 @@
         });
     });
 
-    // ====================== AUTO REFRESH ======================
-    let refreshInterval = setTimeout(function() {
-        location.reload();
-    }, 60000);
+    // ====================== AUTO REFRESH TIMER ======================
+    const REFRESH_INTERVAL = 30;
+    let countdownSeconds = REFRESH_INTERVAL;
+    let countdownElement = document.getElementById('countdownTimer');
 
-    window.addEventListener('beforeunload', function() {
-        clearTimeout(refreshInterval);
+    function updateCountdown() {
+        countdownSeconds--;
+        
+        if (countdownElement) {
+            const secs = countdownSeconds.toString().padStart(2, '0');
+            countdownElement.textContent = '0:' + secs;
+            
+            countdownElement.className = 'countdown';
+            if (countdownSeconds < 5) {
+                countdownElement.classList.add('danger');
+            } else if (countdownSeconds < 10) {
+                countdownElement.classList.add('warning');
+            }
+        }
+        
+        if (countdownSeconds <= 0) {
+            countdownSeconds = REFRESH_INTERVAL;
+            location.reload();
+        }
+    }
+
+    // ====================== FETCH ESP STATUS REAL-TIME ======================
+    function fetchEspStatus() {
+        fetch('/api/smoke/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const esp = data.data;
+                    const isOnline = esp.device_status === 'ONLINE';
+                    
+                    // Update dot
+                    const dot = document.getElementById('espDot');
+                    if (dot) {
+                        dot.style.background = isOnline ? '#10b981' : '#ef4444';
+                        dot.style.boxShadow = isOnline ? '0 0 20px rgba(16,185,129,0.4)' : '0 0 20px rgba(239,68,68,0.4)';
+                    }
+                    
+                    // Update status text
+                    const statusText = document.getElementById('espStatusText');
+                    if (statusText) {
+                        statusText.textContent = esp.device_status;
+                    }
+                    
+                    // Update last seen
+                    const lastSeen = document.getElementById('espLastSeen');
+                    if (lastSeen) {
+                        if (isOnline && esp.last_seen_human) {
+                            lastSeen.textContent = '✅ Terakhir: ' + esp.last_seen_human;
+                        } else {
+                            lastSeen.textContent = '❌ Tidak ada data (offline)';
+                        }
+                    }
+                    
+                    // Update PPM
+                    const ppm = document.getElementById('espPpm');
+                    if (ppm) {
+                        ppm.textContent = esp.ppm + ' ppm';
+                    }
+                    
+                    // Update smoke status
+                    const statusBadge = document.getElementById('espSmokeStatus');
+                    if (statusBadge) {
+                        const status = esp.status || 'NORMAL';
+                        statusBadge.textContent = status;
+                        statusBadge.className = 'status-badge ' + status.toLowerCase();
+                        if (status === 'DANGER') {
+                            statusBadge.style.background = '#fee2e2';
+                            statusBadge.style.color = '#991b1b';
+                        } else if (status === 'WARNING') {
+                            statusBadge.style.background = '#fef3c7';
+                            statusBadge.style.color = '#92400e';
+                        } else {
+                            statusBadge.style.background = '#d1fae5';
+                            statusBadge.style.color = '#065f46';
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching ESP status:', error));
+    }
+
+    // ====================== INIT ======================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Start countdown
+        setInterval(updateCountdown, 1000);
+        
+        // Fetch ESP status pertama kali
+        setTimeout(fetchEspStatus, 1000);
+        
+        // Fetch ESP status setiap 3 detik
+        setInterval(fetchEspStatus, 3000);
     });
 </script>
 @endsection
