@@ -324,6 +324,9 @@ class ServiceMonitorService
         $this->saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action);
     }
 
+    /**
+     * 🔥 SAVE RESULT DENGAN LOGIKA PENGIRIMAN WA YANG DIPERBAIKI
+     */
     private function saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action)
     {
         $service->update([
@@ -335,6 +338,7 @@ class ServiceMonitorService
         ]);
 
         if ($oldStatus != $status) {
+            // 🔥 BUAT LOG
             ServiceLog::create([
                 'service_id' => $service->id,
                 'status' => $status,
@@ -347,8 +351,33 @@ class ServiceMonitorService
 
             Log::info("📝 Log dibuat untuk {$service->name}: {$oldStatus} → {$status}");
 
-            $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
+            // 🔥 CEK APAKAH INI SERVICE BARU (BELUM PERNAH ADA LOG SEBELUMNYA)
+            $logCount = ServiceLog::where('service_id', $service->id)->count();
+            
+            // 🔥 LOGIKA PENGIRIMAN WA
+            $shouldSendWA = false;
+            
+            if ($logCount == 1) {
+                // 🔥 SERVICE BARU (hanya 1 log yaitu yang baru dibuat)
+                if (in_array($status, ['DOWN', 'WARNING'])) {
+                    $shouldSendWA = true;
+                    Log::info("📱 Service baru {$service->name} dengan status {$status} → KIRIM WA");
+                } else {
+                    Log::info("📱 Service baru {$service->name} dengan status UP → TIDAK KIRIM WA");
+                }
+            } else {
+                // 🔥 SERVICE LAMA (sudah ada log sebelumnya) - KIRIM UNTUK SEMUA PERUBAHAN
+                $shouldSendWA = true;
+                Log::info("📱 Perubahan status {$service->name}: {$oldStatus} → {$status} → KIRIM WA");
+            }
+
+            // 🔥 KIRIM WA JIKA MEMENUHI SYARAT
+            if ($shouldSendWA) {
+                $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
+            }
+
         } else {
+            // 🔥 STATUS TIDAK BERUBAH - UPDATE WAKTU SAJA
             $lastLog = ServiceLog::where('service_id', $service->id)
                 ->latest()
                 ->first();
@@ -464,7 +493,7 @@ class ServiceMonitorService
     }
 
     /**
-     * 🔥 KIRIM WA - HANYA UNTUK SERVICE (DOWN, WARNING, UP)
+     * 🔥 KIRIM WA - HANYA UNTUK PERUBAHAN STATUS (DOWN, WARNING, UP)
      * PESAN SIMPEL & RINGKAS
      */
     private function sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action)

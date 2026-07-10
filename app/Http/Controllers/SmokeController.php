@@ -14,15 +14,25 @@ class SmokeController extends Controller
 {
     /**
      * ============================================================
-     *  🔥 KONFIGURASI THRESHOLD PPM (Ubah angka di sini!)
+     *  🔥 KONFIGURASI THRESHOLD PPM
      * ============================================================
      *  NORMAL   : 0 - (WARNING_THRESHOLD - 1)
      *  WARNING  : WARNING_THRESHOLD - (DANGER_THRESHOLD - 1)
      *  DANGER   : >= DANGER_THRESHOLD
      * ============================================================
      */
-    private const WARNING_THRESHOLD = 200;  // Mulai Warning dari 200 ppm
-    private const DANGER_THRESHOLD  = 500;  // Mulai Danger dari 500 ppm
+    private const WARNING_THRESHOLD = 700;  // Mulai Warning dari 700 ppm
+    private const DANGER_THRESHOLD  = 1000; // Mulai Danger dari 1000 ppm
+
+    /**
+     * ============================================================
+     *  🔧 KONFIGURASI PENGIRIMAN WA
+     * ============================================================
+     *  COOLDOWN_MINUTES: Minimal jeda pengiriman WA (menit)
+     *  Agar tidak spam WA jika status tetap WARNING/DANGER
+     * ============================================================
+     */
+    private const WA_COOLDOWN_MINUTES = 5; // Kirim ulang setiap 5 menit jika masih WARNING/DANGER
 
     /**
      * ============================================================
@@ -52,16 +62,13 @@ class SmokeController extends Controller
         $online = SmokeDevice::where('device_status', 'ONLINE')->count();
         $offline = SmokeDevice::where('device_status', 'OFFLINE')->count();
         
-        // 🔥 Reset counter
         $normal = 0;
         $warning = 0;
         $danger = 0;
 
-        // 🔥 Loop setiap device untuk tentukan status berdasarkan PPM
         foreach ($devices as $device) {
             $ppm = $device->smoke_value ?? 0;
             
-            // 🔥 LOGIKA PENENTUAN STATUS (Gunakan konstanta di atas)
             if ($ppm >= self::DANGER_THRESHOLD) {
                 $danger++;
                 $device->status = 'DANGER';
@@ -83,24 +90,22 @@ class SmokeController extends Controller
             }
         }
 
-        // ==================== CHART LOGS (20 data terakhir) ====================
+        // ==================== CHART LOGS ====================
         $chartLogs = SmokeLog::latest()
             ->take(20)
             ->get()
             ->reverse()
             ->values();
 
-        // ==================== LOGS UNTUK TABEL (dengan pagination) ====================
+        // ==================== LOGS UNTUK TABEL ====================
         $perPage = $request->input('perPage', 10);
         $smokeLogs = SmokeLog::with('device')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage)
             ->appends(['perPage' => $perPage]);
 
-        // ==================== ONLINE COUNT UNTUK ESP STATUS ====================
         $onlineCount = $online;
 
-        // ==================== KIRIM KE VIEW ====================
         return view('smoke', compact(
             'devices',
             'totalDevice',
@@ -127,14 +132,13 @@ class SmokeController extends Controller
     public function receiveData(Request $request)
     {
         try {
-            // 🔥 VALIDASI INPUT
             $validated = $request->validate([
                 'ppm' => 'required|integer|min:0|max:10000',
             ]);
 
             $ppm = $validated['ppm'];
 
-            // 🔥 CARI ATAU BUAT DEVICE (HANYA 1)
+            // CARI ATAU BUAT DEVICE
             $device = SmokeDevice::first();
             if (!$device) {
                 $device = SmokeDevice::create([
@@ -144,13 +148,14 @@ class SmokeController extends Controller
                     'smoke_value' => $ppm,
                     'status' => 'NORMAL',
                     'last_seen_at' => Carbon::now(),
+                    'last_wa_sent_at' => null,
                 ]);
             }
 
-            // 🔥 SIMPAN STATUS LAMA UNTUK CEK PERUBAHAN
+            // STATUS LAMA
             $oldStatus = $device->status;
 
-            // 🔥 TENTUKAN STATUS BERDASARKAN PPM
+            // TENTUKAN STATUS
             if ($ppm >= self::DANGER_THRESHOLD) {
                 $status = 'DANGER';
                 $message = "🔥 Asap tinggi! {$ppm} ppm - Segera periksa!";
@@ -165,7 +170,7 @@ class SmokeController extends Controller
                 $icon = '✅';
             }
 
-            // 🔥 UPDATE DEVICE
+            // UPDATE DEVICE
             $device->update([
                 'smoke_value' => $ppm,
                 'status' => $status,
@@ -173,7 +178,7 @@ class SmokeController extends Controller
                 'last_seen_at' => Carbon::now(),
             ]);
 
-            // 🔥 SIMPAN LOG
+            // SIMPAN LOG
             $log = SmokeLog::create([
                 'smoke_device_id' => $device->id,
                 'smoke_value' => $ppm,
@@ -181,15 +186,66 @@ class SmokeController extends Controller
                 'message' => $message,
             ]);
 
-            // 🔥 KIRIM WA JIKA STATUS BERUBAH (NORMAL → WARNING/DANGER)
-            if ($oldStatus != $status) {
-                $this->sendSmokeAlert($device, $ppm, $status);
+            // ============================================================
+            // 🔥 KIRIM WA - HANYA UNTUK WARNING & DANGER (TIDAK UNTUK NORMAL)
+            // ============================================================
+            $shouldSendWA = false;
+            $waReason = '';
+
+            // 🔥 CEK APAKAH STATUS SEKARANG WARNING ATAU DANGER
+            $isWarningOrDanger = in_array($status, ['WARNING', 'DANGER']);
+
+            if ($isWarningOrDanger) {
+                // 🔥 KONDISI 1: STATUS BERUBAH MENJADI WARNING/DANGER (dari NORMAL/status lain)
+                if ($oldStatus != $status) {
+                    $shouldSendWA = true;
+                    $waReason = 'Status berubah dari ' . $oldStatus . ' ke ' . $status;
+                } 
+                // 🔥 KONDISI 2: STATUS TETAP WARNING/DANGER & MELEWATI COOLDOWN
+                else {
+                    $lastWaSent = $device->last_wa_sent_at;
+                    
+                    if (!$lastWaSent) {
+                        // Belum pernah kirim WA
+                        $shouldSendWA = true;
+                        $waReason = 'Pertama kali status ' . $status;
+                    } else {
+                        // Cek cooldown
+                        $minutesSinceLastWA = Carbon::parse($lastWaSent)->diffInMinutes(now());
+                        if ($minutesSinceLastWA >= self::WA_COOLDOWN_MINUTES) {
+                            $shouldSendWA = true;
+                            $waReason = 'Status ' . $status . ' berlanjut (cooldown ' . self::WA_COOLDOWN_MINUTES . ' menit)';
+                        }
+                    }
+                }
+            } else {
+                // 🔥 STATUS NORMAL - TIDAK KIRIM WA
+                Log::info("⏭️ WA tidak dikirim: Status NORMAL ({$ppm} ppm)");
             }
 
-            // 🔥 LOG KE FILE (untuk debugging)
+            // 🔥 KIRIM WA JIKA MEMENUHI SYARAT
+            if ($shouldSendWA) {
+                $this->sendSmokeAlert($device, $ppm, $status);
+                
+                // 🔥 UPDATE WAKTU TERAKHIR KIRIM WA
+                $device->update([
+                    'last_wa_sent_at' => Carbon::now(),
+                ]);
+                
+                Log::info("📱 WA dikirim: {$waReason} - {$status} ({$ppm} ppm)");
+            } else {
+                // Log jika tidak kirim
+                if (!$isWarningOrDanger) {
+                    Log::info("⏭️ WA tidak dikirim: Status NORMAL - kondisi aman");
+                } else {
+                    Log::info("⏭️ WA tidak dikirim: Status {$status}, masih dalam cooldown");
+                }
+            }
+
+            // LOG KE FILE
             Log::info("📡 Data dari ESP32: {$ppm} ppm - {$status}");
 
-            // 🔥 RESPONSE SUKSES
+            // RESPONSE
             return response()->json([
                 'success' => true,
                 'message' => 'Data berhasil dikirim',
@@ -202,6 +258,8 @@ class SmokeController extends Controller
                     'log_id' => $log->id,
                     'device_name' => $device->name,
                     'created_at' => $log->created_at->format('Y-m-d H:i:s'),
+                    'wa_sent' => $shouldSendWA,
+                    'wa_reason' => $waReason,
                 ]
             ], 201);
 
@@ -223,12 +281,19 @@ class SmokeController extends Controller
 
     /**
      * ============================================================
-     *  🔥 KIRIM WHATSAPP ALERT UNTUK ASAP (WARNING/DANGER)
+     *  🔥 KIRIM WHATSAPP ALERT UNTUK ASAP
+     *  HANYA UNTUK WARNING & DANGER
      *  PESAN SINGKAT & RINGKAS
      * ============================================================
      */
     private function sendSmokeAlert($device, $ppm, $status)
     {
+        // 🔥 HANYA KIRIM UNTUK WARNING ATAU DANGER
+        if (!in_array($status, ['WARNING', 'DANGER'])) {
+            Log::info("⏭️ WA tidak dikirim: Status {$status} (hanya WARNING/DANGER)");
+            return;
+        }
+
         $contacts = Contact::where('is_active', true)->get();
 
         if ($contacts->isEmpty()) {
@@ -236,13 +301,13 @@ class SmokeController extends Controller
             return;
         }
 
-        // 🔥 PESAN SINGKAT
+        // 🔥 PESAN BERDASARKAN STATUS
         if ($status == 'DANGER') {
             $message = 
 "🔴 DANGER! ASAP TINGGI!
 
-📊 Nilai Asap  {$ppm} ppm
-⚠️ Status : DANGER
+📊 Nilai Asap : {$ppm} ppm
+⚠️ Status    : DANGER
 
 🔍 TINDAKAN:
 1️⃣  SEGERA EVAKUASI!
@@ -255,8 +320,8 @@ class SmokeController extends Controller
             $message = 
 "🟡 PERINGATAN ASAP!
 
-📊 Nilai Asap  {$ppm} ppm
-⚠️ Status : WARNING
+📊 Nilai Asap : {$ppm} ppm
+⚠️ Status    : WARNING
 
 🔍 TINDAKAN:
 1️⃣  Periksa sumber asap
@@ -266,7 +331,7 @@ class SmokeController extends Controller
 🕐 " . now()->format('d-m-Y H:i:s');
         }
 
-        // 🔥 KIRIM KE SEMUA KONTAK AKTIF
+        // KIRIM KE SEMUA KONTAK AKTIF
         foreach ($contacts as $contact) {
             $result = FonnteService::send($contact->phone, $message);
             if ($result) {
@@ -433,7 +498,6 @@ class SmokeController extends Controller
             $devices = SmokeDevice::all()->map(function($device) {
                 $ppm = $device->smoke_value ?? 0;
                 
-                // 🔥 Tentukan status
                 if ($ppm >= self::DANGER_THRESHOLD) {
                     $status = 'DANGER';
                     $label = '🔴 DANGER';
@@ -492,7 +556,6 @@ class SmokeController extends Controller
                 'danger' => 'required|integer|min:0|gt:warning',
             ]);
 
-            // Simpan ke database atau config
             config(['smoke.thresholds.warning' => $request->warning]);
             config(['smoke.thresholds.danger' => $request->danger]);
 
@@ -525,43 +588,32 @@ class SmokeController extends Controller
      * ============================================================
      *  📥 EXPORT LOGS KE CSV
      *  ============================================================
-     *  🔗 URL: GET /smoke-detector/export
-     *  🔑 Butuh Auth (user login)
-     *  📦 Filter (opsional): ?date_from=2026-01-01&date_to=2026-01-31&status=WARNING
-     * ============================================================
      */
     public function export(Request $request)
     {
         try {
-            // 🔥 AMBIL SEMUA LOG DENGAN FILTER (OPSIONAL)
             $query = SmokeLog::with('device')->orderBy('created_at', 'desc');
 
-            // Filter berdasarkan tanggal (opsional)
             if ($request->has('date_from') && $request->date_from) {
                 $query->whereDate('created_at', '>=', $request->date_from);
             }
             if ($request->has('date_to') && $request->date_to) {
                 $query->whereDate('created_at', '<=', $request->date_to);
             }
-
-            // Filter berdasarkan status (opsional)
             if ($request->has('status') && $request->status) {
                 $query->where('status', $request->status);
             }
 
             $logs = $query->get();
 
-            // Jika tidak ada data
             if ($logs->isEmpty()) {
                 return redirect()
                     ->back()
                     ->with('warning', 'Tidak ada data untuk diexport');
             }
 
-            // Nama file
             $filename = 'smoke_logs_' . date('Y-m-d_H-i-s') . '.csv';
 
-            // Header CSV
             $headers = [
                 'Content-Type' => 'text/csv; charset=UTF-8',
                 'Content-Disposition' => "attachment; filename=\"$filename\"",
@@ -570,14 +622,10 @@ class SmokeController extends Controller
                 'Expires' => '0'
             ];
 
-            // 🔥 BUAT CSV
             $callback = function() use ($logs) {
                 $file = fopen('php://output', 'w');
-                
-                // BOM untuk UTF-8 (biar Excel baca dengan benar)
                 fputs($file, "\xEF\xBB\xBF");
 
-                // 🔥 HEADER CSV
                 fputcsv($file, [
                     'No',
                     'Tanggal & Waktu',
@@ -587,10 +635,8 @@ class SmokeController extends Controller
                     'Keterangan'
                 ]);
 
-                // 🔥 DATA
                 $no = 1;
                 foreach ($logs as $log) {
-                    // Tentukan status label
                     $statusLabel = $log->status ?? 'NORMAL';
                     $statusIcon = match($statusLabel) {
                         'DANGER' => '🔴 DANGER',
@@ -598,7 +644,6 @@ class SmokeController extends Controller
                         default => '🟢 NORMAL',
                     };
 
-                    // Tentukan pesan
                     $message = $log->message ?? match($statusLabel) {
                         'DANGER' => '🔥 Asap tinggi! Periksa segera!',
                         'WARNING' => '⚠️ Asap mulai terdeteksi, waspada!',

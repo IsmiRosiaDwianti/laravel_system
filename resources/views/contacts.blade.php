@@ -27,6 +27,18 @@
         box-shadow: 0 10px 40px rgba(13, 59, 102, 0.3);
     }
 
+    .contacts-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
     .contacts-header .header-left {
         display: flex;
         align-items: center;
@@ -101,6 +113,91 @@
         height: 18px;
     }
 
+    /* ================= SEARCH BOX ================= */
+    .search-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        max-width: 400px;
+    }
+
+    .search-wrapper .search-input-wrap {
+        position: relative;
+        flex: 1;
+    }
+
+    .search-wrapper .search-input-wrap .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 16px;
+        pointer-events: none;
+    }
+
+    .search-wrapper .search-input-wrap input {
+        width: 100%;
+        padding: 8px 14px 8px 36px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+        background: #fafbfc;
+        outline: none;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+
+    .search-wrapper .search-input-wrap input:focus {
+        border-color: #25D366;
+        box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+        background: white;
+    }
+
+    .search-wrapper .btn-search {
+        background: #25D366;
+        color: white;
+        padding: 8px 20px;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .search-wrapper .btn-search:hover {
+        background: #1da851;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    }
+
+    .search-wrapper .btn-reset {
+        background: #e2e8f0;
+        color: #475569;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .search-wrapper .btn-reset:hover {
+        background: #cbd5e1;
+        transform: translateY(-1px);
+    }
+
     /* ================= TOAST ================= */
     .toast-container {
         position: fixed;
@@ -126,37 +223,16 @@
         gap: 14px;
     }
 
-    .toast.hide {
-        animation: slideOutRight 0.4s ease forwards;
-    }
-
+    .toast.hide { animation: slideOutRight 0.4s ease forwards; }
     .toast-success { border-left-color: #10b981; }
     .toast-error { border-left-color: #ef4444; }
     .toast-warning { border-left-color: #f59e0b; }
     .toast-info { border-left-color: #3b82f6; }
 
-    .toast .toast-icon {
-        font-size: 24px;
-        flex-shrink: 0;
-        margin-top: 2px;
-    }
-
-    .toast .toast-content {
-        flex: 1;
-    }
-
-    .toast .toast-title {
-        font-weight: 600;
-        font-size: 14px;
-        color: #0f172a;
-    }
-
-    .toast .toast-message {
-        font-size: 13px;
-        color: #64748b;
-        margin-top: 2px;
-    }
-
+    .toast .toast-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
+    .toast .toast-content { flex: 1; }
+    .toast .toast-title { font-weight: 600; font-size: 14px; color: #0f172a; }
+    .toast .toast-message { font-size: 13px; color: #64748b; margin-top: 2px; }
     .toast .toast-close {
         background: none;
         border: none;
@@ -167,16 +243,12 @@
         line-height: 1;
         transition: color 0.2s ease;
     }
-
-    .toast .toast-close:hover {
-        color: #475569;
-    }
+    .toast .toast-close:hover { color: #475569; }
 
     @keyframes slideInRight {
         from { transform: translateX(120%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
     }
-
     @keyframes slideOutRight {
         from { transform: translateX(0); opacity: 1; }
         to { transform: translateX(120%); opacity: 0; }
@@ -200,6 +272,13 @@
         flex-wrap: wrap;
         gap: 12px;
         background: #fafbfc;
+    }
+
+    .table-header .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .table-header h2 {
@@ -228,7 +307,6 @@
         color: #0f172a;
     }
 
-    /* PerPage Selector */
     .perpage-selector {
         display: flex;
         align-items: center;
@@ -287,15 +365,9 @@
         vertical-align: middle;
     }
 
-    .table-container tbody tr:last-child td {
-        border-bottom: none;
-    }
+    .table-container tbody tr:last-child td { border-bottom: none; }
+    .table-container tbody tr:hover { background: #f8fafc; }
 
-    .table-container tbody tr:hover {
-        background: #f8fafc;
-    }
-
-    /* Contact Info */
     .contact-info {
         display: flex;
         align-items: center;
@@ -338,7 +410,6 @@
         display: inline-block;
     }
 
-    /* Actions */
     .action-buttons {
         display: flex;
         gap: 6px;
@@ -403,23 +474,31 @@
         color: #94a3b8;
     }
 
-    .empty-state .empty-icon {
-        font-size: 48px;
-        display: block;
-        margin-bottom: 12px;
-        opacity: 0.6;
-    }
+    .empty-state .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; opacity: 0.6; }
+    .empty-state h3 { color: #0f172a; font-size: 18px; margin: 0 0 8px; font-weight: 600; }
+    .empty-state p { margin: 0; font-size: 14px; }
 
-    .empty-state h3 {
-        color: #0f172a;
-        font-size: 18px;
-        margin: 0 0 8px;
-        font-weight: 600;
-    }
-
-    .empty-state p {
-        margin: 0;
+    .btn-empty-primary {
+        background: #25D366;
+        color: white;
+        padding: 10px 24px;
+        border: none;
+        border-radius: 10px;
         font-size: 14px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        font-family: inherit;
+        margin-top: 16px;
+    }
+
+    .btn-empty-primary:hover {
+        background: #1da851;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
     }
 
     /* Pagination */
@@ -435,14 +514,8 @@
         gap: 12px;
     }
 
-    .pagination-info {
-        font-size: 13px;
-        color: #64748b;
-    }
-
-    .pagination-info strong {
-        color: #0f172a;
-    }
+    .pagination-info { font-size: 13px; color: #64748b; }
+    .pagination-info strong { color: #0f172a; }
 
     .pagination-links {
         display: flex;
@@ -483,10 +556,7 @@
         pointer-events: none;
     }
 
-    .pagination-links .page-dots {
-        padding: 6px 4px;
-        color: #94a3b8;
-    }
+    .pagination-links .page-dots { padding: 6px 4px; color: #94a3b8; }
 
     /* ================= MODAL ================= */
     .modal-overlay {
@@ -504,9 +574,7 @@
         animation: fadeIn 0.3s ease;
     }
 
-    .modal-overlay.active {
-        display: flex;
-    }
+    .modal-overlay.active { display: flex; }
 
     .modal-content {
         background: white;
@@ -573,19 +641,9 @@
         overflow-y: auto;
     }
 
-    .modal-body::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .modal-body::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 10px;
-    }
-
-    .modal-body::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-    }
+    .modal-body::-webkit-scrollbar { width: 6px; }
+    .modal-body::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    .modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
     .modal-footer {
         padding: 16px 24px;
@@ -598,10 +656,7 @@
     }
 
     /* ================= FORM DALAM MODAL ================= */
-    .modal-body .form-group {
-        margin-bottom: 18px;
-    }
-
+    .modal-body .form-group { margin-bottom: 18px; }
     .modal-body .form-group label {
         display: block;
         font-size: 14px;
@@ -610,16 +665,8 @@
         margin-bottom: 6px;
     }
 
-    .modal-body .form-group label .required {
-        color: #ef4444;
-        margin-left: 2px;
-    }
-
-    .modal-body .form-group .helper-text {
-        font-size: 12px;
-        color: #94a3b8;
-        margin-top: 4px;
-    }
+    .modal-body .form-group label .required { color: #ef4444; margin-left: 2px; }
+    .modal-body .form-group .helper-text { font-size: 12px; color: #94a3b8; margin-top: 4px; }
 
     .modal-body .form-control {
         width: 100%;
@@ -639,9 +686,7 @@
         background: white;
     }
 
-    .modal-body .form-control.error {
-        border-color: #ef4444;
-    }
+    .modal-body .form-control.error { border-color: #ef4444; }
 
     .modal-body select.form-control {
         appearance: none;
@@ -673,20 +718,9 @@
         gap: 10px;
     }
 
-    .modal-body .info-box .info-icon {
-        font-size: 18px;
-        margin-top: 1px;
-    }
-
-    .modal-body .info-box .info-content {
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .modal-body .info-box .info-content strong {
-        display: block;
-        margin-bottom: 2px;
-    }
+    .modal-body .info-box .info-icon { font-size: 18px; margin-top: 1px; }
+    .modal-body .info-box .info-content { font-size: 13px; line-height: 1.5; }
+    .modal-body .info-box .info-content strong { display: block; margin-bottom: 2px; }
 
     .btn-submit-modal {
         background: linear-gradient(135deg, #25D366, #128C7E);
@@ -770,9 +804,7 @@
         animation: fadeIn 0.3s ease;
     }
 
-    .modal-delete-overlay.active {
-        display: flex;
-    }
+    .modal-delete-overlay.active { display: flex; }
 
     .modal-delete-content {
         background: white;
@@ -785,42 +817,13 @@
         animation: slideUp 0.3s ease;
     }
 
-    .modal-delete-content .delete-icon {
-        font-size: 56px;
-        margin-bottom: 12px;
-    }
+    .modal-delete-content .delete-icon { font-size: 56px; margin-bottom: 12px; }
+    .modal-delete-content h3 { margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: #0f172a; }
+    .modal-delete-content p { margin: 0 0 4px 0; color: #64748b; font-size: 14px; }
+    .modal-delete-content .delete-name { font-weight: 700; color: #0f172a; font-size: 16px; margin: 8px 0 20px 0; }
+    .modal-delete-content .delete-warning { color: #94a3b8; font-size: 13px; margin-bottom: 24px; }
 
-    .modal-delete-content h3 {
-        margin: 0 0 8px 0;
-        font-size: 20px;
-        font-weight: 700;
-        color: #0f172a;
-    }
-
-    .modal-delete-content p {
-        margin: 0 0 4px 0;
-        color: #64748b;
-        font-size: 14px;
-    }
-
-    .modal-delete-content .delete-name {
-        font-weight: 700;
-        color: #0f172a;
-        font-size: 16px;
-        margin: 8px 0 20px 0;
-    }
-
-    .modal-delete-content .delete-warning {
-        color: #94a3b8;
-        font-size: 13px;
-        margin-bottom: 24px;
-    }
-
-    .modal-delete-content .delete-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-    }
+    .modal-delete-content .delete-actions { display: flex; gap: 12px; justify-content: center; }
 
     .btn-delete-cancel {
         padding: 10px 24px;
@@ -885,6 +888,9 @@
         .perpage-selector { font-size: 12px; }
         .perpage-selector select { padding: 4px 8px; font-size: 12px; }
         .table-header { flex-direction: column; align-items: stretch; gap: 8px; }
+        .search-wrapper { max-width: 100%; flex-wrap: wrap; }
+        .search-wrapper .btn-search,
+        .search-wrapper .btn-reset { flex: 1; justify-content: center; padding: 8px 12px; font-size: 12px; }
     }
 
     @media (max-width: 480px) {
@@ -905,8 +911,26 @@
         .modal-delete-content h3 { font-size: 17px; }
         .perpage-selector { font-size: 11px; }
         .perpage-selector select { padding: 3px 6px; font-size: 11px; }
+        .search-wrapper .btn-search,
+        .search-wrapper .btn-reset { font-size: 11px; padding: 6px 10px; }
+        .search-wrapper .search-input-wrap input { padding: 6px 10px 6px 32px; font-size: 12px; }
+        .search-wrapper .search-input-wrap .search-icon { font-size: 13px; left: 10px; }
     }
 </style>
+
+<!-- ================= DATA CONTACT UNTUK INSTANT EDIT ================= -->
+<script>
+    // 🔥 SIMPAN DATA SEMUA CONTACT DALAM JAVASCRIPT (INSTANT ACCESS)
+    const contactsMap = {};
+    @foreach($contacts as $contact)
+        contactsMap[{{ $contact->id }}] = {
+            id: {{ $contact->id }},
+            name: '{{ addslashes($contact->name) }}',
+            phone: '{{ addslashes($contact->phone) }}',
+            is_active: {{ $contact->is_active ?? 1 }}
+        };
+    @endforeach
+</script>
 
 <div class="contacts-container">
     <!-- ================= TOAST CONTAINER ================= -->
@@ -934,7 +958,25 @@
     <!-- ================= TABLE ================= -->
     <div class="table-container">
         <div class="table-header">
-            <h2>📋 Daftar Kontak WhatsApp</h2>
+            <div class="header-left">
+                <h2>📋 Daftar Kontak WhatsApp</h2>
+            </div>
+
+            <!-- ================= SEARCH BOX ================= -->
+            <div class="search-wrapper">
+                <div class="search-input-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        id="searchContact" 
+                        placeholder="Cari kontak..." 
+                        autocomplete="off"
+                    >
+                </div>
+                <button onclick="searchContacts()" class="btn-search">🔍 Cari</button>
+                <button onclick="resetSearch()" class="btn-reset">↺ Reset</button>
+            </div>
+
             <div class="header-right">
                 <div class="perpage-selector">
                     <label for="perPage">Tampilkan:</label>
@@ -946,7 +988,7 @@
                     </select>
                     <span>data</span>
                 </div>
-                <span class="table-info">
+                <span class="table-info" id="tableInfo">
                     Total <strong>{{ $contacts->total() }}</strong> kontak
                 </span>
             </div>
@@ -962,7 +1004,7 @@
                         <th style="width: 170px;">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     @forelse($contacts as $index => $contact)
                         @php
                             $colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6'];
@@ -997,10 +1039,7 @@
                                     <span class="empty-icon">📭</span>
                                     <h3>Belum Ada Kontak</h3>
                                     <p>Mulai dengan menambahkan kontak WhatsApp pertama Anda</p>
-                                    <br>
-                                    <button onclick="openCreateModal()" class="btn-primary" style="display: inline-flex; background: #25D366; border: none; color: white;">
-                                        + Tambah Kontak
-                                    </button>
+                                    <button onclick="openCreateModal()" class="btn-empty-primary">+ Tambah Kontak</button>
                                 </div>
                             </td>
                         </tr>
@@ -1011,19 +1050,17 @@
 
         <!-- Pagination -->
         @if($contacts->hasPages())
-        <div class="pagination-wrapper">
+        <div class="pagination-wrapper" id="paginationWrapper">
             <div class="pagination-info">
                 Menampilkan <strong>{{ $contacts->firstItem() ?? 0 }}</strong> - <strong>{{ $contacts->lastItem() ?? 0 }}</strong> dari <strong>{{ $contacts->total() }}</strong> data
             </div>
             <div class="pagination-links">
-                {{-- Previous Page --}}
                 @if($contacts->onFirstPage())
                     <span class="page-link disabled">‹</span>
                 @else
                     <a href="{{ $contacts->previousPageUrl() }}" class="page-link">‹</a>
                 @endif
 
-                {{-- Pagination Elements --}}
                 @php
                     $start = max(1, $contacts->currentPage() - 2);
                     $end = min($contacts->lastPage(), $contacts->currentPage() + 2);
@@ -1051,7 +1088,6 @@
                     <a href="{{ $contacts->url($contacts->lastPage()) }}" class="page-link">{{ $contacts->lastPage() }}</a>
                 @endif
 
-                {{-- Next Page --}}
                 @if($contacts->hasMorePages())
                     <a href="{{ $contacts->nextPageUrl() }}" class="page-link">›</a>
                 @else
@@ -1074,7 +1110,6 @@
             <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <!-- Info Box -->
             <div class="info-box">
                 <span class="info-icon">ℹ️</span>
                 <div class="info-content">
@@ -1089,7 +1124,6 @@
                 <input type="hidden" name="_method" id="formMethod" value="POST">
                 <input type="hidden" name="contact_id" id="contactId" value="">
 
-                <!-- Nama -->
                 <div class="form-group">
                     <label for="modal_name">
                         Nama Kontak
@@ -1106,7 +1140,6 @@
                     <div class="helper-text">Nama lengkap atau nama panggilan kontak</div>
                 </div>
 
-                <!-- Nomor WhatsApp -->
                 <div class="form-group">
                     <label for="modal_phone">
                         Nomor WhatsApp
@@ -1123,7 +1156,6 @@
                     <div class="helper-text">Masukkan nomor dengan format internasional (tanpa +, spasi, atau tanda hubung)</div>
                 </div>
 
-                <!-- Status Aktif (Hidden) -->
                 <input type="hidden" name="is_active" value="1">
             </form>
         </div>
@@ -1153,8 +1185,11 @@
     </div>
 </div>
 
-<!-- ================= SCRIPT ================= -->
 <script>
+    // ================= VARIABEL GLOBAL =================
+    let searchTimeout = null;
+
+    // ================= DOM READY =================
     document.addEventListener('DOMContentLoaded', function() {
         @if(session('success'))
             showToast('success', 'Berhasil!', '{{ session('success') }}');
@@ -1168,13 +1203,40 @@
         @if(session('info'))
             showToast('info', 'Info', '{{ session('info') }}');
         @endif
+
+        // 🔥 SEARCH WITH DEBOUNCE
+        const searchInput = document.getElementById('searchContact');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchContacts();
+                }
+            });
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length === 0) {
+                    resetSearch();
+                    return;
+                }
+                
+                if (query.length >= 2) {
+                    searchTimeout = setTimeout(function() {
+                        searchContacts();
+                    }, 500);
+                }
+            });
+        }
     });
 
     // ================= CHANGE PER PAGE =================
     function changePerPage(value) {
         let url = new URL(window.location.href);
         url.searchParams.set('perPage', value);
-        url.searchParams.set('page', '1'); // Reset ke halaman pertama
+        url.searchParams.set('page', '1');
         window.location.href = url.toString();
     }
 
@@ -1201,6 +1263,122 @@
                 setTimeout(() => toast.remove(), 400);
             }
         }, 5000);
+    }
+
+    // ================= SEARCH CONTACTS (AJAX) - TANPA ALERT PROSES =================
+    function searchContacts() {
+        const query = document.getElementById('searchContact').value.trim();
+        
+        if (query.length === 0) {
+            showToast('warning', 'Peringatan!', 'Masukkan kata kunci pencarian');
+            return;
+        }
+        
+        fetch(`/contacts/search?q=${encodeURIComponent(query)}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderSearchResult(data.data, data.pagination);
+                showToast('success', 'Berhasil!', 'Ditemukan ' + data.data.length + ' data');
+            } else {
+                showToast('error', 'Gagal!', data.message || 'Gagal mencari data');
+            }
+        })
+        .catch(error => {
+            showToast('error', 'Error!', 'Terjadi kesalahan: ' + error.message);
+        });
+    }
+
+    function resetSearch() {
+        document.getElementById('searchContact').value = '';
+        window.location.reload();
+    }
+
+    function renderSearchResult(contacts, pagination) {
+        const tbody = document.getElementById('tableBody');
+        const info = document.getElementById('tableInfo');
+        const paginationWrapper = document.getElementById('paginationWrapper');
+        
+        if (!tbody) return;
+        
+        if (contacts.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state">
+                            <span class="empty-icon">🔍</span>
+                            <h3>Tidak Ditemukan</h3>
+                            <p>Tidak ada kontak yang sesuai dengan kata kunci pencarian</p>
+                            <button onclick="resetSearch()" class="btn-empty-primary">↺ Reset Pencarian</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            if (info) info.innerHTML = 'Total <strong>0</strong> kontak';
+            if (paginationWrapper) paginationWrapper.style.display = 'none';
+            return;
+        }
+        
+        let html = '';
+        const colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6'];
+        
+        contacts.forEach((contact, index) => {
+            const colorClass = colors[index % colors.length];
+            const initials = contact.name.substring(0, 2).toUpperCase();
+            const no = index + 1;
+            
+            html += `
+                <tr>
+                    <td><span class="contact-no">${no}</span></td>
+                    <td>
+                        <div class="contact-info">
+                            <div class="contact-avatar ${colorClass}">${initials}</div>
+                            <div>
+                                <div class="contact-name">${contact.name}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="contact-phone">${contact.phone}</span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button onclick="openEditModal(${contact.id})" class="btn-edit">✏️ Edit</button>
+                            <button onclick="openDeleteModal(${contact.id}, '${contact.name.replace(/'/g, "\\'")}')" class="btn-delete">🗑️ Hapus</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+        
+        if (info && pagination) {
+            info.innerHTML = `Total <strong>${pagination.total || 0}</strong> kontak`;
+        }
+        
+        if (paginationWrapper) {
+            paginationWrapper.style.display = 'flex';
+            paginationWrapper.innerHTML = `
+                <div class="pagination-info">
+                    Menampilkan <strong>${pagination.from || 0}</strong> - <strong>${pagination.to || 0}</strong> dari <strong>${pagination.total || 0}</strong> data
+                </div>
+                <div class="pagination-links">
+                    ${pagination.prev_page_url ? `<a href="#" onclick="loadPage('${pagination.prev_page_url}')" class="page-link">‹</a>` : `<span class="page-link disabled">‹</span>`}
+                    <span class="page-link active">${pagination.current_page || 1}</span>
+                    ${pagination.next_page_url ? `<a href="#" onclick="loadPage('${pagination.next_page_url}')" class="page-link">›</a>` : `<span class="page-link disabled">›</span>`}
+                </div>
+            `;
+        }
+    }
+
+    function loadPage(url) {
+        showToast('info', 'Info', 'Fitur pagination pada hasil pencarian akan segera hadir');
     }
 
     // ================= OPEN CREATE MODAL =================
@@ -1232,54 +1410,44 @@
         }, 100);
     }
 
-    // ================= OPEN EDIT MODAL =================
+    // ================= OPEN EDIT MODAL - INSTANT! =================
     function openEditModal(id) {
-        fetch(`/contacts/${id}/edit`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                const contact = data.data;
-                const modal = document.getElementById('contactModal');
-                const title = document.getElementById('modalTitle');
-                const icon = document.getElementById('modalIcon');
-                const btnSubmit = document.getElementById('btnSubmitModal');
-                const form = document.getElementById('contactForm');
+        const modal = document.getElementById('contactModal');
+        const title = document.getElementById('modalTitle');
+        const icon = document.getElementById('modalIcon');
+        const btnSubmit = document.getElementById('btnSubmitModal');
+        const form = document.getElementById('contactForm');
 
-                document.getElementById('modal_name').value = contact.name;
-                document.getElementById('modal_phone').value = contact.phone;
-                document.getElementById('contactId').value = contact.id;
-                document.getElementById('formMethod').value = 'PUT';
-                form.action = `/contacts/${contact.id}`;
+        // 🔥 AMBIL DATA DARI CACHE (contactsMap) - INSTANT!
+        const contact = contactsMap[id];
+        
+        if (!contact) {
+            showToast('error', 'Gagal!', 'Data kontak tidak ditemukan');
+            return;
+        }
 
-                title.textContent = 'Edit Kontak';
-                icon.textContent = '✏️';
-                btnSubmit.textContent = '💾 Update Kontak';
-                btnSubmit.className = 'btn-submit-modal edit-mode';
-                btnSubmit.disabled = false;
+        // 🔥 SET MODAL TITLE & ICON
+        title.textContent = 'Edit Kontak';
+        icon.textContent = '✏️';
+        btnSubmit.textContent = '💾 Update Kontak';
+        btnSubmit.className = 'btn-submit-modal edit-mode';
+        btnSubmit.disabled = false;
 
-                document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
-                document.querySelectorAll('.error-message').forEach(el => el.remove());
+        // 🔥 ISI FORM DENGAN DATA (INSTANT, TANPA TUNGGU)
+        document.getElementById('modal_name').value = contact.name;
+        document.getElementById('modal_phone').value = contact.phone;
+        document.getElementById('contactId').value = contact.id;
+        document.getElementById('formMethod').value = 'PUT';
+        form.action = `/contacts/${contact.id}`;
 
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                setTimeout(() => {
-                    document.getElementById('modal_name').focus();
-                }, 100);
-            } else {
-                showToast('error', 'Gagal!', data.message || 'Gagal mengambil data kontak');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('error', 'Gagal!', 'Gagal mengambil data kontak');
-        });
+        document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
+        document.querySelectorAll('.error-message').forEach(el => el.remove());
+
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => {
+            document.getElementById('modal_name').focus();
+        }, 100);
     }
 
     // ================= CLOSE MODAL =================
@@ -1388,9 +1556,7 @@
     });
 
     document.getElementById('modal_phone').addEventListener('input', function() {
-        // Hanya izinkan angka
         this.value = this.value.replace(/\D/g, '');
-        
         if (/^[0-9]{10,15}$/.test(this.value.trim())) {
             this.classList.remove('error');
             removeFieldError(this);

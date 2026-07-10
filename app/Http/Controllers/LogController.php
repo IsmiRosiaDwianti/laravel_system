@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ServiceLog;
+use App\Models\SmokeLog;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,12 +12,10 @@ class LogController extends Controller
 {
     /**
      * Display a listing of the logs.
-     *
-     * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
-        // Query dasar dengan relasi service
+        // ==================== QUERY LOGS ====================
         $query = ServiceLog::with('service');
         
         // Filter berdasarkan service
@@ -38,21 +37,6 @@ class LogController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
         
-        // Filter berdasarkan perubahan status
-        if ($request->has('status_changed') && $request->status_changed == '1') {
-            $query->whereIn('id', function($subquery) {
-                $subquery->select(DB::raw('MAX(id)'))
-                    ->from('service_logs as sl1')
-                    ->whereExists(function($exists) {
-                        $exists->select(DB::raw(1))
-                            ->from('service_logs as sl2')
-                            ->whereColumn('sl2.service_id', 'sl1.service_id')
-                            ->whereColumn('sl2.created_at', '<', 'sl1.created_at')
-                            ->whereRaw('sl2.status != sl1.status');
-                    });
-            });
-        }
-        
         // Filter pencarian
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -66,32 +50,30 @@ class LogController extends Controller
             });
         }
         
-        // Urutkan dan paginate - DEFAULT 10
-        $logs = $query->latest()
+        // ==================== STATISTIK (SEBELUM PAGINATE) ====================
+        $statsQuery = clone $query;
+        $stats = [
+            'total' => $statsQuery->count(),
+            'up' => (clone $statsQuery)->where('status', 'UP')->count(),
+            'warning' => (clone $statsQuery)->where('status', 'WARNING')->count(),
+            'down' => (clone $statsQuery)->where('status', 'DOWN')->count(),
+            'unknown' => (clone $statsQuery)->where('status', 'UNKNOWN')->count(),
+        ];
+        
+        // ==================== PAGINATION ====================
+        $logs = $query->latest('created_at')
                      ->paginate($request->per_page ?? 10)
                      ->withQueryString();
         
-        // Ambil semua service untuk filter
+        // ==================== AMBIL SERVICE UNTUK FILTER ====================
         $services = Service::orderBy('name')->get();
         
-        // Statistik tambahan
-        $stats = $this->getStats();
-        
-        // Hitung jumlah log yang statusnya berubah
-        $statusChangedCount = $this->getStatusChangedCount();
-        
-        return view('logs', compact(
-            'logs',
-            'services',
-            'stats',
-            'statusChangedCount'
-        ));
+        // ==================== KIRIM KE VIEW ====================
+        return view('logs', compact('logs', 'stats', 'services'));
     }
     
     /**
      * Get statistics for logs.
-     *
-     * @return array
      */
     private function getStats()
     {
@@ -111,8 +93,6 @@ class LogController extends Controller
     
     /**
      * Get count of logs where status changed.
-     *
-     * @return int
      */
     private function getStatusChangedCount()
     {
@@ -131,15 +111,11 @@ class LogController extends Controller
     
     /**
      * Show specific log details.
-     *
-     * @param int $id
-     * @return \Illuminate\View\View
      */
     public function show($id)
     {
         $log = ServiceLog::with('service')->findOrFail($id);
         
-        // Get previous and next log for navigation
         $previousLog = ServiceLog::where('service_id', $log->service_id)
                                ->where('id', '<', $id)
                                ->latest()
@@ -150,7 +126,6 @@ class LogController extends Controller
                            ->oldest()
                            ->first();
         
-        // Get status history for this service
         $statusHistory = ServiceLog::where('service_id', $log->service_id)
                                  ->select('status', 'created_at', 'id')
                                  ->orderBy('created_at', 'desc')
@@ -167,9 +142,6 @@ class LogController extends Controller
     
     /**
      * Get status change history for a service.
-     *
-     * @param int $serviceId
-     * @return \Illuminate\Http\JsonResponse
      */
     public function getStatusHistory($serviceId)
     {
@@ -201,8 +173,6 @@ class LogController extends Controller
     
     /**
      * Get latest status for each service.
-     *
-     * @return \Illuminate\Http\JsonResponse
      */
     public function getLatestStatuses()
     {
@@ -222,9 +192,6 @@ class LogController extends Controller
     
     /**
      * Export logs to CSV.
-     *
-     * @param Request $request
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(Request $request)
     {
@@ -258,7 +225,6 @@ class LogController extends Controller
         $callback = function() use ($logs) {
             $file = fopen('php://output', 'w');
             
-            // Add CSV headers
             fputcsv($file, [
                 'ID',
                 'Service Name',
@@ -271,7 +237,6 @@ class LogController extends Controller
                 'Checked At'
             ]);
             
-            // Add data rows
             foreach ($logs as $log) {
                 fputcsv($file, [
                     $log->id,
@@ -294,9 +259,6 @@ class LogController extends Controller
     
     /**
      * Delete old logs (bulk delete).
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function bulkDelete(Request $request)
     {
@@ -316,9 +278,6 @@ class LogController extends Controller
     
     /**
      * Clear logs older than specified days.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function clearOldLogs(Request $request)
     {
@@ -335,5 +294,265 @@ class LogController extends Controller
             'deleted_count' => $deleted,
             'cutoff_date' => $cutoffDate->format('Y-m-d H:i:s'),
         ]);
+    }
+
+    // ================================================================
+    // 📡 API METHODS - UNTUK POSTMAN / MOBILE APP
+    // ================================================================
+
+    /**
+     * ============================================================
+     *  📡 API: GET ALL LOGS
+     *  ============================================================
+     *  🔗 URL: GET /api/logs
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?per_page=20&page=1&type=service
+     * ============================================================
+     */
+    public function apiIndex(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 20);
+            $type = $request->input('type'); // service / smoke
+            
+            if ($type === 'smoke') {
+                $logs = SmokeLog::orderBy('created_at', 'desc')
+                    ->paginate($perPage);
+            } else {
+                $logs = ServiceLog::with('service')
+                    ->orderBy('created_at', 'desc')
+                    ->paginate($perPage);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $logs->items(),
+                'pagination' => [
+                    'total' => $logs->total(),
+                    'per_page' => $logs->perPage(),
+                    'current_page' => $logs->currentPage(),
+                    'last_page' => $logs->lastPage(),
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil logs: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: GET SERVICE LOGS
+     *  ============================================================
+     *  🔗 URL: GET /api/logs/service
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?per_page=20&status=UP&date_from=2026-01-01&date_to=2026-01-31
+     * ============================================================
+     */
+    public function apiServiceLogs(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 20);
+            $status = $request->input('status');
+            $dateFrom = $request->input('date_from');
+            $dateTo = $request->input('date_to');
+            $serviceId = $request->input('service_id');
+
+            $query = ServiceLog::with('service');
+
+            if ($serviceId) {
+                $query->where('service_id', $serviceId);
+            }
+
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            if ($dateFrom) {
+                $query->whereDate('created_at', '>=', $dateFrom);
+            }
+
+            if ($dateTo) {
+                $query->whereDate('created_at', '<=', $dateTo);
+            }
+
+            $logs = $query->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $logs->items(),
+                'pagination' => [
+                    'total' => $logs->total(),
+                    'per_page' => $logs->perPage(),
+                    'current_page' => $logs->currentPage(),
+                    'last_page' => $logs->lastPage(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil service logs: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: GET SMOKE LOGS
+     *  ============================================================
+     *  🔗 URL: GET /api/logs/smoke
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?per_page=20&date_from=2026-01-01&date_to=2026-01-31
+     * ============================================================
+     */
+    public function apiSmokeLogs(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 20);
+            $dateFrom = $request->input('date_from');
+            $dateTo = $request->input('date_to');
+            $status = $request->input('status'); // NORMAL, WARNING, DANGER
+
+            $query = SmokeLog::orderBy('created_at', 'desc');
+
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            if ($dateFrom) {
+                $query->whereDate('created_at', '>=', $dateFrom);
+            }
+
+            if ($dateTo) {
+                $query->whereDate('created_at', '<=', $dateTo);
+            }
+
+            $logs = $query->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $logs->items(),
+                'pagination' => [
+                    'total' => $logs->total(),
+                    'per_page' => $logs->perPage(),
+                    'current_page' => $logs->currentPage(),
+                    'last_page' => $logs->lastPage(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil smoke logs: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: GET SERVICE LOGS BY ID
+     *  ============================================================
+     *  🔗 URL: GET /api/logs/service/{id}
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?per_page=20&status=UP
+     * ============================================================
+     */
+    public function apiServiceLogsById($id, Request $request)
+    {
+        try {
+            $service = Service::findOrFail($id);
+            
+            $perPage = $request->input('per_page', 20);
+            $status = $request->input('status');
+            $dateFrom = $request->input('date_from');
+            $dateTo = $request->input('date_to');
+
+            $query = ServiceLog::where('service_id', $id);
+
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            if ($dateFrom) {
+                $query->whereDate('created_at', '>=', $dateFrom);
+            }
+
+            if ($dateTo) {
+                $query->whereDate('created_at', '<=', $dateTo);
+            }
+
+            $logs = $query->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'service' => [
+                        'id' => $service->id,
+                        'name' => $service->name,
+                        'target' => $service->target,
+                        'type' => $service->type,
+                        'last_status' => $service->last_status,
+                    ],
+                    'logs' => $logs->items(),
+                    'pagination' => [
+                        'total' => $logs->total(),
+                        'per_page' => $logs->perPage(),
+                        'current_page' => $logs->currentPage(),
+                        'last_page' => $logs->lastPage(),
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil logs: ' . $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: GET LOG STATISTICS
+     *  ============================================================
+     *  🔗 URL: GET /api/logs/stats
+     *  🔑 Butuh Auth: Sanctum Token
+     * ============================================================
+     */
+    public function apiStats()
+    {
+        try {
+            $stats = [
+                'total' => ServiceLog::count(),
+                'up' => ServiceLog::where('status', 'UP')->count(),
+                'warning' => ServiceLog::where('status', 'WARNING')->count(),
+                'down' => ServiceLog::where('status', 'DOWN')->count(),
+                'unknown' => ServiceLog::where('status', 'UNKNOWN')->count(),
+                'today' => ServiceLog::whereDate('created_at', today())->count(),
+                'this_week' => ServiceLog::whereBetween('created_at', [
+                    now()->startOfWeek(),
+                    now()->endOfWeek()
+                ])->count(),
+                'smoke_total' => SmokeLog::count(),
+                'smoke_today' => SmokeLog::whereDate('created_at', today())->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil statistik logs: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

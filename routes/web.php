@@ -8,7 +8,7 @@ use App\Services\FonnteService;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\SmokeController;
 use App\Http\Controllers\LoginController;
-use App\Http\Controllers\NetworkController; // 🔥 TAMBAHKAN INI
+use App\Http\Controllers\NetworkController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,6 +50,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
 
+    // 🔍 SEARCH ROUTE
+    Route::get('/services/search', [ServiceController::class, 'search'])->name('services.search');
+
     // Service Details & Reports
     Route::get('/services/{id}/detail', [ServiceController::class, 'detail'])->name('services.detail');
     Route::get('/services/{id}/logs', [ServiceController::class, 'logs'])->name('services.logs');
@@ -79,6 +82,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/contacts/{contact}', [ContactController::class, 'update'])->name('contacts.update');
     Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->name('contacts.destroy');
 
+    // 🔍 SEARCH ROUTE CONTACT
+    Route::get('/contacts/search', [ContactController::class, 'search'])->name('contacts.search');
+
     /*
     |--------------------------------------------------------------------------
     | Smoke Detector (Web View)
@@ -89,10 +95,57 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | 🔥 NETWORK STATUS API (TAMBAHKAN INI)
+    | 🔥 NETWORK STATUS API
     |--------------------------------------------------------------------------
     */
     Route::get('/api/network/status', [NetworkController::class, 'status'])->name('api.network.status');
+});
+
+/*
+|--------------------------------------------------------------------------
+| API Routes (Untuk Postman / Mobile App) - Tanpa Auth
+|--------------------------------------------------------------------------
+*/
+Route::prefix('api')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | API: Services
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/services', [ServiceController::class, 'apiIndex']);
+    Route::get('/services/{id}', [ServiceController::class, 'apiShow']);
+    Route::post('/services', [ServiceController::class, 'apiStore']);
+    Route::put('/services/{id}', [ServiceController::class, 'apiUpdate']);
+    Route::delete('/services/{id}', [ServiceController::class, 'apiDestroy']);
+    Route::post('/services/{id}/check', [ServiceController::class, 'apiCheck']);
+    Route::get('/services/{id}/logs', [ServiceController::class, 'apiLogs']);
+    Route::get('/services/{id}/detail', [ServiceController::class, 'apiDetail']);
+    Route::get('/services/{id}/download-report', [ServiceController::class, 'apiDownloadReport']);
+
+    // 🔍 API SEARCH SERVICES
+    Route::get('/services/search', [ServiceController::class, 'apiSearch']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | API: Contacts
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/contacts', [ContactController::class, 'apiIndex']);
+    Route::get('/contacts/{id}', [ContactController::class, 'apiShow']);
+    Route::post('/contacts', [ContactController::class, 'apiStore']);
+    Route::put('/contacts/{id}', [ContactController::class, 'apiUpdate']);
+    Route::delete('/contacts/{id}', [ContactController::class, 'apiDestroy']);
+
+    // 🔍 API SEARCH CONTACTS
+    Route::get('/contacts/search', [ContactController::class, 'apiSearch']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | API: Network Status
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/network/status', [NetworkController::class, 'status']);
 });
 
 /*
@@ -102,7 +155,7 @@ Route::middleware('auth')->group(function () {
 */
 Route::get('/test-wa', function () {
     FonnteService::send(
-        'nomorsaya',
+        '6281234567890',
         'Test Laravel Monitoring berhasil 🚀'
     );
     return 'WhatsApp berhasil dikirim';

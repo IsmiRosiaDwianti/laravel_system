@@ -315,6 +315,91 @@
     .uptime-bar .uptime-fill.yellow { background: #d97706; }
     .uptime-bar .uptime-fill.red { background: #dc2626; }
 
+    /* ================= SEARCH BOX ================= */
+    .search-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        max-width: 500px;
+    }
+
+    .search-wrapper .search-input-wrap {
+        position: relative;
+        flex: 1;
+    }
+
+    .search-wrapper .search-input-wrap .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 16px;
+        pointer-events: none;
+    }
+
+    .search-wrapper .search-input-wrap input {
+        width: 100%;
+        padding: 10px 14px 10px 38px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+        background: #fafbfc;
+        outline: none;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+
+    .search-wrapper .search-input-wrap input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        background: white;
+    }
+
+    .search-wrapper .btn-search {
+        background: #4f46e5;
+        color: white;
+        padding: 10px 22px;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .search-wrapper .btn-search:hover {
+        background: #4338ca;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .search-wrapper .btn-reset {
+        background: #e2e8f0;
+        color: #475569;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .search-wrapper .btn-reset:hover {
+        background: #cbd5e1;
+        transform: translateY(-1px);
+    }
+
     /* ================= TABLE ================= */
     .table-container {
         background: white;
@@ -333,6 +418,13 @@
         flex-wrap: wrap;
         gap: 12px;
         background: #fafbfc;
+    }
+
+    .table-header .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .table-header h2 {
@@ -802,7 +894,6 @@
         box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
     }
 
-    /* Disabled state untuk button modal */
     .btn-modal:disabled {
         opacity: 0.5;
         cursor: not-allowed;
@@ -1386,6 +1477,7 @@
     @media (max-width: 1024px) {
         .stats-bar { grid-template-columns: repeat(2, 1fr); }
         .detail-grid { grid-template-columns: 1fr; }
+        .search-wrapper { max-width: 100%; }
     }
 
     @media (max-width: 768px) {
@@ -1441,6 +1533,16 @@
             padding: 4px 8px;
             font-size: 12px;
         }
+        .search-wrapper {
+            flex-wrap: wrap;
+        }
+        .search-wrapper .btn-search,
+        .search-wrapper .btn-reset {
+            flex: 1;
+            justify-content: center;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
     }
 
     @media (max-width: 480px) {
@@ -1470,8 +1572,46 @@
             font-size: 11px;
             min-width: 30px;
         }
+        .search-wrapper .btn-search,
+        .search-wrapper .btn-reset {
+            font-size: 11px;
+            padding: 6px 10px;
+        }
+        .search-wrapper .search-input-wrap input {
+            padding: 8px 10px 8px 32px;
+            font-size: 12px;
+        }
+        .search-wrapper .search-input-wrap .search-icon {
+            font-size: 13px;
+            left: 10px;
+        }
+    }
+
+    /* ================= SPIN ANIMATION ================= */
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .spin {
+        display: inline-block;
+        animation: spin 1s linear infinite;
     }
 </style>
+
+<!-- ================= DATA SERVICE UNTUK INSTANT EDIT ================= -->
+<script>
+    // 🔥 SIMPAN DATA SEMUA SERVICE DALAM JAVASCRIPT (INSTANT ACCESS)
+    const servicesMap = {};
+    @foreach($services as $service)
+        servicesMap[{{ $service->id }}] = {
+            id: {{ $service->id }},
+            name: '{{ addslashes($service->name) }}',
+            target: '{{ addslashes($service->target) }}',
+            type: '{{ $service->type ?? 'http' }}'
+        };
+    @endforeach
+</script>
 
 <div class="service-container">
     <!-- ================= TOAST CONTAINER ================= -->
@@ -1537,7 +1677,25 @@
     <!-- ================= TABLE ================= -->
     <div class="table-container">
         <div class="table-header">
-            <h2>📋 Daftar Service</h2>
+            <div class="header-left">
+                <h2>📋 Daftar Service</h2>
+            </div>
+            
+            <!-- ================= SEARCH BOX ================= -->
+            <div class="search-wrapper">
+                <div class="search-input-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        id="searchService" 
+                        placeholder="Cari service berdasarkan nama atau target..." 
+                        autocomplete="off"
+                    >
+                </div>
+                <button onclick="searchServices()" class="btn-search">🔍 Cari</button>
+                <button onclick="resetSearch()" class="btn-reset">↺ Reset</button>
+            </div>
+
             <div class="table-header-right">
                 <div class="perpage-selector">
                     <label for="perPage">Tampilkan:</label>
@@ -1549,7 +1707,7 @@
                     </select>
                     <span>data</span>
                 </div>
-                <span class="table-info">
+                <span class="table-info" id="tableInfo">
                     Menampilkan <strong>{{ $services->firstItem() ?? 0 }}</strong> - <strong>{{ $services->lastItem() ?? 0 }}</strong> dari <strong>{{ $services->total() }}</strong> service
                 </span>
             </div>
@@ -1568,7 +1726,7 @@
                         <th style="width: 280px;">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     @forelse($services as $index => $service)
                         @php
                             $colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6', 'color-7', 'color-8'];
@@ -1644,7 +1802,7 @@
         </div>
 
         @if(method_exists($services, 'hasPages') && $services->hasPages())
-        <div class="pagination-wrapper">
+        <div class="pagination-wrapper" id="paginationWrapper">
             <div class="pagination-info">
                 Menampilkan <strong>{{ $services->firstItem() ?? 0 }}</strong> - <strong>{{ $services->lastItem() ?? 0 }}</strong> dari <strong>{{ $services->total() }}</strong> data
             </div>
@@ -1729,7 +1887,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn-cancel-modal" onclick="closeDetailModal()">✕ Tutup</button>
-            <button class="btn-submit-modal" onclick="refreshDetail()" style="background: linear-gradient(135deg, #059669, #10b981);">🔄 Refresh</button>
+            <button class="btn-submit-modal" id="refreshDetailBtn" onclick="refreshDetail()" style="background: linear-gradient(135deg, #059669, #10b981);">🔄 Refresh</button>
         </div>
     </div>
 </div>
@@ -1962,6 +2120,148 @@
     let currentDetailId = null;
     let currentDownloadId = null;
     let selectedPeriod = 7;
+    let searchTimeout = null;
+
+    // ================= SEARCH SERVICES (AJAX) - TANPA ALERT PROSES =================
+    function searchServices() {
+        const query = document.getElementById('searchService').value.trim();
+        
+        if (query.length === 0) {
+            showToast('warning', 'Peringatan!', 'Masukkan kata kunci pencarian');
+            return;
+        }
+        
+        fetch(`/services/search?q=${encodeURIComponent(query)}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderSearchResult(data.data, data.pagination);
+                showToast('success', 'Berhasil!', 'Ditemukan ' + data.data.length + ' data');
+            } else {
+                showToast('error', 'Gagal!', data.message || 'Gagal mencari data');
+            }
+        })
+        .catch(error => {
+            showToast('error', 'Error!', 'Terjadi kesalahan: ' + error.message);
+        });
+    }
+
+    function resetSearch() {
+        document.getElementById('searchService').value = '';
+        window.location.reload();
+    }
+
+    function renderSearchResult(services, pagination) {
+        const tbody = document.getElementById('tableBody');
+        const info = document.getElementById('tableInfo');
+        const paginationWrapper = document.getElementById('paginationWrapper');
+        
+        if (!tbody) return;
+        
+        if (services.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <span class="empty-icon">🔍</span>
+                            <h3>Tidak Ditemukan</h3>
+                            <p>Tidak ada service yang sesuai dengan kata kunci pencarian</p>
+                            <button onclick="resetSearch()" class="btn-empty-primary">↺ Reset Pencarian</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            if (info) info.innerHTML = 'Menampilkan <strong>0</strong> - <strong>0</strong> dari <strong>0</strong> service';
+            if (paginationWrapper) paginationWrapper.style.display = 'none';
+            return;
+        }
+        
+        let html = '';
+        const colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6', 'color-7', 'color-8'];
+        
+        services.forEach((service, index) => {
+            const colorClass = colors[index % colors.length];
+            const initials = service.name.substring(0, 2).toUpperCase();
+            const statusLabel = service.last_status || 'UNKNOWN';
+            const uptime = service.uptime || 0;
+            const uptimeColor = uptime >= 70 ? 'green' : (uptime >= 50 ? 'yellow' : 'red');
+            const no = index + 1;
+            
+            html += `
+                <tr>
+                    <td><span class="service-no">${no}</span></td>
+                    <td>
+                        <div class="service-info">
+                            <div class="service-avatar ${colorClass}">${initials}</div>
+                            <div>
+                                <div class="service-name">${service.name}</div>
+                                <span class="service-type">${(service.type || 'HTTP').toUpperCase()}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="service-target">${service.target}</span></td>
+                    <td>
+                        ${statusLabel == 'UP' ? '<span class="status-badge up"><span class="status-dot"></span> UP</span>' : 
+                          statusLabel == 'DOWN' ? '<span class="status-badge down"><span class="status-dot"></span> DOWN</span>' :
+                          statusLabel == 'WARNING' ? '<span class="status-badge warning"><span class="status-dot"></span> WARNING</span>' :
+                          '<span class="status-badge unknown"><span class="status-dot"></span> UNKNOWN</span>'}
+                    </td>
+                    <td>
+                        <div class="uptime-value ${uptimeColor}">${Number(uptime).toFixed(2)}%</div>
+                        <div class="uptime-bar">
+                            <div class="uptime-fill ${uptimeColor}" style="width: ${uptime}%;"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size: 12px; color: #6b7280;">
+                            ${service.last_check_at ? new Date(service.last_check_at).toLocaleDateString('id-ID') + ' ' + new Date(service.last_check_at).toLocaleTimeString('id-ID') : '-'}
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; font-family: 'Courier New', monospace;">
+                            ${service.last_check_at ? new Date(service.last_check_at).toLocaleTimeString('id-ID') : '-'}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button onclick="openDetailModal(${service.id})" class="btn-action btn-detail" title="Detail">👁️ Detail</button>
+                            <button onclick="openDownloadModal(${service.id}, '${service.name.replace(/'/g, "\\'")}')" class="btn-action btn-download" title="Download Laporan PDF">📥 PDF</button>
+                            <button onclick="openEditModal(${service.id})" class="btn-action btn-edit" title="Edit">✏️ Edit</button>
+                            <button onclick="confirmDelete(${service.id}, '${service.name.replace(/'/g, "\\'")}')" class="btn-action btn-delete" title="Hapus">🗑️ Hapus</button>
+                            <button onclick="checkService(${service.id})" class="btn-check" title="Check Now" id="checkBtn${service.id}">🔄</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+        
+        if (info && pagination) {
+            info.innerHTML = `Menampilkan <strong>${pagination.from || 0}</strong> - <strong>${pagination.to || 0}</strong> dari <strong>${pagination.total || 0}</strong> service`;
+        }
+        
+        if (paginationWrapper) {
+            paginationWrapper.style.display = 'flex';
+            paginationWrapper.innerHTML = `
+                <div class="pagination-info">
+                    Menampilkan <strong>${pagination.from || 0}</strong> - <strong>${pagination.to || 0}</strong> dari <strong>${pagination.total || 0}</strong> data
+                </div>
+                <div class="pagination-links">
+                    ${pagination.prev_page_url ? `<a href="#" onclick="loadPage('${pagination.prev_page_url}')" class="page-link">‹</a>` : `<span class="page-link disabled">‹</span>`}
+                    <span class="page-link active">${pagination.current_page || 1}</span>
+                    ${pagination.next_page_url ? `<a href="#" onclick="loadPage('${pagination.next_page_url}')" class="page-link">›</a>` : `<span class="page-link disabled">›</span>`}
+                </div>
+            `;
+        }
+    }
+
+    function loadPage(url) {
+        showToast('info', 'Info', 'Fitur pagination pada hasil pencarian akan segera hadir');
+    }
 
     // ================= EVENT LISTENER =================
     document.addEventListener('DOMContentLoaded', function() {
@@ -1983,6 +2283,40 @@
         weekAgo.setDate(weekAgo.getDate() - 7);
         document.getElementById('dateFrom').value = weekAgo.toISOString().split('T')[0];
         document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+
+        const typeSelect = document.getElementById('modal_type');
+        if (typeSelect) {
+            typeSelect.addEventListener('change', function() {
+                updateHelperText(this.value);
+            });
+            updateHelperText(typeSelect.value);
+        }
+
+        const searchInput = document.getElementById('searchService');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchServices();
+                }
+            });
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length === 0) {
+                    resetSearch();
+                    return;
+                }
+                
+                if (query.length >= 2) {
+                    searchTimeout = setTimeout(function() {
+                        searchServices();
+                    }, 500);
+                }
+            });
+        }
     });
 
     // ================= TOAST =================
@@ -2010,21 +2344,38 @@
         }, 5000);
     }
 
-    // ================= CHECK SERVICE (CEPAT) =================
+    // ================= HELPER TEXT =================
+    function updateHelperText(type) {
+        const targetInput = document.getElementById('modal_target');
+        const helperText = targetInput?.parentElement?.querySelector('.helper-text');
+        
+        if (!targetInput || !helperText) return;
+        
+        if (type === 'ping') {
+            targetInput.placeholder = 'Contoh: 192.168.1.1 atau 8.8.8.8';
+            helperText.textContent = 'Masukkan alamat IP (contoh: 192.168.1.1)';
+        } else {
+            targetInput.placeholder = 'Contoh: https://example.com atau http://localhost';
+            helperText.textContent = 'URL lengkap dengan protocol (http:// atau https://)';
+        }
+    }
+
+    // ================= CHECK SERVICE (CEPAT) - DENGAN ALERT PROSES =================
     function checkService(id) {
         const btn = document.getElementById('checkBtn' + id);
         
-        // 🔥 CEK JARINGAN CEPAT PAKAI navigator.onLine
         if (!navigator.onLine) {
             showToast('error', 'Jaringan Terputus!', 'Tidak ada koneksi internet. Periksa router/modem Anda.');
             return;
         }
         
-        // ✅ JARINGAN NORMAL → LANJUTKAN CHECK
         if (btn) {
             btn.disabled = true;
             btn.textContent = '⏳';
         }
+        
+        // 🔥 ALERT PROSES HANYA UNTUK CHECK MANUAL
+        showToast('info', 'Memproses...', 'Sedang mengecek service...');
         
         fetch(`/services/${id}/check`, {
             method: 'POST',
@@ -2124,8 +2475,6 @@
         const message = service.last_message || '-';
         const isEmptyPage = message.includes('konten kosong') || message.includes('EMPTY_RESPONSE');
 
-        // 🔥 STATISTIK MONITORING TELAH DIHAPUS
-
         const messageClass = isEmptyPage ? 'empty-message' : '';
         const actionClass = isEmptyAction ? 'empty-action' : (isNoAction ? 'no-action' : '');
         const actionBadgeText = isEmptyAction ? '📄 ' + action : action;
@@ -2138,7 +2487,6 @@
                 <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}"><span class="status-dot"></span> ${statusBadge}</span></div></div>
                 <div class="detail-item"><div class="detail-label">Response Code</div><div class="detail-value"><span class="response-code ${codeClass}">${responseCode}</span></div></div>
                 <div class="detail-item"><div class="detail-label">Response Time</div><div class="detail-value"><span class="response-time ${timeClass}">${Number(responseTime).toFixed(2)} <span style="font-size: 12px; color: #6b7280;">s</span></span></div></div>
-                <div class="detail-item"><div class="detail-label">Terakhir Diperiksa</div><div class="detail-value"><span class="detail-timestamp">${service.last_checked_at || service.updated_at || '-'}</span></div></div>
                 <div class="detail-item full-width"><div class="detail-label">Pesan</div><div class="detail-message ${messageClass}">${message}</div></div>
                 <div class="detail-action"><div class="detail-label">🔧 Tindakan yang Disarankan</div><div class="detail-value"><span class="action-badge ${actionClass}">${actionBadgeText}</span></div></div>
                 <div class="detail-item full-width" style="background: #f1f5f9; border-color: #d1d5db;"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: #4b5563;"><span><strong>ID:</strong> ${service.id}</span><span><strong>Dibuat:</strong> ${service.created_at || '-'}</span><span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span></div></div>
@@ -2146,10 +2494,19 @@
         `;
     }
 
+    // 🔥 REFRESH DETAIL - TANPA ALERT PROSES
     function refreshDetail() {
         if (currentDetailId) {
+            const btn = document.getElementById('refreshDetailBtn');
+            btn.innerHTML = `<span class="spin">🔄</span> Memuat...`;
+            btn.disabled = true;
+            
             fetchDetailData(currentDetailId);
-            showToast('info', 'Refresh', 'Memperbarui data service...');
+            
+            setTimeout(() => {
+                btn.innerHTML = '🔄 Refresh';
+                btn.disabled = false;
+            }, 1000);
         }
     }
 
@@ -2276,6 +2633,9 @@
         document.getElementById('formMethod').value = 'POST';
         form.action = '{{ route('services.store') }}';
         
+        document.getElementById('modal_type').value = 'http';
+        updateHelperText('http');
+        
         document.getElementById('modalTitle').textContent = 'Tambah Service';
         document.getElementById('modalIcon').textContent = '➕';
         document.getElementById('modalIcon').style.background = 'linear-gradient(135deg, #4f46e5, #7c3aed)';
@@ -2290,46 +2650,45 @@
     }
 
     function openEditModal(id) {
-        fetch(`/services/${id}/edit`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const service = data.data;
-                const modal = document.getElementById('serviceModal');
-                const form = document.getElementById('serviceForm');
-                const closeBtn = document.getElementById('modalCloseBtn');
-                const cancelBtn = document.getElementById('btnCancelModal');
-                const submitBtn = document.getElementById('btnSubmitModal');
-                
-                closeBtn.disabled = false;
-                cancelBtn.disabled = false;
-                submitBtn.disabled = false;
-                submitBtn.textContent = '💾 Update Service';
-                submitBtn.className = 'btn-submit-modal edit-mode';
-                
-                document.getElementById('modal_name').value = service.name;
-                document.getElementById('modal_target').value = service.target;
-                document.getElementById('modal_type').value = service.type || 'http';
-                document.getElementById('serviceId').value = service.id;
-                document.getElementById('formMethod').value = 'PUT';
-                form.action = `/services/${service.id}`;
-                
-                document.getElementById('modalTitle').textContent = 'Edit Service';
-                document.getElementById('modalIcon').textContent = '✏️';
-                document.getElementById('modalIcon').style.background = 'linear-gradient(135deg, #d97706, #b45309)';
-                
-                document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
-                document.querySelectorAll('.error-message').forEach(el => el.remove());
-                
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                document.dispatchEvent(new Event('modalOpened'));
-                setTimeout(() => document.getElementById('modal_name').focus(), 100);
-            }
-        })
-        .catch(() => showToast('error', 'Gagal!', 'Gagal mengambil data service'));
+        const modal = document.getElementById('serviceModal');
+        const submitBtn = document.getElementById('btnSubmitModal');
+        const cancelBtn = document.getElementById('btnCancelModal');
+        const closeBtn = document.getElementById('modalCloseBtn');
+        
+        const service = servicesMap[id];
+        
+        if (!service) {
+            showToast('error', 'Gagal!', 'Data service tidak ditemukan');
+            return;
+        }
+        
+        document.getElementById('modalTitle').textContent = 'Edit Service';
+        document.getElementById('modalIcon').textContent = '✏️';
+        document.getElementById('modalIcon').style.background = 'linear-gradient(135deg, #d97706, #b45309)';
+        
+        submitBtn.disabled = false;
+        submitBtn.textContent = '💾 Update Service';
+        submitBtn.className = 'btn-submit-modal edit-mode';
+        cancelBtn.disabled = false;
+        closeBtn.disabled = false;
+        
+        document.getElementById('modal_name').value = service.name;
+        document.getElementById('modal_target').value = service.target;
+        document.getElementById('modal_type').value = service.type || 'http';
+        document.getElementById('serviceId').value = service.id;
+        document.getElementById('formMethod').value = 'PUT';
+        document.getElementById('serviceForm').action = `/services/${service.id}`;
+        
+        updateHelperText(service.type || 'http');
+        
+        document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
+        document.querySelectorAll('.error-message').forEach(el => el.remove());
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        document.dispatchEvent(new Event('modalOpened'));
+        
+        setTimeout(() => document.getElementById('modal_name').focus(), 100);
     }
 
     function closeModal() {
@@ -2349,6 +2708,9 @@
         const closeBtn = document.getElementById('modalCloseBtn');
         const name = document.getElementById('modal_name');
         const target = document.getElementById('modal_target');
+        const type = document.getElementById('modal_type');
+        const serviceId = document.getElementById('serviceId').value;
+        const isEdit = serviceId !== '';
         
         let hasError = false;
         
@@ -2363,13 +2725,26 @@
         }
         
         if (target.value.trim() === '') {
-            showFieldError(target, 'Target URL / IP wajib diisi');
+            showFieldError(target, 'Target wajib diisi');
             hasError = true;
+        } else if (type.value !== 'ping') {
+            if (!/^https?:\/\/.+/i.test(target.value.trim())) {
+                showFieldError(target, 'URL harus diawali dengan http:// atau https://');
+                hasError = true;
+            } else {
+                removeFieldError(target);
+            }
         } else {
             removeFieldError(target);
         }
         
-        if (hasError) return;
+        if (hasError) {
+            const firstError = document.querySelector('.form-control.error');
+            if (firstError) {
+                firstError.focus();
+            }
+            return;
+        }
         
         submitBtn.disabled = true;
         submitBtn.textContent = '⏳ Menyimpan...';

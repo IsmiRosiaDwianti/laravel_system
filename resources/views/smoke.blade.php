@@ -220,12 +220,6 @@
 
     .auto-refresh-timer .icon {
         font-size: 16px;
-        animation: spin 3s linear infinite;
-    }
-
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
     }
 
     .auto-refresh-timer .label {
@@ -372,7 +366,7 @@
         50% { opacity: 0.6; }
     }
 
-    /* ========== SMOKE STATUS RIGHT - PERBAIKAN ========== */
+    /* ========== SMOKE STATUS RIGHT ========== */
     .smoke-status-right {
         display: flex;
         align-items: center;
@@ -504,19 +498,6 @@
         padding: 0 10px;
         border-radius: 10px;
         display: inline-block;
-    }
-
-    .smoke-status-right .last-update-time {
-        font-size: 11px;
-        color: #94a3b8;
-        margin-top: 8px;
-        width: 100%;
-        text-align: right;
-        font-style: italic;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 6px;
     }
 
     /* ========== TABLE LOGS ========== */
@@ -876,6 +857,15 @@
         box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
     }
 
+    .new-log-flash {
+        animation: flashRow 0.6s ease;
+    }
+
+    @keyframes flashRow {
+        0% { background: #dbeafe; }
+        100% { background: transparent; }
+    }
+
     /* ========== RESPONSIVE ========== */
     @media (max-width: 1024px) {
         .smoke-status-right {
@@ -1049,10 +1039,6 @@
             padding: 4px 10px;
             font-size: 12px;
         }
-
-        .smoke-status-right .last-update-time {
-            font-size: 10px;
-        }
     }
 
     @media (max-width: 480px) {
@@ -1212,10 +1198,6 @@
         .empty-state p {
             font-size: 12px;
         }
-
-        .smoke-status-right .last-update-time {
-            font-size: 9px;
-        }
     }
 </style>
 
@@ -1237,13 +1219,11 @@
                 📥 <span>Download CSV</span>
             </a>
 
-            @php
-                $isOnline = ($onlineCount ?? 0) > 0;
-            @endphp
+            <!-- 🔥 STATUS ESP - LANGSUNG DARI API -->
             <div class="status-esp" id="espStatus">
-                <span class="dot {{ $isOnline ? 'online' : 'offline' }}" id="espDot"></span>
+                <span class="dot offline" id="espDot"></span>
                 <span>ESP Status:</span>
-                <span id="espStatusText" style="font-weight: 700;">{{ $isOnline ? 'ONLINE' : 'OFFLINE' }}</span>
+                <span id="espStatusText" style="font-weight: 700;">Memuat...</span>
             </div>
         </div>
     </div>
@@ -1278,7 +1258,6 @@
             </div>
         </div>
         <div class="smoke-status-right">
-            <!-- Nilai PPM dengan label -->
             <div class="smoke-value-wrapper">
                 <div class="smoke-value {{ $statusClass }}" id="smokeValue">
                     {{ number_format($smokeValue, 0) }}<small>ppm</small>
@@ -1286,7 +1265,6 @@
                 <div class="smoke-label">Nilai Asap</div>
             </div>
 
-            <!-- Progress Bar dengan label yang jelas -->
             <div class="smoke-bar-container">
                 <div class="bar-track">
                     <div class="bar-fill {{ $statusClass }}" id="smokeBar" style="width: {{ $percentage }}%;"></div>
@@ -1296,12 +1274,6 @@
                     <span class="current-value">{{ number_format($smokeValue, 0) }} ppm</span>
                     <span class="max-label">⚠️ {{ $maxPpm }} ppm</span>
                 </div>
-            </div>
-
-            <!-- Last Update -->
-            <div class="last-update-time" id="lastUpdateTime">
-                <span>🔄</span>
-                <span>Update: {{ now()->format('H:i:s') }}</span>
             </div>
         </div>
     </div>
@@ -1348,7 +1320,7 @@
                             $statusIcon = $log->status == 'DANGER' ? '🔴' : ($log->status == 'WARNING' ? '🟡' : '🟢');
                             $logMessage = $log->status == 'DANGER' ? '🔥 Asap tinggi! Periksa segera!' : ($log->status == 'WARNING' ? '⚠️ Asap mulai terdeteksi, waspada!' : '✅ Kondisi aman, tidak ada asap');
                         @endphp
-                        <tr data-log-id="{{ $log->id }}">
+                        <tr data-log-id="{{ $log->id }}" data-log-status="{{ $log->status }}">
                             <td>
                                 <span class="time-cell">
                                     {{ $log->created_at->setTimezone('Asia/Jakarta')->format('d/m/Y H:i:s') }}
@@ -1400,7 +1372,6 @@
             </div>
             
             <ul class="pagination">
-                {{-- Previous Page Link --}}
                 @if ($smokeLogs->onFirstPage())
                     <li class="page-item disabled">
                         <span class="page-link">
@@ -1415,7 +1386,6 @@
                     </li>
                 @endif
 
-                {{-- Pagination Elements --}}
                 @php
                     $start = max(1, $smokeLogs->currentPage() - 2);
                     $end = min($start + 4, $smokeLogs->lastPage());
@@ -1458,7 +1428,6 @@
                     </li>
                 @endif
 
-                {{-- Next Page Link --}}
                 @if ($smokeLogs->hasMorePages())
                     <li class="page-item">
                         <a class="page-link" href="{{ $smokeLogs->nextPageUrl() }}" rel="next">
@@ -1487,40 +1456,40 @@
 
 <!-- ========== SCRIPT ========== -->
 <script>
-    // ========== AUTO REFRESH DATA ESP (TANPA RELOAD) ==========
+    // ========== KONFIGURASI ==========
     const REFRESH_INTERVAL = 30;
     let countdownSeconds = REFRESH_INTERVAL;
     let countdownElement = document.getElementById('countdownTimer');
     let lastLogCount = {{ $smokeLogs->total() }};
+    let isUpdating = false;
+    let lastPpm = {{ $smokeValue }};
+    let lastStatus = '{{ $smokeStatus }}';
 
-    // ========== AMBIL DATA STATUS ESP ==========
-    function fetchLatestSmokeData() {
+    // ========== FETCH ESP STATUS (SAMA SEPERTI DASHBOARD) ==========
+    function fetchEspStatus() {
         fetch('/api/smoke/status')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    updateSmokeDisplay(data.data);
-                }
-            })
-            .catch(error => console.error('Error fetching smoke data:', error));
-    }
-
-    // ========== AMBIL LOG TERBARU ==========
-    function fetchLatestLogs() {
-        const perPage = document.getElementById('perPage')?.value || 10;
-        fetch('/api/smoke/logs?limit=' + perPage)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.data.length > 0) {
-                    updateLogTable(data.data);
-                    if (data.total > lastLogCount) {
-                        document.getElementById('totalLogs').textContent = data.total;
-                        document.getElementById('logCount').textContent = data.total;
-                        lastLogCount = data.total;
+                    const esp = data.data;
+                    const isOnline = esp.device_status === 'ONLINE';
+                    const ppm = esp.ppm || 0;
+                    const status = esp.status || 'NORMAL';
+                    
+                    // 🔥 UPDATE ESP STATUS - SAMA SEPERTI DASHBOARD
+                    const dot = document.getElementById('espDot');
+                    const statusText = document.getElementById('espStatusText');
+                    if (dot && statusText) {
+                        dot.className = 'dot ' + (isOnline ? 'online' : 'offline');
+                        statusText.textContent = isOnline ? 'ONLINE' : 'OFFLINE';
+                        statusText.style.color = isOnline ? '#10b981' : '#ef4444';
                     }
+                    
+                    // 🔥 UPDATE TAMPILAN SMOKE
+                    updateSmokeDisplay(esp);
                 }
             })
-            .catch(error => console.error('Error fetching logs:', error));
+            .catch(error => console.error('Error fetching ESP status:', error));
     }
 
     // ========== UPDATE TAMPILAN SMOKE ==========
@@ -1528,7 +1497,6 @@
         const ppm = data.ppm || 0;
         const status = data.status || 'NORMAL';
         const statusClass = data.status_class || 'normal';
-        const deviceStatus = data.device_status || 'OFFLINE';
 
         // Update PPM
         const smokeValueElement = document.getElementById('smokeValue');
@@ -1562,32 +1530,32 @@
             barFill.className = 'bar-fill ' + statusClass.toLowerCase();
         }
 
-        // Update Current Value di tengah bar labels
+        // Update Current Value
         const currentValueLabels = document.querySelectorAll('.bar-labels .current-value');
         if (currentValueLabels.length > 0) {
             currentValueLabels.forEach(el => {
                 el.textContent = numberFormat(ppm) + ' ppm';
             });
         }
+    }
 
-        // Update ESP Status
-        const espDot = document.getElementById('espDot');
-        const espStatusText = document.getElementById('espStatusText');
-        if (espDot && espStatusText) {
-            const isOnline = deviceStatus === 'ONLINE';
-            espDot.className = 'dot ' + (isOnline ? 'online' : 'offline');
-            espStatusText.textContent = isOnline ? 'ONLINE' : 'OFFLINE';
-        }
-
-        // Update Last Update Time
-        const lastUpdateElement = document.getElementById('lastUpdateTime');
-        if (lastUpdateElement) {
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
-                           now.getMinutes().toString().padStart(2, '0') + ':' +
-                           now.getSeconds().toString().padStart(2, '0');
-            lastUpdateElement.innerHTML = '<span>🔄</span><span>Update: ' + timeStr + '</span>';
-        }
+    // ========== AMBIL LOG TERBARU ==========
+    function fetchLatestLogs() {
+        const perPage = document.getElementById('perPage')?.value || 10;
+        fetch('/api/smoke/logs?limit=' + perPage)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data.length > 0) {
+                    const newLogCount = data.total || data.data.length;
+                    if (newLogCount > lastLogCount) {
+                        updateLogTable(data.data);
+                        lastLogCount = newLogCount;
+                        document.getElementById('totalLogs').textContent = newLogCount;
+                        document.getElementById('logCount').textContent = newLogCount;
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching logs:', error));
     }
 
     // ========== UPDATE TABEL LOG ==========
@@ -1595,16 +1563,15 @@
         const tbody = document.getElementById('logTableBody');
         if (!tbody) return;
 
-        // Cek apakah ada data baru dengan ID berbeda
         const existingIds = Array.from(tbody.querySelectorAll('tr[data-log-id]')).map(tr => parseInt(tr.dataset.logId));
         const newLogs = logs.filter(log => !existingIds.includes(log.id));
 
         if (newLogs.length === 0) return;
 
-        // Tambahkan log baru ke atas tabel (prepend)
         newLogs.forEach(log => {
             const row = document.createElement('tr');
             row.dataset.logId = log.id;
+            row.dataset.logStatus = log.status || 'NORMAL';
             const statusClass = log.status ? log.status.toLowerCase() : 'normal';
             const statusIcon = log.status === 'DANGER' ? '🔴' : (log.status === 'WARNING' ? '🟡' : '🟢');
             const logMessage = log.status === 'DANGER' ? '🔥 Asap tinggi! Periksa segera!' : 
@@ -1617,10 +1584,13 @@
                 <td><div class="message-cell" title="${logMessage}">${logMessage}</div></td>
             `;
             
-            // Prepend ke tbody
             tbody.insertBefore(row, tbody.firstChild);
             
-            // Hapus baris paling bawah jika lebih dari perPage
+            row.classList.add('new-log-flash');
+            setTimeout(() => {
+                row.classList.remove('new-log-flash');
+            }, 600);
+            
             const perPage = parseInt(document.getElementById('perPage')?.value || 10);
             while (tbody.children.length > perPage) {
                 tbody.removeChild(tbody.lastChild);
@@ -1636,13 +1606,12 @@
     function formatDate(dateStr) {
         if (!dateStr) return '-';
         const date = new Date(dateStr);
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        const seconds = date.getSeconds().toString().padStart(2, '0');
-        return day + '/' + month + '/' + year + ' ' + hours + ':' + minutes + ':' + seconds;
+        return date.getDate().toString().padStart(2, '0') + '/' + 
+               (date.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+               date.getFullYear() + ' ' + 
+               date.getHours().toString().padStart(2, '0') + ':' + 
+               date.getMinutes().toString().padStart(2, '0') + ':' + 
+               date.getSeconds().toString().padStart(2, '0');
     }
 
     // ========== COUNTDOWN TIMER ==========
@@ -1663,24 +1632,25 @@
         
         if (countdownSeconds <= 0) {
             countdownSeconds = REFRESH_INTERVAL;
-            fetchLatestSmokeData();
+            fetchEspStatus();
             fetchLatestLogs();
         }
     }
 
     // ========== JALANKAN SAAT HALAMAN DIMUAT ==========
     document.addEventListener('DOMContentLoaded', function() {
-        // Ambil data pertama kali
-        fetchLatestSmokeData();
+        // 🔥 FETCH DATA LANGSUNG SAAT HALAMAN DIMUAT
+        fetchEspStatus();
+        fetchLatestLogs();
         
         // Jalankan countdown setiap detik
         setInterval(updateCountdown, 1000);
         
-        // Refresh data setiap 30 detik (cadangan)
-        setInterval(function() {
-            fetchLatestSmokeData();
-            fetchLatestLogs();
-        }, REFRESH_INTERVAL * 1000);
+        // 🔥 FETCH ESP STATUS SETIAP 3 DETIK (SAMA SEPERTI DASHBOARD)
+        setInterval(fetchEspStatus, 3000);
+        
+        // Fetch logs setiap 10 detik
+        setInterval(fetchLatestLogs, 10000);
     });
 
     // ========== PERPAGE ==========

@@ -51,53 +51,72 @@ class ServiceController extends Controller
     }
 
     /**
-     * 🔥 PERBAIKI URL: Tambahkan https:// jika tidak ada
+     * 🔥 PERBAIKI: Fix target berdasarkan tipe
+     * - Untuk HTTP/HTTPS: Tambahkan https:// jika tidak ada
+     * - Untuk PING: Biarkan apa adanya (IP atau hostname)
      */
-    private function fixUrl($url)
+    private function fixTarget($target, $type)
     {
-        // Jika tidak diawali http:// atau https://, tambahkan https://
-        if (!preg_match('/^https?:\/\/.+/', $url)) {
-            return 'https://' . $url;
+        // 🔥 PING: Biarkan apa adanya, tidak perlu ditambah https://
+        if ($type === 'ping') {
+            return trim($target);
         }
-        return $url;
+        
+        // 🔥 HTTP/HTTPS: Tambahkan https:// jika tidak ada protocol
+        if (!preg_match('/^https?:\/\/.+/', $target)) {
+            return 'https://' . $target;
+        }
+        return $target;
     }
 
     /**
      * Store a newly created service in storage.
-     * 🔥 DITAMBAHKAN: Validasi URL harus diawali http:// atau https://
      */
     public function store(Request $request, ServiceMonitorService $monitor)
     {
         try {
-            $validated = $request->validate([
+            // 🔥 VALIDASI DINAMIS BERDASARKAN TIPE
+            $rules = [
                 'name' => 'required|string|max:255',
-                'target' => [
+                'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
+            ];
+
+            // 🔥 Validasi target berdasarkan tipe
+            if (in_array($request->type, ['http', 'https', 'port'])) {
+                $rules['target'] = [
                     'required',
                     'string',
                     'max:255',
-                    // 🔥 VALIDASI: PAKAI CLOSURE
                     function ($attribute, $value, $fail) {
                         if (!preg_match('/^https?:\/\/.+/', $value)) {
                             $fail('Format URL tidak valid. Harus diawali dengan http:// atau https://');
                         }
                     },
-                ],
-                'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
-            ]);
+                ];
+            } else if ($request->type === 'ping') {
+                $rules['target'] = [
+                    'required',
+                    'string',
+                    'max:255',
+                    // ✅ PING: Boleh IP atau hostname, tidak wajib URL
+                ];
+            }
 
-            // 🔥 PERBAIKI URL (tambahkan https:// jika perlu)
-            $validated['target'] = $this->fixUrl($validated['target']);
+            $validated = $request->validate($rules);
 
-            // ✅ CEK APAKAH TARGET SUDAH ADA
+            // 🔥 PERBAIKI: Fix target berdasarkan tipe
+            $validated['target'] = $this->fixTarget($validated['target'], $validated['type']);
+
+            // Cek duplikat target
             $existingTarget = Service::where('target', $validated['target'])->first();
             if ($existingTarget) {
                 return redirect()
                     ->back()
                     ->withInput()
-                    ->with('error', 'Target URL/IP "' . $validated['target'] . '" sudah digunakan oleh service "' . $existingTarget->name . '"');
+                    ->with('error', 'Target "' . $validated['target'] . '" sudah digunakan oleh service "' . $existingTarget->name . '"');
             }
 
-            // ✅ CEK APAKAH NAMA SUDAH ADA
+            // Cek duplikat nama
             $existingName = Service::where('name', $validated['name'])->first();
             if ($existingName) {
                 return redirect()
@@ -151,33 +170,45 @@ class ServiceController extends Controller
 
     /**
      * Update the specified service in storage.
-     * 🔥 DITAMBAHKAN: Validasi URL harus diawali http:// atau https://
      */
     public function update(Request $request, $id, ServiceMonitorService $monitor)
     {
         try {
             $service = Service::findOrFail($id);
 
-            $validated = $request->validate([
+            // 🔥 VALIDASI DINAMIS BERDASARKAN TIPE
+            $rules = [
                 'name' => 'required|string|max:255',
-                'target' => [
+                'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
+            ];
+
+            // 🔥 Validasi target berdasarkan tipe
+            if (in_array($request->type, ['http', 'https', 'port'])) {
+                $rules['target'] = [
                     'required',
                     'string',
                     'max:255',
-                    // 🔥 VALIDASI: PAKAI CLOSURE
                     function ($attribute, $value, $fail) {
                         if (!preg_match('/^https?:\/\/.+/', $value)) {
                             $fail('Format URL tidak valid. Harus diawali dengan http:// atau https://');
                         }
                     },
-                ],
-                'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
-            ]);
+                ];
+            } else if ($request->type === 'ping') {
+                $rules['target'] = [
+                    'required',
+                    'string',
+                    'max:255',
+                    // ✅ PING: Boleh IP atau hostname, tidak wajib URL
+                ];
+            }
 
-            // 🔥 PERBAIKI URL (tambahkan https:// jika perlu)
-            $validated['target'] = $this->fixUrl($validated['target']);
+            $validated = $request->validate($rules);
 
-            // ✅ CEK APAKAH TARGET SUDAH ADA (kecuali dirinya sendiri)
+            // 🔥 PERBAIKI: Fix target berdasarkan tipe
+            $validated['target'] = $this->fixTarget($validated['target'], $validated['type']);
+
+            // Cek duplikat target
             $existingTarget = Service::where('target', $validated['target'])
                 ->where('id', '!=', $id)
                 ->first();
@@ -185,10 +216,10 @@ class ServiceController extends Controller
                 return redirect()
                     ->back()
                     ->withInput()
-                    ->with('error', 'Target URL/IP "' . $validated['target'] . '" sudah digunakan oleh service "' . $existingTarget->name . '"');
+                    ->with('error', 'Target "' . $validated['target'] . '" sudah digunakan oleh service "' . $existingTarget->name . '"');
             }
 
-            // ✅ CEK APAKAH NAMA SUDAH ADA (kecuali dirinya sendiri)
+            // Cek duplikat nama
             $existingName = Service::where('name', $validated['name'])
                 ->where('id', '!=', $id)
                 ->first();
@@ -247,7 +278,6 @@ class ServiceController extends Controller
 
     /**
      * Get detailed information of a service.
-     * 🔥 DIPERBAIKI: Menambahkan action/tindakan ke response
      */
     public function detail($id)
     {
@@ -258,8 +288,6 @@ class ServiceController extends Controller
 
             $latestLog = $service->logs()->latest()->first();
             $stats = $this->getServiceStats($service->id);
-
-            // 🔥 AMBIL ACTION DARI LOG TERAKHIR
             $action = $latestLog?->action ?? '-';
 
             if (request()->ajax()) {
@@ -356,11 +384,6 @@ class ServiceController extends Controller
 
     /**
      * Calculate uptime percentage for a specific service.
-     * Menggunakan bobot: UP=100, WARNING=70, DOWN=0
-     * 
-     * @param int $serviceId
-     * @param int $days
-     * @return float
      */
     public function calculateUptime($serviceId, $days = 30)
     {
@@ -370,7 +393,6 @@ class ServiceController extends Controller
 
         $total = $logs->count();
         
-        // Jika tidak ada log sama sekali, cek status terakhir
         if ($total === 0) {
             $service = Service::find($serviceId);
             if ($service) {
@@ -381,8 +403,6 @@ class ServiceController extends Controller
             return 0.00;
         }
 
-        // ✅ HITUNG DENGAN BOBOT
-        // UP = 100, WARNING = 70, DOWN = 0
         $totalWeight = 0;
         foreach ($logs as $log) {
             if ($log->status === 'UP') {
@@ -395,8 +415,6 @@ class ServiceController extends Controller
         }
         
         $uptime = round($totalWeight / $total, 2);
-        
-        // Minimal 0, maksimal 100
         return max(0, min(100, $uptime));
     }
 
@@ -893,8 +911,8 @@ class ServiceController extends Controller
      *  📡 API: GET ALL SERVICES
      *  ============================================================
      *  🔗 URL: GET /api/services
-     *  🔑 Butuh Auth (session)
-     *  📦 Query Params: ?per_page=10&page=1
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?per_page=10&page=1
      * ============================================================
      */
     public function apiIndex(Request $request)
@@ -905,7 +923,6 @@ class ServiceController extends Controller
             $services = Service::orderBy('created_at', 'desc')
                 ->paginate($perPage);
             
-            // Hitung uptime untuk setiap service
             foreach ($services as $service) {
                 $service->uptime = $this->calculateUptime($service->id, 30);
             }
@@ -931,10 +948,10 @@ class ServiceController extends Controller
 
     /**
      * ============================================================
-     *  📡 API: GET SERVICE DETAIL
+     *  📡 API: GET SERVICE DETAIL (SIMPLE)
      *  ============================================================
      *  🔗 URL: GET /api/services/{id}
-     *  🔑 Butuh Auth (session)
+     *  🔑 Butuh Auth: Sanctum Token
      * ============================================================
      */
     public function apiShow($id)
@@ -954,7 +971,7 @@ class ServiceController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Service tidak ditemukan: ' . $e->getMessage()
+                'message' => 'Service tidak ditemukan'
             ], 404);
         }
     }
@@ -964,28 +981,51 @@ class ServiceController extends Controller
      *  📡 API: CREATE SERVICE
      *  ============================================================
      *  🔗 URL: POST /api/services
-     *  🔑 Butuh Auth (session)
+     *  🔑 Butuh Auth: Sanctum Token
      *  📦 Body: { "name": "...", "target": "...", "type": "http" }
      * ============================================================
      */
     public function apiStore(Request $request, ServiceMonitorService $monitor)
     {
         try {
-            $validated = $request->validate([
+            // 🔥 VALIDASI DINAMIS BERDASARKAN TIPE
+            $rules = [
                 'name' => 'required|string|max:255',
-                'target' => 'required|string|max:255',
                 'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
-            ]);
+            ];
 
-            // Cek target sudah ada
+            // 🔥 Validasi target berdasarkan tipe
+            if (in_array($request->type, ['http', 'https', 'port'])) {
+                $rules['target'] = [
+                    'required',
+                    'string',
+                    'max:255',
+                    function ($attribute, $value, $fail) {
+                        if (!preg_match('/^https?:\/\/.+/', $value)) {
+                            $fail('Format URL tidak valid. Harus diawali dengan http:// atau https://');
+                        }
+                    },
+                ];
+            } else if ($request->type === 'ping') {
+                $rules['target'] = [
+                    'required',
+                    'string',
+                    'max:255',
+                ];
+            }
+
+            $validated = $request->validate($rules);
+
+            // 🔥 PERBAIKI: Fix target berdasarkan tipe
+            $validated['target'] = $this->fixTarget($validated['target'], $validated['type']);
+
             if (Service::where('target', $validated['target'])->exists()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Target URL/IP "' . $validated['target'] . '" sudah digunakan'
+                    'message' => 'Target "' . $validated['target'] . '" sudah digunakan'
                 ], 422);
             }
 
-            // Cek nama sudah ada
             if (Service::where('name', $validated['name'])->exists()) {
                 return response()->json([
                     'success' => false,
@@ -1000,7 +1040,6 @@ class ServiceController extends Controller
                 'last_status' => 'UNKNOWN'
             ]);
 
-            // Check service
             $monitor->check($service);
 
             return response()->json([
@@ -1028,7 +1067,7 @@ class ServiceController extends Controller
      *  📡 API: UPDATE SERVICE
      *  ============================================================
      *  🔗 URL: PUT /api/services/{id}
-     *  🔑 Butuh Auth (session)
+     *  🔑 Butuh Auth: Sanctum Token
      *  📦 Body: { "name": "...", "target": "...", "type": "http" }
      * ============================================================
      */
@@ -1037,21 +1076,43 @@ class ServiceController extends Controller
         try {
             $service = Service::findOrFail($id);
 
-            $validated = $request->validate([
+            // 🔥 VALIDASI DINAMIS BERDASARKAN TIPE
+            $rules = [
                 'name' => 'required|string|max:255',
-                'target' => 'required|string|max:255',
                 'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
-            ]);
+            ];
 
-            // Cek target sudah ada (kecuali dirinya sendiri)
+            if (in_array($request->type, ['http', 'https', 'port'])) {
+                $rules['target'] = [
+                    'required',
+                    'string',
+                    'max:255',
+                    function ($attribute, $value, $fail) {
+                        if (!preg_match('/^https?:\/\/.+/', $value)) {
+                            $fail('Format URL tidak valid. Harus diawali dengan http:// atau https://');
+                        }
+                    },
+                ];
+            } else if ($request->type === 'ping') {
+                $rules['target'] = [
+                    'required',
+                    'string',
+                    'max:255',
+                ];
+            }
+
+            $validated = $request->validate($rules);
+
+            // 🔥 PERBAIKI: Fix target berdasarkan tipe
+            $validated['target'] = $this->fixTarget($validated['target'], $validated['type']);
+
             if (Service::where('target', $validated['target'])->where('id', '!=', $id)->exists()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Target URL/IP "' . $validated['target'] . '" sudah digunakan'
+                    'message' => 'Target "' . $validated['target'] . '" sudah digunakan'
                 ], 422);
             }
 
-            // Cek nama sudah ada (kecuali dirinya sendiri)
             if (Service::where('name', $validated['name'])->where('id', '!=', $id)->exists()) {
                 return response()->json([
                     'success' => false,
@@ -1065,7 +1126,6 @@ class ServiceController extends Controller
                 'type' => $validated['type']
             ]);
 
-            // Check service
             $monitor->check($service);
 
             return response()->json([
@@ -1093,7 +1153,7 @@ class ServiceController extends Controller
      *  📡 API: DELETE SERVICE
      *  ============================================================
      *  🔗 URL: DELETE /api/services/{id}
-     *  🔑 Butuh Auth (session)
+     *  🔑 Butuh Auth: Sanctum Token
      * ============================================================
      */
     public function apiDestroy($id)
@@ -1112,6 +1172,339 @@ class ServiceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus service: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: CHECK SERVICE (MANUAL)
+     *  ============================================================
+     *  🔗 URL: POST /api/services/{id}/check
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Body: (kosong)
+     * ============================================================
+     */
+    public function apiCheck($id, ServiceMonitorService $monitor)
+    {
+        try {
+            $service = Service::findOrFail($id);
+            $monitor->check($service);
+
+            $latestLog = $service->logs()->latest()->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service "' . $service->name . '" berhasil di-check',
+                'data' => [
+                    'status' => $service->last_status,
+                    'response_code' => $latestLog?->response_code,
+                    'response_time' => $latestLog?->response_time,
+                    'message' => $latestLog?->message,
+                    'checked_at' => $latestLog?->created_at?->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal check service: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: GET SERVICE LOGS
+     *  ============================================================
+     *  🔗 URL: GET /api/services/{id}/logs
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?per_page=20&status=UP&date_from=2026-01-01&date_to=2026-01-31
+     * ============================================================
+     */
+    public function apiLogs($id, Request $request)
+    {
+        try {
+            $service = Service::findOrFail($id);
+            
+            $perPage = $request->input('per_page', 20);
+            $status = $request->input('status');
+            $dateFrom = $request->input('date_from');
+            $dateTo = $request->input('date_to');
+
+            $query = ServiceLog::where('service_id', $id);
+
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            if ($dateFrom) {
+                $query->whereDate('created_at', '>=', $dateFrom);
+            }
+
+            if ($dateTo) {
+                $query->whereDate('created_at', '<=', $dateTo);
+            }
+
+            $logs = $query->latest()->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $logs->items(),
+                'pagination' => [
+                    'total' => $logs->total(),
+                    'per_page' => $logs->perPage(),
+                    'current_page' => $logs->currentPage(),
+                    'last_page' => $logs->lastPage(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data logs: ' . $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: GET SERVICE DETAIL (LENGKAP)
+     *  ============================================================
+     *  🔗 URL: GET /api/services/{id}/detail
+     *  🔑 Butuh Auth: Sanctum Token
+     * ============================================================
+     */
+    public function apiDetail($id)
+    {
+        try {
+            $service = Service::with(['logs' => function($query) {
+                $query->latest()->limit(10);
+            }])->findOrFail($id);
+
+            $latestLog = $service->logs()->latest()->first();
+            $stats = $this->getServiceStats($service->id);
+            $uptime = $this->calculateUptime($service->id, 30);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $service->id,
+                    'name' => $service->name,
+                    'target' => $service->target,
+                    'type' => $service->type,
+                    'last_status' => $service->last_status ?? 'UNKNOWN',
+                    'last_response_code' => $latestLog?->response_code,
+                    'last_response_time' => $latestLog?->response_time,
+                    'last_message' => $latestLog?->message ?? '-',
+                    'last_checked_at' => $latestLog?->created_at?->format('Y-m-d H:i:s'),
+                    'uptime_30d' => $uptime,
+                    'created_at' => $service->created_at?->format('Y-m-d H:i:s'),
+                    'updated_at' => $service->updated_at?->format('Y-m-d H:i:s'),
+                    'stats' => $stats,
+                    'recent_logs' => $service->logs()->latest()->limit(5)->get()->map(function($log) {
+                        return [
+                            'status' => $log->status,
+                            'response_code' => $log->response_code,
+                            'response_time' => $log->response_time,
+                            'message' => $log->message,
+                            'created_at' => $log->created_at->format('Y-m-d H:i:s')
+                        ];
+                    })
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Service tidak ditemukan'
+            ], 404);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📡 API: DOWNLOAD REPORT PDF
+     *  ============================================================
+     *  🔗 URL: GET /api/services/{id}/download-report
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?date_from=2026-01-01&date_to=2026-01-31
+     * ============================================================
+     */
+    public function apiDownloadReport($id, Request $request)
+    {
+        try {
+            $service = Service::findOrFail($id);
+            
+            $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
+            $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+
+            $logs = ServiceLog::where('service_id', $id)
+                ->whereDate('created_at', '>=', $dateFrom)
+                ->whereDate('created_at', '<=', $dateTo)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $reportData = $this->generateReportData($service, $logs, $dateFrom, $dateTo);
+
+            if (!class_exists('Barryvdh\DomPDF\Facade\Pdf')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'DomPDF tidak terinstall. Jalankan: composer require barryvdh/laravel-dompdf'
+                ], 500);
+            }
+
+            $filename = 'laporan_' . str_replace([' ', '/', '\\', ':', '*', '?', '"', '<', '>', '|'], '_', $service->name) 
+                . '_' . $dateFrom . '_to_' . $dateTo . '.pdf';
+            
+            if (!view()->exists('reports.service-pdf')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'View reports.service-pdf tidak ditemukan. Buat file di resources/views/reports/service-pdf.blade.php'
+                ], 500);
+            }
+
+            $pdf = Pdf::loadView('reports.service-pdf', compact('reportData'));
+            $pdf->setPaper('A4', 'portrait');
+            
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat laporan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ================================================================
+    // 🔍 SEARCH METHODS
+    // ================================================================
+
+    /**
+     * ============================================================
+     *  🔍 SEARCH SERVICES (AJAX)
+     *  ============================================================
+     *  🔗 URL: GET /services/search
+     *  🔑 Butuh Auth: Session (web)
+     *  📦 Query: ?q=kata_kunci&per_page=10
+     * ============================================================
+     */
+    public function search(Request $request)
+    {
+        try {
+            $query = $request->input('q', '');
+            $perPage = $request->input('per_page', 10);
+            
+            if (empty($query)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'pagination' => [
+                        'total' => 0,
+                        'from' => 0,
+                        'to' => 0,
+                        'current_page' => 1,
+                        'last_page' => 1,
+                        'prev_page_url' => null,
+                        'next_page_url' => null
+                    ]
+                ]);
+            }
+            
+            // 🔥 SEARCH BERDASARKAN NAMA ATAU TARGET
+            $services = Service::where('name', 'LIKE', "%{$query}%")
+                ->orWhere('target', 'LIKE', "%{$query}%")
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+            
+            // Hitung uptime untuk setiap service
+            foreach ($services as $service) {
+                $service->uptime = $this->calculateUptime($service->id, 30);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $services->items(),
+                'pagination' => [
+                    'total' => $services->total(),
+                    'from' => $services->firstItem(),
+                    'to' => $services->lastItem(),
+                    'current_page' => $services->currentPage(),
+                    'last_page' => $services->lastPage(),
+                    'prev_page_url' => $services->previousPageUrl(),
+                    'next_page_url' => $services->nextPageUrl()
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mencari data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  🔍 API SEARCH SERVICES
+     *  ============================================================
+     *  🔗 URL: GET /api/services/search
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?q=kata_kunci&per_page=10&page=1
+     * ============================================================
+     */
+    public function apiSearch(Request $request)
+    {
+        try {
+            $query = $request->input('q', '');
+            $perPage = $request->input('per_page', 10);
+            
+            if (empty($query)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'pagination' => [
+                        'total' => 0,
+                        'from' => 0,
+                        'to' => 0,
+                        'current_page' => 1,
+                        'last_page' => 1,
+                        'prev_page_url' => null,
+                        'next_page_url' => null
+                    ]
+                ]);
+            }
+            
+            // 🔥 SEARCH BERDASARKAN NAMA ATAU TARGET
+            $services = Service::where('name', 'LIKE', "%{$query}%")
+                ->orWhere('target', 'LIKE', "%{$query}%")
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+            
+            // Hitung uptime untuk setiap service
+            foreach ($services as $service) {
+                $service->uptime = $this->calculateUptime($service->id, 30);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $services->items(),
+                'pagination' => [
+                    'total' => $services->total(),
+                    'from' => $services->firstItem(),
+                    'to' => $services->lastItem(),
+                    'current_page' => $services->currentPage(),
+                    'last_page' => $services->lastPage(),
+                    'prev_page_url' => $services->previousPageUrl(),
+                    'next_page_url' => $services->nextPageUrl()
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mencari data: ' . $e->getMessage()
             ], 500);
         }
     }
