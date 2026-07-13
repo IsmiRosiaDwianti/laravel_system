@@ -38,7 +38,8 @@ class ServiceController extends Controller
             'totalServices', 
             'totalUp', 
             'totalWarning', 
-            'totalDown'
+            'totalDown',
+            'perPage'  // 🔥 TAMBAHKAN INI
         ));
     }
 

@@ -2,13 +2,68 @@
 
 @section('content')
 <style>
+    /* ================= ROOT VARIABLES ================= */
+    :root {
+        --bg-contacts: #ffffff;
+        --bg-card-contacts: #ffffff;
+        --text-contacts: #1e293b;
+        --text-secondary-contacts: #475569;
+        --text-muted-contacts: #94a3b8;
+        --border-contacts: rgba(226, 232, 240, 0.6);
+        --shadow-contacts: rgba(0, 0, 0, 0.04);
+        --shadow-hover-contacts: rgba(0, 0, 0, 0.08);
+        --bg-table-header: #fafbfc;
+        --bg-hover-row: #f8fafc;
+        --bg-search: #fafbfc;
+        --bg-input: #ffffff;
+        --bg-toast: #ffffff;
+        --bg-modal: #ffffff;
+        --bg-modal-header: #fafbfc;
+        --bg-modal-footer: #fafbfc;
+        --bg-delete-modal: #ffffff;
+        --bg-status-bar: #f8fafc;
+        --bg-info-box: #eff6ff;
+        --border-info-box: #93c5fd;
+        --text-info-box: #1e40af;
+    }
+
+    /* Dark mode override dari layout utama */
+    [data-theme="dark"] {
+        --bg-contacts: #0f172a;
+        --bg-card-contacts: #1e293b;
+        --text-contacts: #e2e8f0;
+        --text-secondary-contacts: #94a3b8;
+        --text-muted-contacts: #64748b;
+        --border-contacts: #334155;
+        --shadow-contacts: rgba(0, 0, 0, 0.2);
+        --shadow-hover-contacts: rgba(0, 0, 0, 0.3);
+        --bg-table-header: #1e293b;
+        --bg-hover-row: #2d3a4f;
+        --bg-search: #1e293b;
+        --bg-input: #1e293b;
+        --bg-toast: #1e293b;
+        --bg-modal: #1e293b;
+        --bg-modal-header: #1e293b;
+        --bg-modal-footer: #1e293b;
+        --bg-delete-modal: #1e293b;
+        --bg-status-bar: #1e293b;
+        --bg-info-box: #1a2332;
+        --border-info-box: #3b82f6;
+        --text-info-box: #93c5fd;
+        
+        /* Dark mode untuk warna teks form */
+        --text-form: #e2e8f0;
+    }
+
     .contacts-container {
         padding: 24px;
         max-width: 1440px;
         margin: 0 auto;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: #ffffff;
+        background: var(--bg-contacts);
         min-height: 100vh;
+        transition: background 0.3s ease, color 0.3s ease;
+        color: var(--text-contacts);
     }
 
     /* ================= HEADER ================= */
@@ -25,6 +80,7 @@
         position: relative;
         overflow: hidden;
         box-shadow: 0 10px 40px rgba(13, 59, 102, 0.3);
+        transition: box-shadow 0.3s ease;
     }
 
     .contacts-header::before {
@@ -119,7 +175,7 @@
         align-items: center;
         gap: 10px;
         flex: 1;
-        max-width: 400px;
+        max-width: 450px;
     }
 
     .search-wrapper .search-input-wrap {
@@ -132,18 +188,43 @@
         left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        color: #94a3b8;
+        color: var(--text-muted-contacts);
         font-size: 16px;
         pointer-events: none;
+        transition: all 0.3s ease;
+    }
+
+    .search-wrapper .search-input-wrap .search-spinner {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: none;
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--border-contacts);
+        border-top: 2px solid #25D366;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+    }
+
+    .search-wrapper .search-input-wrap .search-spinner.active {
+        display: block;
+    }
+
+    @keyframes spin {
+        0% { transform: translateY(-50%) rotate(0deg); }
+        100% { transform: translateY(-50%) rotate(360deg); }
     }
 
     .search-wrapper .search-input-wrap input {
         width: 100%;
         padding: 8px 14px 8px 36px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-contacts);
         border-radius: 10px;
         font-size: 14px;
-        background: #fafbfc;
+        background: var(--bg-search);
+        color: var(--text-contacts);
         outline: none;
         transition: all 0.2s ease;
         font-family: inherit;
@@ -152,7 +233,15 @@
     .search-wrapper .search-input-wrap input:focus {
         border-color: #25D366;
         box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
-        background: white;
+        background: var(--bg-input);
+    }
+
+    .search-wrapper .search-input-wrap input::placeholder {
+        color: var(--text-muted-contacts);
+    }
+
+    .search-wrapper .search-input-wrap input:focus + .search-spinner {
+        display: none;
     }
 
     .search-wrapper .btn-search {
@@ -177,9 +266,15 @@
         box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
     }
 
+    .search-wrapper .btn-search:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
     .search-wrapper .btn-reset {
-        background: #e2e8f0;
-        color: #475569;
+        background: var(--border-contacts);
+        color: var(--text-secondary-contacts);
         padding: 8px 14px;
         border: none;
         border-radius: 10px;
@@ -194,7 +289,8 @@
     }
 
     .search-wrapper .btn-reset:hover {
-        background: #cbd5e1;
+        background: var(--text-muted-contacts);
+        color: var(--bg-contacts);
         transform: translateY(-1px);
     }
 
@@ -212,15 +308,17 @@
     }
 
     .toast {
-        background: white;
+        background: var(--bg-toast);
         border-radius: 14px;
         padding: 16px 20px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 10px 40px var(--shadow-contacts);
         border-left: 5px solid;
         animation: slideInRight 0.4s ease;
         display: flex;
         align-items: flex-start;
         gap: 14px;
+        color: var(--text-contacts);
+        border: 1px solid var(--border-contacts);
     }
 
     .toast.hide { animation: slideOutRight 0.4s ease forwards; }
@@ -231,19 +329,19 @@
 
     .toast .toast-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
     .toast .toast-content { flex: 1; }
-    .toast .toast-title { font-weight: 600; font-size: 14px; color: #0f172a; }
-    .toast .toast-message { font-size: 13px; color: #64748b; margin-top: 2px; }
+    .toast .toast-title { font-weight: 600; font-size: 14px; color: var(--text-contacts); }
+    .toast .toast-message { font-size: 13px; color: var(--text-secondary-contacts); margin-top: 2px; }
     .toast .toast-close {
         background: none;
         border: none;
         font-size: 20px;
-        color: #94a3b8;
+        color: var(--text-muted-contacts);
         cursor: pointer;
         padding: 0 4px;
         line-height: 1;
         transition: color 0.2s ease;
     }
-    .toast .toast-close:hover { color: #475569; }
+    .toast .toast-close:hover { color: var(--text-contacts); }
 
     @keyframes slideInRight {
         from { transform: translateX(120%); opacity: 0; }
@@ -254,24 +352,72 @@
         to { transform: translateX(120%); opacity: 0; }
     }
 
+    /* ================= SEARCH STATUS BAR ================= */
+    .search-status {
+        display: none;
+        padding: 10px 16px;
+        background: var(--bg-status-bar);
+        border-bottom: 1px solid var(--border-contacts);
+        font-size: 13px;
+        color: var(--text-secondary-contacts);
+        align-items: center;
+        gap: 10px;
+        transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .search-status.active {
+        display: flex;
+    }
+
+    .search-status .status-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border-contacts);
+        border-top: 2px solid #25D366;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+    }
+
+    .search-status .status-text {
+        flex: 1;
+        color: var(--text-secondary-contacts);
+    }
+
+    .search-status .status-cancel {
+        background: none;
+        border: none;
+        color: var(--text-muted-contacts);
+        cursor: pointer;
+        font-size: 18px;
+        padding: 0 4px;
+        transition: color 0.2s ease;
+    }
+
+    .search-status .status-cancel:hover {
+        color: var(--text-contacts);
+    }
+
     /* ================= TABLE ================= */
     .table-container {
-        background: white;
+        background: var(--bg-card-contacts);
         border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-        border: 1px solid rgba(226, 232, 240, 0.6);
+        box-shadow: 0 4px 20px var(--shadow-contacts);
+        border: 1px solid var(--border-contacts);
         overflow: hidden;
+        transition: all 0.3s ease;
     }
 
     .table-header {
         padding: 20px 24px;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid var(--border-contacts);
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
         gap: 12px;
-        background: #fafbfc;
+        background: var(--bg-table-header);
+        transition: background 0.3s ease;
     }
 
     .table-header .header-left {
@@ -284,11 +430,12 @@
     .table-header h2 {
         font-size: 16px;
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-contacts);
         margin: 0;
         display: flex;
         align-items: center;
         gap: 8px;
+        transition: color 0.3s ease;
     }
 
     .table-header .header-right {
@@ -300,11 +447,13 @@
 
     .table-header .table-info {
         font-size: 13px;
-        color: #94a3b8;
+        color: var(--text-muted-contacts);
+        transition: color 0.3s ease;
     }
 
     .table-header .table-info strong {
-        color: #0f172a;
+        color: var(--text-contacts);
+        transition: color 0.3s ease;
     }
 
     .perpage-selector {
@@ -312,16 +461,17 @@
         align-items: center;
         gap: 8px;
         font-size: 13px;
-        color: #64748b;
+        color: var(--text-secondary-contacts);
+        transition: color 0.3s ease;
     }
 
     .perpage-selector select {
         padding: 6px 12px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-contacts);
         border-radius: 6px;
-        background: white;
+        background: var(--bg-input);
+        color: var(--text-contacts);
         font-size: 13px;
-        color: #0f172a;
         cursor: pointer;
         outline: none;
         transition: all 0.2s ease;
@@ -330,6 +480,11 @@
     .perpage-selector select:focus {
         border-color: #6366f1;
         box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .perpage-selector select option {
+        background: var(--bg-input);
+        color: var(--text-contacts);
     }
 
     .table-scroll {
@@ -347,26 +502,28 @@
         padding: 14px 16px;
         font-size: 11px;
         font-weight: 600;
-        color: #94a3b8;
+        color: var(--text-muted-contacts);
         text-transform: uppercase;
         letter-spacing: 0.8px;
-        border-bottom: 2px solid #f1f5f9;
-        background: #fafbfc;
+        border-bottom: 2px solid var(--border-contacts);
+        background: var(--bg-table-header);
         position: sticky;
         top: 0;
         z-index: 10;
+        transition: all 0.3s ease;
     }
 
     .table-container tbody td {
         padding: 14px 16px;
-        border-bottom: 1px solid #f1f5f9;
-        color: #1e293b;
+        border-bottom: 1px solid var(--border-contacts);
+        color: var(--text-contacts);
         font-size: 14px;
         vertical-align: middle;
+        transition: all 0.3s ease;
     }
 
     .table-container tbody tr:last-child td { border-bottom: none; }
-    .table-container tbody tr:hover { background: #f8fafc; }
+    .table-container tbody tr:hover { background: var(--bg-hover-row); }
 
     .contact-info {
         display: flex;
@@ -396,18 +553,20 @@
 
     .contact-name {
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-contacts);
         font-size: 14px;
+        transition: color 0.3s ease;
     }
 
     .contact-phone {
         font-size: 13px;
-        color: #64748b;
+        color: var(--text-secondary-contacts);
         font-family: 'Courier New', monospace;
-        background: #f8fafc;
+        background: var(--bg-hover-row);
         padding: 2px 10px;
         border-radius: 4px;
         display: inline-block;
+        transition: all 0.3s ease;
     }
 
     .action-buttons {
@@ -460,23 +619,24 @@
 
     .contact-no {
         font-weight: 700;
-        color: #94a3b8;
+        color: var(--text-muted-contacts);
         font-size: 13px;
         font-family: 'Inter', sans-serif;
         min-width: 30px;
         display: inline-block;
+        transition: color 0.3s ease;
     }
 
     /* Empty State */
     .empty-state {
         text-align: center;
         padding: 60px 20px;
-        color: #94a3b8;
+        color: var(--text-muted-contacts);
     }
 
     .empty-state .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; opacity: 0.6; }
-    .empty-state h3 { color: #0f172a; font-size: 18px; margin: 0 0 8px; font-weight: 600; }
-    .empty-state p { margin: 0; font-size: 14px; }
+    .empty-state h3 { color: var(--text-contacts); font-size: 18px; margin: 0 0 8px; font-weight: 600; transition: color 0.3s ease; }
+    .empty-state p { margin: 0; font-size: 14px; color: var(--text-secondary-contacts); }
 
     .btn-empty-primary {
         background: #25D366;
@@ -501,21 +661,29 @@
         box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
     }
 
-    /* Pagination */
+    /* ================= PAGINATION ================= */
     .pagination-wrapper {
         padding: 16px 24px 20px;
-        border-top: 1px solid #f1f5f9;
-        background: #fafbfc;
+        border-top: 1px solid var(--border-contacts);
+        background: var(--bg-table-header);
         border-radius: 0 0 16px 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
         gap: 12px;
+        transition: all 0.3s ease;
     }
 
-    .pagination-info { font-size: 13px; color: #64748b; }
-    .pagination-info strong { color: #0f172a; }
+    .pagination-info { 
+        font-size: 13px; 
+        color: var(--text-secondary-contacts);
+        transition: color 0.3s ease;
+    }
+    .pagination-info strong { 
+        color: var(--text-contacts);
+        transition: color 0.3s ease;
+    }
 
     .pagination-links {
         display: flex;
@@ -526,11 +694,11 @@
 
     .pagination-links .page-link {
         padding: 6px 12px;
-        background: white;
-        border: 1px solid #e2e8f0;
+        background: var(--bg-card-contacts);
+        border: 1px solid var(--border-contacts);
         border-radius: 6px;
         font-size: 13px;
-        color: #475569;
+        color: var(--text-secondary-contacts);
         text-decoration: none;
         transition: all 0.2s ease;
         min-width: 36px;
@@ -538,8 +706,8 @@
     }
 
     .pagination-links .page-link:hover:not(.active) {
-        background: #f1f5f9;
-        border-color: #94a3b8;
+        background: var(--bg-hover-row);
+        border-color: var(--text-muted-contacts);
         transform: translateY(-1px);
     }
 
@@ -550,13 +718,17 @@
     }
 
     .pagination-links .page-link.disabled {
-        background: #f1f5f9;
-        color: #94a3b8;
+        background: var(--bg-hover-row);
+        color: var(--text-muted-contacts);
         cursor: not-allowed;
         pointer-events: none;
+        border-color: var(--border-contacts);
     }
 
-    .pagination-links .page-dots { padding: 6px 4px; color: #94a3b8; }
+    .pagination-links .page-dots { 
+        padding: 6px 4px; 
+        color: var(--text-muted-contacts);
+    }
 
     /* ================= MODAL ================= */
     .modal-overlay {
@@ -577,7 +749,7 @@
     .modal-overlay.active { display: flex; }
 
     .modal-content {
-        background: white;
+        background: var(--bg-modal);
         border-radius: 20px;
         max-width: 600px;
         width: 90%;
@@ -585,25 +757,29 @@
         overflow: hidden;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         animation: slideUp 0.3s ease;
+        border: 1px solid var(--border-contacts);
+        color: var(--text-contacts);
     }
 
     .modal-header {
         padding: 20px 24px;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid var(--border-contacts);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #fafbfc;
+        background: var(--bg-modal-header);
+        transition: all 0.3s ease;
     }
 
     .modal-header h2 {
         margin: 0;
         font-size: 20px;
         font-weight: 700;
-        color: #0f172a;
+        color: var(--text-contacts);
         display: flex;
         align-items: center;
         gap: 10px;
+        transition: color 0.3s ease;
     }
 
     .modal-header h2 .modal-icon {
@@ -622,7 +798,7 @@
         background: none;
         border: none;
         font-size: 28px;
-        color: #94a3b8;
+        color: var(--text-muted-contacts);
         cursor: pointer;
         padding: 0 8px;
         border-radius: 8px;
@@ -631,8 +807,8 @@
     }
 
     .modal-close:hover {
-        background: #f1f5f9;
-        color: #0f172a;
+        background: var(--bg-hover-row);
+        color: var(--text-contacts);
     }
 
     .modal-body {
@@ -642,17 +818,18 @@
     }
 
     .modal-body::-webkit-scrollbar { width: 6px; }
-    .modal-body::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
-    .modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .modal-body::-webkit-scrollbar-track { background: var(--bg-hover-row); border-radius: 10px; }
+    .modal-body::-webkit-scrollbar-thumb { background: var(--text-muted-contacts); border-radius: 10px; }
 
     .modal-footer {
         padding: 16px 24px;
-        border-top: 1px solid #f1f5f9;
+        border-top: 1px solid var(--border-contacts);
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-        background: #fafbfc;
+        background: var(--bg-modal-footer);
         border-radius: 0 0 20px 20px;
+        transition: all 0.3s ease;
     }
 
     /* ================= FORM DALAM MODAL ================= */
@@ -661,32 +838,42 @@
         display: block;
         font-size: 14px;
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-contacts);
         margin-bottom: 6px;
+        transition: color 0.3s ease;
     }
 
     .modal-body .form-group label .required { color: #ef4444; margin-left: 2px; }
-    .modal-body .form-group .helper-text { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .modal-body .form-group .helper-text { 
+        font-size: 12px; 
+        color: var(--text-muted-contacts); 
+        margin-top: 4px;
+        transition: color 0.3s ease;
+    }
 
     .modal-body .form-control {
         width: 100%;
         padding: 10px 14px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-contacts);
         border-radius: 8px;
         font-size: 14px;
-        color: #0f172a;
+        color: var(--text-contacts);
         transition: all 0.2s ease;
-        background: #fafbfc;
+        background: var(--bg-input);
         outline: none;
     }
 
     .modal-body .form-control:focus {
         border-color: #25D366;
         box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
-        background: white;
+        background: var(--bg-input);
     }
 
     .modal-body .form-control.error { border-color: #ef4444; }
+
+    .modal-body .form-control::placeholder {
+        color: var(--text-muted-contacts);
+    }
 
     .modal-body select.form-control {
         appearance: none;
@@ -695,6 +882,10 @@
         background-position: right 12px center;
         padding-right: 36px;
         cursor: pointer;
+    }
+
+    [data-theme="dark"] .modal-body select.form-control {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
     }
 
     .modal-body .error-message {
@@ -707,20 +898,32 @@
     }
 
     .modal-body .info-box {
-        background: #eff6ff;
-        border: 1px solid #93c5fd;
-        color: #1e40af;
+        background: var(--bg-info-box);
+        border: 1px solid var(--border-info-box);
+        color: var(--text-info-box);
         padding: 12px 16px;
         border-radius: 8px;
         margin-bottom: 20px;
         display: flex;
         align-items: flex-start;
         gap: 10px;
+        transition: all 0.3s ease;
     }
 
     .modal-body .info-box .info-icon { font-size: 18px; margin-top: 1px; }
     .modal-body .info-box .info-content { font-size: 13px; line-height: 1.5; }
     .modal-body .info-box .info-content strong { display: block; margin-bottom: 2px; }
+    .modal-body .info-box .info-content code {
+        background: rgba(0,0,0,0.05);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: 'Courier New', monospace;
+    }
+
+    [data-theme="dark"] .modal-body .info-box .info-content code {
+        background: rgba(255,255,255,0.05);
+    }
 
     .btn-submit-modal {
         background: linear-gradient(135deg, #25D366, #128C7E);
@@ -759,10 +962,10 @@
     }
 
     .btn-cancel-modal {
-        background: #f1f5f9;
-        color: #475569;
+        background: var(--bg-hover-row);
+        color: var(--text-secondary-contacts);
         padding: 10px 24px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-contacts);
         border-radius: 8px;
         font-size: 14px;
         font-weight: 500;
@@ -774,7 +977,7 @@
     }
 
     .btn-cancel-modal:hover {
-        background: #e2e8f0;
+        background: var(--border-contacts);
         transform: translateY(-1px);
     }
 
@@ -807,7 +1010,7 @@
     .modal-delete-overlay.active { display: flex; }
 
     .modal-delete-content {
-        background: white;
+        background: var(--bg-delete-modal);
         border-radius: 20px;
         max-width: 420px;
         width: 90%;
@@ -815,22 +1018,24 @@
         text-align: center;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         animation: slideUp 0.3s ease;
+        border: 1px solid var(--border-contacts);
+        color: var(--text-contacts);
     }
 
     .modal-delete-content .delete-icon { font-size: 56px; margin-bottom: 12px; }
-    .modal-delete-content h3 { margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: #0f172a; }
-    .modal-delete-content p { margin: 0 0 4px 0; color: #64748b; font-size: 14px; }
-    .modal-delete-content .delete-name { font-weight: 700; color: #0f172a; font-size: 16px; margin: 8px 0 20px 0; }
-    .modal-delete-content .delete-warning { color: #94a3b8; font-size: 13px; margin-bottom: 24px; }
+    .modal-delete-content h3 { margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: var(--text-contacts); }
+    .modal-delete-content p { margin: 0 0 4px 0; color: var(--text-secondary-contacts); font-size: 14px; }
+    .modal-delete-content .delete-name { font-weight: 700; color: var(--text-contacts); font-size: 16px; margin: 8px 0 20px 0; }
+    .modal-delete-content .delete-warning { color: var(--text-muted-contacts); font-size: 13px; margin-bottom: 24px; }
 
     .modal-delete-content .delete-actions { display: flex; gap: 12px; justify-content: center; }
 
     .btn-delete-cancel {
         padding: 10px 24px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-contacts);
         border-radius: 10px;
-        background: white;
-        color: #475569;
+        background: var(--bg-card-contacts);
+        color: var(--text-secondary-contacts);
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -838,7 +1043,7 @@
     }
 
     .btn-delete-cancel:hover {
-        background: #f1f5f9;
+        background: var(--bg-hover-row);
         transform: translateY(-1px);
     }
 
@@ -859,6 +1064,19 @@
         background: #dc2626;
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    /* ================= SEARCH HIGHLIGHT ================= */
+    mark {
+        background: #fbbf24;
+        padding: 0 2px;
+        border-radius: 2px;
+        color: #0f172a;
+    }
+
+    [data-theme="dark"] mark {
+        background: #f59e0b;
+        color: #0f172a;
     }
 
     /* ================= RESPONSIVE ================= */
@@ -972,8 +1190,9 @@
                         placeholder="Cari kontak..." 
                         autocomplete="off"
                     >
+                    <span class="search-spinner" id="searchSpinner"></span>
                 </div>
-                <button onclick="searchContacts()" class="btn-search">🔍 Cari</button>
+                <button onclick="searchContacts()" class="btn-search" id="btnSearch">🔍 Cari</button>
                 <button onclick="resetSearch()" class="btn-reset">↺ Reset</button>
             </div>
 
@@ -981,10 +1200,10 @@
                 <div class="perpage-selector">
                     <label for="perPage">Tampilkan:</label>
                     <select id="perPage" onchange="changePerPage(this.value)">
-                        <option value="10" {{ request('perPage') == 10 ? 'selected' : '' }}>10</option>
-                        <option value="20" {{ request('perPage') == 20 ? 'selected' : '' }}>20</option>
-                        <option value="50" {{ request('perPage') == 50 ? 'selected' : '' }}>50</option>
-                        <option value="100" {{ request('perPage') == 100 ? 'selected' : '' }}>100</option>
+                        <option value="10" {{ (request('perPage', $perPage ?? 10) == 10) ? 'selected' : '' }}>10</option>
+                        <option value="20" {{ (request('perPage', $perPage ?? 10) == 20) ? 'selected' : '' }}>20</option>
+                        <option value="50" {{ (request('perPage', $perPage ?? 10) == 50) ? 'selected' : '' }}>50</option>
+                        <option value="100" {{ (request('perPage', $perPage ?? 10) == 100) ? 'selected' : '' }}>100</option>
                     </select>
                     <span>data</span>
                 </div>
@@ -992,6 +1211,13 @@
                     Total <strong>{{ $contacts->total() }}</strong> kontak
                 </span>
             </div>
+        </div>
+
+        <!-- ================= SEARCH STATUS BAR ================= -->
+        <div class="search-status" id="searchStatus">
+            <div class="status-spinner"></div>
+            <span class="status-text" id="searchStatusText">🔍 Sedang mencari...</span>
+            <button class="status-cancel" onclick="cancelSearch()" title="Batalkan pencarian">✕</button>
         </div>
 
         <div class="table-scroll">
@@ -1188,6 +1414,8 @@
 <script>
     // ================= VARIABEL GLOBAL =================
     let searchTimeout = null;
+    let isSearching = false;
+    let currentSearchQuery = '';
 
     // ================= DOM READY =================
     document.addEventListener('DOMContentLoaded', function() {
@@ -1204,7 +1432,7 @@
             showToast('info', 'Info', '{{ session('info') }}');
         @endif
 
-        // 🔥 SEARCH WITH DEBOUNCE
+        // 🔥 SEARCH WITH DEBOUNCE + INDICATOR
         const searchInput = document.getElementById('searchContact');
         if (searchInput) {
             searchInput.addEventListener('keypress', function(e) {
@@ -1215,22 +1443,63 @@
             });
             
             searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
                 const query = this.value.trim();
+                currentSearchQuery = query;
+                
+                clearTimeout(searchTimeout);
                 
                 if (query.length === 0) {
+                    hideSearchStatus();
                     resetSearch();
                     return;
                 }
                 
                 if (query.length >= 2) {
+                    // Tampilkan status "sedang mengetik..."
+                    showSearchStatus('✍️ Mengetik...', false);
+                    
                     searchTimeout = setTimeout(function() {
                         searchContacts();
-                    }, 500);
+                    }, 800);
+                } else {
+                    hideSearchStatus();
                 }
             });
         }
+
+        // Auto focus search on Ctrl+F
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('searchContact').focus();
+                document.getElementById('searchContact').select();
+            }
+        });
     });
+
+    // ================= SEARCH STATUS FUNCTIONS =================
+    function showSearchStatus(text, showSpinner = true) {
+        const status = document.getElementById('searchStatus');
+        const textEl = document.getElementById('searchStatusText');
+        const spinner = status.querySelector('.status-spinner');
+        
+        textEl.textContent = text;
+        spinner.style.display = showSpinner ? 'block' : 'none';
+        status.classList.add('active');
+    }
+
+    function hideSearchStatus() {
+        const status = document.getElementById('searchStatus');
+        status.classList.remove('active');
+    }
+
+    function cancelSearch() {
+        clearTimeout(searchTimeout);
+        hideSearchStatus();
+        document.getElementById('searchContact').value = '';
+        resetSearch();
+        showToast('info', 'Info', 'Pencarian dibatalkan');
+    }
 
     // ================= CHANGE PER PAGE =================
     function changePerPage(value) {
@@ -1268,11 +1537,28 @@
     // ================= SEARCH CONTACTS (AJAX) - TANPA ALERT PROSES =================
     function searchContacts() {
         const query = document.getElementById('searchContact').value.trim();
+        currentSearchQuery = query;
         
         if (query.length === 0) {
+            hideSearchStatus();
             showToast('warning', 'Peringatan!', 'Masukkan kata kunci pencarian');
             return;
         }
+        
+        if (isSearching) {
+            showToast('info', 'Info', 'Pencarian sedang berlangsung...');
+            return;
+        }
+        
+        isSearching = true;
+        const btnSearch = document.getElementById('btnSearch');
+        const spinner = document.getElementById('searchSpinner');
+        
+        // Tampilkan status mencari
+        showSearchStatus('🔍 Sedang mencari "' + query + '"...');
+        btnSearch.disabled = true;
+        btnSearch.textContent = '⏳';
+        spinner.classList.add('active');
         
         fetch(`/contacts/search?q=${encodeURIComponent(query)}`, {
             headers: {
@@ -1280,29 +1566,53 @@
                 'Accept': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
+            isSearching = false;
+            btnSearch.disabled = false;
+            btnSearch.textContent = '🔍 Cari';
+            spinner.classList.remove('active');
+            
             if (data.success) {
-                renderSearchResult(data.data, data.pagination);
-                showToast('success', 'Berhasil!', 'Ditemukan ' + data.data.length + ' data');
+                renderSearchResult(data.data, data.pagination, query);
+                hideSearchStatus();
+                showToast('success', 'Berhasil!', `Ditemukan ${data.data.length} data untuk "${query}"`);
             } else {
+                hideSearchStatus();
                 showToast('error', 'Gagal!', data.message || 'Gagal mencari data');
+                // Kembalikan ke tampilan awal
+                window.location.reload();
             }
         })
         .catch(error => {
+            isSearching = false;
+            btnSearch.disabled = false;
+            btnSearch.textContent = '🔍 Cari';
+            spinner.classList.remove('active');
+            hideSearchStatus();
             showToast('error', 'Error!', 'Terjadi kesalahan: ' + error.message);
+            // Kembalikan ke tampilan awal
+            window.location.reload();
         });
     }
 
     function resetSearch() {
         document.getElementById('searchContact').value = '';
+        currentSearchQuery = '';
+        hideSearchStatus();
         window.location.reload();
     }
 
-    function renderSearchResult(contacts, pagination) {
+    function renderSearchResult(contacts, pagination, query) {
         const tbody = document.getElementById('tableBody');
         const info = document.getElementById('tableInfo');
         const paginationWrapper = document.getElementById('paginationWrapper');
+        const searchStatus = document.getElementById('searchStatus');
         
         if (!tbody) return;
         
@@ -1312,8 +1622,8 @@
                     <td colspan="4">
                         <div class="empty-state">
                             <span class="empty-icon">🔍</span>
-                            <h3>Tidak Ditemukan</h3>
-                            <p>Tidak ada kontak yang sesuai dengan kata kunci pencarian</p>
+                            <h3>Kontak Tidak Ditemukan</h3>
+                            <p>Tidak ada kontak yang sesuai dengan "<strong>${query}</strong>"</p>
                             <button onclick="resetSearch()" class="btn-empty-primary">↺ Reset Pencarian</button>
                         </div>
                     </td>
@@ -1332,6 +1642,16 @@
             const initials = contact.name.substring(0, 2).toUpperCase();
             const no = index + 1;
             
+            // Highlight matching text
+            let displayName = contact.name;
+            let displayPhone = contact.phone;
+            
+            if (query) {
+                const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                displayName = contact.name.replace(regex, '<mark>$1</mark>');
+                displayPhone = contact.phone.replace(regex, '<mark>$1</mark>');
+            }
+            
             html += `
                 <tr>
                     <td><span class="contact-no">${no}</span></td>
@@ -1339,12 +1659,12 @@
                         <div class="contact-info">
                             <div class="contact-avatar ${colorClass}">${initials}</div>
                             <div>
-                                <div class="contact-name">${contact.name}</div>
+                                <div class="contact-name">${displayName}</div>
                             </div>
                         </div>
                     </td>
                     <td>
-                        <span class="contact-phone">${contact.phone}</span>
+                        <span class="contact-phone">${displayPhone}</span>
                     </td>
                     <td>
                         <div class="action-buttons">
@@ -1537,6 +1857,7 @@
         if (e.key === 'Escape') {
             closeModal();
             closeDeleteModal();
+            hideSearchStatus();
         }
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             const modal = document.getElementById('contactModal');
@@ -1544,6 +1865,12 @@
                 e.preventDefault();
                 submitForm();
             }
+        }
+        // Ctrl+K for search focus
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('searchContact').focus();
+            document.getElementById('searchContact').select();
         }
     });
 

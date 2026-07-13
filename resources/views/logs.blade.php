@@ -2,28 +2,95 @@
 
 @section('content')
 <style>
+    /* ================= ROOT VARIABLES ================= */
+    :root {
+        --bg-logs: #ffffff;
+        --bg-card-logs: #ffffff;
+        --bg-table-header-logs: #fafbfc;
+        --bg-hover-row-logs: #f8fafc;
+        --bg-stats-logs: #ffffff;
+        --text-primary-logs: #0f172a;
+        --text-secondary-logs: #475569;
+        --text-muted-logs: #94a3b8;
+        --text-light-logs: #64748b;
+        --border-color-logs: #eef2f6;
+        --border-table-logs: #f1f5f9;
+        --shadow-card-logs: 0 4px 20px rgba(0, 0, 0, 0.08);
+        --shadow-hover-logs: 0 8px 30px rgba(0, 0, 0, 0.12);
+        --radius-logs: 16px;
+        --transition-logs: all 0.2s ease;
+        
+        /* Status badge colors - light mode */
+        --badge-up-bg: #ecfdf5;
+        --badge-up-text: #065f46;
+        --badge-warning-bg: #fffbeb;
+        --badge-warning-text: #92400e;
+        --badge-down-bg: #fef2f2;
+        --badge-down-text: #991b1b;
+        --badge-unknown-bg: #f1f5f9;
+        --badge-unknown-text: #64748b;
+        
+        --btn-back-bg: #f1f5f9;
+        --btn-back-text: #475569;
+        --btn-back-border: #e2e8f0;
+    }
+
+    /* Dark mode override dari layout utama */
+    [data-theme="dark"] {
+        --bg-logs: #0f172a;
+        --bg-card-logs: #1e293b;
+        --bg-table-header-logs: #1e293b;
+        --bg-hover-row-logs: #2d3a4f;
+        --bg-stats-logs: #1e293b;
+        --text-primary-logs: #e2e8f0;
+        --text-secondary-logs: #94a3b8;
+        --text-muted-logs: #64748b;
+        --text-light-logs: #94a3b8;
+        --border-color-logs: #334155;
+        --border-table-logs: #334155;
+        --shadow-card-logs: 0 4px 20px rgba(0, 0, 0, 0.2);
+        --shadow-hover-logs: 0 8px 30px rgba(0, 0, 0, 0.3);
+        
+        /* Status badge colors - dark mode */
+        --badge-up-bg: #064e3b;
+        --badge-up-text: #6ee7b7;
+        --badge-warning-bg: #78350f;
+        --badge-warning-text: #fcd34d;
+        --badge-down-bg: #7f1d1d;
+        --badge-down-text: #fca5a5;
+        --badge-unknown-bg: #1e293b;
+        --badge-unknown-text: #94a3b8;
+        
+        --btn-back-bg: #1e293b;
+        --btn-back-text: #94a3b8;
+        --btn-back-border: #334155;
+    }
+
     .logs-container {
         padding: 24px;
         max-width: 1440px;
         margin: 0 auto;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: #ffffff;
+        background: var(--bg-logs);
         min-height: 100vh;
+        transition: background 0.3s ease, color 0.3s ease;
+        color: var(--text-primary-logs);
     }
 
     /* Header Section */
     .logs-header {
-        background: white;
+        background: var(--bg-card-logs);
         padding: 24px 28px;
-        border-radius: 16px;
+        border-radius: var(--radius-logs);
         margin-bottom: 24px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        border: 1px solid #eef2f6;
+        box-shadow: var(--shadow-card-logs);
+        border: 1px solid var(--border-color-logs);
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
         gap: 16px;
+        transition: all 0.3s ease;
     }
 
     .logs-header .header-left {
@@ -43,21 +110,24 @@
         font-size: 24px;
         color: white;
         box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        flex-shrink: 0;
     }
 
     .logs-header h1 {
         font-size: 24px;
         font-weight: 700;
-        color: #0f172a;
+        color: var(--text-primary-logs);
         margin: 0;
         letter-spacing: -0.5px;
+        transition: color 0.3s ease;
     }
 
     .logs-header .header-subtitle {
-        color: #64748b;
+        color: var(--text-secondary-logs);
         font-size: 13px;
         font-weight: 400;
         margin-top: 2px;
+        transition: color 0.3s ease;
     }
 
     .logs-header .header-actions {
@@ -65,6 +135,29 @@
         gap: 12px;
         align-items: center;
         flex-wrap: wrap;
+    }
+
+    .btn-back {
+        background: var(--btn-back-bg);
+        color: var(--btn-back-text);
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        border: 1px solid var(--btn-back-border);
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .btn-back:hover {
+        background: var(--border-color-logs);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     /* Stats Bar */
@@ -76,34 +169,36 @@
     }
 
     .stat-item {
-        background: white;
+        background: var(--bg-stats-logs);
         padding: 16px 20px;
         border-radius: 12px;
-        border: 1px solid #eef2f6;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border-color-logs);
+        box-shadow: var(--shadow-card-logs);
         text-align: center;
         transition: all 0.2s ease;
     }
 
     .stat-item:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        box-shadow: var(--shadow-hover-logs);
     }
 
     .stat-item .stat-number {
         font-size: 28px;
         font-weight: 700;
-        color: #0f172a;
+        color: var(--text-primary-logs);
         display: block;
+        transition: color 0.3s ease;
     }
 
     .stat-item .stat-label {
         font-size: 12px;
-        color: #94a3b8;
+        color: var(--text-muted-logs);
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-top: 4px;
+        transition: color 0.3s ease;
     }
 
     .stat-item .stat-number.green { color: #10b981; }
@@ -113,38 +208,43 @@
 
     /* Table Container */
     .table-container {
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        border: 1px solid #eef2f6;
+        background: var(--bg-card-logs);
+        border-radius: var(--radius-logs);
+        box-shadow: var(--shadow-card-logs);
+        border: 1px solid var(--border-color-logs);
         overflow: hidden;
+        transition: all 0.3s ease;
     }
 
     .table-header {
         padding: 20px 24px;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid var(--border-table-logs);
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
         gap: 12px;
-        background: #fafbfc;
+        background: var(--bg-table-header-logs);
+        transition: all 0.3s ease;
     }
 
     .table-header h2 {
         font-size: 16px;
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-primary-logs);
         margin: 0;
+        transition: color 0.3s ease;
     }
 
     .table-header .table-info {
         font-size: 13px;
-        color: #94a3b8;
+        color: var(--text-muted-logs);
+        transition: color 0.3s ease;
     }
 
     .table-header .table-info strong {
-        color: #0f172a;
+        color: var(--text-primary-logs);
+        transition: color 0.3s ease;
     }
 
     /* PerPage Selector */
@@ -153,16 +253,17 @@
         align-items: center;
         gap: 8px;
         font-size: 13px;
-        color: #64748b;
+        color: var(--text-secondary-logs);
+        transition: color 0.3s ease;
     }
 
     .perpage-selector select {
         padding: 6px 12px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-color-logs);
         border-radius: 6px;
-        background: white;
+        background: var(--bg-card-logs);
         font-size: 13px;
-        color: #0f172a;
+        color: var(--text-primary-logs);
         cursor: pointer;
         outline: none;
         transition: all 0.2s ease;
@@ -171,6 +272,11 @@
     .perpage-selector select:focus {
         border-color: #6366f1;
         box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .perpage-selector select option {
+        background: var(--bg-card-logs);
+        color: var(--text-primary-logs);
     }
 
     .table-scroll {
@@ -188,22 +294,24 @@
         padding: 14px 16px;
         font-size: 11px;
         font-weight: 600;
-        color: #94a3b8;
+        color: var(--text-muted-logs);
         text-transform: uppercase;
         letter-spacing: 0.8px;
-        border-bottom: 2px solid #f1f5f9;
-        background: #fafbfc;
+        border-bottom: 2px solid var(--border-table-logs);
+        background: var(--bg-table-header-logs);
         position: sticky;
         top: 0;
         z-index: 10;
+        transition: all 0.3s ease;
     }
 
     .table-container tbody td {
         padding: 14px 16px;
-        border-bottom: 1px solid #f1f5f9;
-        color: #1e293b;
+        border-bottom: 1px solid var(--border-table-logs);
+        color: var(--text-primary-logs);
         font-size: 14px;
         vertical-align: middle;
+        transition: all 0.3s ease;
     }
 
     .table-container tbody tr:last-child td {
@@ -215,7 +323,7 @@
     }
 
     .table-container tbody tr:hover {
-        background: #f8fafc;
+        background: var(--bg-hover-row-logs);
     }
 
     /* Status Badge */
@@ -229,6 +337,7 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        transition: all 0.3s ease;
     }
 
     .status-badge::before {
@@ -240,8 +349,8 @@
     }
 
     .status-badge.up {
-        background: #ecfdf5;
-        color: #065f46;
+        background: var(--badge-up-bg);
+        color: var(--badge-up-text);
     }
 
     .status-badge.up::before {
@@ -250,8 +359,8 @@
     }
 
     .status-badge.warning {
-        background: #fffbeb;
-        color: #92400e;
+        background: var(--badge-warning-bg);
+        color: var(--badge-warning-text);
     }
 
     .status-badge.warning::before {
@@ -260,8 +369,8 @@
     }
 
     .status-badge.down {
-        background: #fef2f2;
-        color: #991b1b;
+        background: var(--badge-down-bg);
+        color: var(--badge-down-text);
     }
 
     .status-badge.down::before {
@@ -270,8 +379,8 @@
     }
 
     .status-badge.unknown {
-        background: #f1f5f9;
-        color: #64748b;
+        background: var(--badge-unknown-bg);
+        color: var(--badge-unknown-text);
     }
 
     .status-badge.unknown::before {
@@ -292,22 +401,25 @@
     /* Service Name */
     .service-name {
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-primary-logs);
+        transition: color 0.3s ease;
     }
 
     /* Response Time */
     .response-time {
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-primary-logs);
         font-family: 'Courier New', monospace;
         font-size: 13px;
+        transition: color 0.3s ease;
     }
 
     .response-time .unit {
-        color: #94a3b8;
+        color: var(--text-muted-logs);
         font-weight: 400;
         font-size: 11px;
         margin-left: 1px;
+        transition: color 0.3s ease;
     }
 
     .response-time .slow {
@@ -318,14 +430,15 @@
         color: #10b981;
     }
 
-    /* 🔥 PERBAIKI MESSAGE - TIDAK KEPOTONG */
+    /* Message Cell */
     .message-cell {
         max-width: 400px;
         word-wrap: break-word;
         white-space: normal;
         font-size: 13px;
-        color: #475569;
+        color: var(--text-secondary-logs);
         line-height: 1.5;
+        transition: color 0.3s ease;
     }
 
     .message-cell .tooltip {
@@ -336,9 +449,10 @@
     /* Time */
     .time-cell {
         font-size: 13px;
-        color: #64748b;
+        color: var(--text-secondary-logs);
         font-family: 'Courier New', monospace;
         white-space: nowrap;
+        transition: color 0.3s ease;
     }
 
     /* Code */
@@ -346,7 +460,8 @@
         font-family: 'Courier New', monospace;
         font-size: 13px;
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-primary-logs);
+        transition: color 0.3s ease;
     }
 
     .code-cell.success { color: #10b981; }
@@ -357,7 +472,7 @@
     .empty-state {
         text-align: center;
         padding: 60px 20px;
-        color: #94a3b8;
+        color: var(--text-muted-logs);
     }
 
     .empty-state .empty-icon {
@@ -368,37 +483,42 @@
     }
 
     .empty-state h3 {
-        color: #0f172a;
+        color: var(--text-primary-logs);
         font-size: 18px;
         margin: 0 0 8px;
         font-weight: 600;
+        transition: color 0.3s ease;
     }
 
     .empty-state p {
         margin: 0;
         font-size: 14px;
+        color: var(--text-secondary-logs);
     }
 
     /* Pagination */
     .pagination-wrapper {
         padding: 16px 24px 20px;
-        border-top: 1px solid #f1f5f9;
-        background: #fafbfc;
-        border-radius: 0 0 16px 16px;
+        border-top: 1px solid var(--border-table-logs);
+        background: var(--bg-table-header-logs);
+        border-radius: 0 0 var(--radius-logs) var(--radius-logs);
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
         gap: 12px;
+        transition: all 0.3s ease;
     }
 
     .pagination-info {
         font-size: 13px;
-        color: #64748b;
+        color: var(--text-secondary-logs);
+        transition: color 0.3s ease;
     }
 
     .pagination-info strong {
-        color: #0f172a;
+        color: var(--text-primary-logs);
+        transition: color 0.3s ease;
     }
 
     .pagination-links {
@@ -410,11 +530,11 @@
 
     .pagination-links .page-link {
         padding: 6px 12px;
-        background: white;
-        border: 1px solid #e2e8f0;
+        background: var(--bg-card-logs);
+        border: 1px solid var(--border-color-logs);
         border-radius: 6px;
         font-size: 13px;
-        color: #475569;
+        color: var(--text-secondary-logs);
         text-decoration: none;
         transition: all 0.2s ease;
         min-width: 36px;
@@ -422,8 +542,8 @@
     }
 
     .pagination-links .page-link:hover:not(.active) {
-        background: #f1f5f9;
-        border-color: #94a3b8;
+        background: var(--bg-hover-row-logs);
+        border-color: var(--text-muted-logs);
         transform: translateY(-1px);
     }
 
@@ -434,15 +554,16 @@
     }
 
     .pagination-links .page-link.disabled {
-        background: #f1f5f9;
-        color: #94a3b8;
+        background: var(--bg-hover-row-logs);
+        color: var(--text-muted-logs);
         cursor: not-allowed;
         pointer-events: none;
+        border-color: var(--border-color-logs);
     }
 
     .pagination-links .page-dots {
         padding: 6px 4px;
-        color: #94a3b8;
+        color: var(--text-muted-logs);
     }
 
     /* Responsive */
@@ -525,6 +646,10 @@
             align-items: stretch;
             gap: 8px;
         }
+
+        .btn-back {
+            justify-content: center;
+        }
     }
 
     @media (max-width: 480px) {
@@ -582,6 +707,15 @@
             padding: 3px 6px;
             font-size: 11px;
         }
+
+        .logs-header h1 {
+            font-size: 17px;
+        }
+
+        .btn-back {
+            font-size: 12px;
+            padding: 6px 12px;
+        }
     }
 </style>
 
@@ -596,20 +730,7 @@
             </div>
         </div>
         <div class="header-actions">
-            <a href="{{ route('services') }}" class="btn-primary" style="
-                background: #f1f5f9;
-                color: #475569;
-                padding: 8px 16px;
-                border-radius: 8px;
-                text-decoration: none;
-                font-size: 13px;
-                font-weight: 500;
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                transition: all 0.2s ease;
-                border: 1px solid #e2e8f0;
-            ">
+            <a href="{{ route('services') }}" class="btn-back">
                 ← Kembali ke Service
             </a>
         </div>
@@ -617,10 +738,10 @@
 
     <!-- Stats Bar -->
     @php
-        $totalLogs = $logs->total();
-        $upCount = $logs->where('status', 'UP')->count();
-        $warningCount = $logs->where('status', 'WARNING')->count();
-        $downCount = $logs->where('status', 'DOWN')->count();
+        $totalLogs = $stats['total'] ?? $logs->count();
+        $upCount = $stats['up'] ?? $logs->where('status', 'UP')->count();
+        $warningCount = $stats['warning'] ?? $logs->where('status', 'WARNING')->count();
+        $downCount = $stats['down'] ?? $logs->where('status', 'DOWN')->count();
     @endphp
 
     <div class="stats-bar">
@@ -650,15 +771,15 @@
                 <div class="perpage-selector">
                     <label for="perPage">Tampilkan:</label>
                     <select id="perPage" onchange="changePerPage(this.value)">
-                        <option value="10" {{ request('perPage') == 10 ? 'selected' : '' }}>10</option>
-                        <option value="20" {{ request('perPage') == 20 ? 'selected' : '' }}>20</option>
-                        <option value="50" {{ request('perPage') == 50 ? 'selected' : '' }}>50</option>
-                        <option value="100" {{ request('perPage') == 100 ? 'selected' : '' }}>100</option>
+                        <option value="10" {{ request('perPage', $perPage ?? 10) == 10 ? 'selected' : '' }}>10</option>
+                        <option value="20" {{ request('perPage', $perPage ?? 10) == 20 ? 'selected' : '' }}>20</option>
+                        <option value="50" {{ request('perPage', $perPage ?? 10) == 50 ? 'selected' : '' }}>50</option>
+                        <option value="100" {{ request('perPage', $perPage ?? 10) == 100 ? 'selected' : '' }}>100</option>
                     </select>
                     <span>data</span>
                 </div>
                 <span class="table-info">
-                    Total <strong>{{ $logs->total() }}</strong> logs
+                    Total <strong>{{ $stats['total'] ?? $logs->count() }}</strong> logs
                 </span>
             </div>
         </div>
@@ -684,7 +805,6 @@
                             $timeClass = $responseTime < 1 ? 'fast' : ($responseTime < 3 ? '' : 'slow');
                             $codeClass = $log->response_code < 400 ? 'success' : ($log->response_code < 500 ? 'warning' : 'error');
                             
-                            // 🔥 PERBAIKI MESSAGE AGAR LENGKAP DAN TIDAK KEPOTONG
                             $message = $log->message ?? '-';
                             if ($statusLabel == 'UP' && $log->response_code == 200) {
                                 $message = '✅ Server berjalan dengan normal. Service dalam kondisi baik dan merespon dengan cepat.';

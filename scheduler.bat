@@ -7,7 +7,8 @@ echo   📡 Monitoring Service
 echo ================================
 echo.
 echo 📌 Folder: %CD%
-echo ⏱️  Schedule akan berjalan setiap 5 menit
+echo ⏱️  Schedule akan berjalan OTOMATIS setiap menit
+echo 📡 Monitoring ESP akan berjalan setiap menit
 echo.
 echo ✅ Tekan Ctrl+C untuk berhenti
 echo.

@@ -25,6 +25,42 @@
         --gray-700: #334155;
         --gray-800: #1e293b;
         --gray-900: #0f172a;
+        
+        /* Dark mode support - akan di-override oleh layout */
+        --bg-dashboard: #ffffff;
+        --bg-card: #ffffff;
+        --text-dashboard: #1e293b;
+        --text-secondary-dash: #475569;
+        --border-dash: rgba(226, 232, 240, 0.6);
+        --shadow-dash: rgba(0, 0, 0, 0.08);
+        --shadow-hover-dash: rgba(0, 0, 0, 0.12);
+    }
+
+    /* Dark mode override dari layout utama */
+    [data-theme="dark"] {
+        --bg-dashboard: #0f172a;
+        --bg-card: #1e293b;
+        --text-dashboard: #e2e8f0;
+        --text-secondary-dash: #94a3b8;
+        --border-dash: #334155;
+        --shadow-dash: rgba(0, 0, 0, 0.2);
+        --shadow-hover-dash: rgba(0, 0, 0, 0.3);
+        --gray-50: #1e293b;
+        --gray-100: #2d3a4f;
+        --gray-200: #334155;
+        --gray-300: #475569;
+        --gray-400: #94a3b8;
+        --gray-500: #64748b;
+        --gray-600: #94a3b8;
+        --gray-700: #cbd5e1;
+        --gray-800: #e2e8f0;
+        --gray-900: #f1f5f9;
+        
+        /* Dark mode status badges */
+        --success-light: #064e3b;
+        --warning-light: #78350f;
+        --danger-light: #7f1d1d;
+        --purple-light: #2e1065;
     }
 
     * {
@@ -36,8 +72,10 @@
         max-width: 1440px;
         margin: 0 auto;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: #ffffff;
+        background: var(--bg-dashboard);
         min-height: 100vh;
+        transition: background 0.3s ease, color 0.3s ease;
+        color: var(--text-dashboard);
     }
 
     /* ================= HEADER ================= */
@@ -55,6 +93,7 @@
         position: relative;
         overflow: hidden;
         box-shadow: 0 10px 40px rgba(13, 59, 102, 0.3);
+        transition: box-shadow 0.3s ease;
     }
 
     .dashboard-header::before {
@@ -165,15 +204,16 @@
     }
 
     .stat-card {
-        background: white;
+        background: var(--bg-card);
         border-radius: 16px;
         padding: 20px 22px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        border: 1px solid rgba(226, 232, 240, 0.6);
+        box-shadow: 0 4px 20px var(--shadow-dash);
+        border: 1px solid var(--border-dash);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
         cursor: pointer;
+        color: var(--text-dashboard);
     }
 
     .stat-card::before {
@@ -206,7 +246,7 @@
 
     .stat-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 12px 40px var(--shadow-hover-dash);
         border-color: var(--gray-300);
     }
 
@@ -239,6 +279,7 @@
         color: var(--gray-600);
         letter-spacing: 0.3px;
         text-transform: uppercase;
+        transition: color 0.3s ease;
     }
 
     .stat-header i {
@@ -263,6 +304,7 @@
         margin-bottom: 2px;
         line-height: 1.1;
         letter-spacing: -1px;
+        transition: color 0.3s ease;
     }
 
     .stat-card.total .stat-value { color: var(--primary); }
@@ -275,6 +317,7 @@
         font-size: 12px;
         color: var(--gray-500);
         font-weight: 400;
+        transition: color 0.3s ease;
     }
 
     .stat-clickable {
@@ -286,15 +329,23 @@
         border-radius: 20px;
         font-size: 10px;
         font-weight: 600;
-        color: white;
         transition: all 0.3s ease;
         background: rgba(0,0,0,0.06);
         color: var(--gray-500);
     }
 
+    [data-theme="dark"] .stat-clickable {
+        background: rgba(255,255,255,0.06);
+        color: var(--gray-400);
+    }
+
     .stat-card:hover .stat-clickable {
         background: rgba(0,0,0,0.1);
         transform: translateX(2px);
+    }
+
+    [data-theme="dark"] .stat-card:hover .stat-clickable {
+        background: rgba(255,255,255,0.12);
     }
 
     .stat-clickable i {
@@ -316,6 +367,10 @@
         pointer-events: none;
     }
 
+    [data-theme="dark"] .stat-card .ripple {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
     @keyframes ripple-animation {
         to {
             transform: scale(4);
@@ -325,12 +380,12 @@
 
     /* ================= UPTIME CARD ================= */
     .uptime-card {
-        background: white;
+        background: var(--bg-card);
         border-radius: 16px;
         padding: 24px 32px;
         margin-bottom: 24px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        border: 1px solid rgba(226, 232, 240, 0.6);
+        box-shadow: 0 4px 20px var(--shadow-dash);
+        border: 1px solid var(--border-dash);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -339,10 +394,11 @@
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
+        color: var(--text-dashboard);
     }
 
     .uptime-card:hover {
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 8px 30px var(--shadow-hover-dash);
     }
 
     .uptime-left {
@@ -355,20 +411,22 @@
         width: 56px;
         height: 56px;
         border-radius: 14px;
-        background: #e0e7ff;
+        background: var(--gray-100);
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 24px;
         color: var(--primary);
         flex-shrink: 0;
+        transition: background 0.3s ease;
     }
 
     .uptime-left .uptime-info h3 {
         margin: 0 0 2px 0;
         font-size: 14px;
         font-weight: 600;
-        color: var(--gray-800);
+        color: var(--text-dashboard);
+        transition: color 0.3s ease;
     }
 
     .uptime-left .uptime-info p {
@@ -378,6 +436,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        transition: color 0.3s ease;
     }
 
     .uptime-left .uptime-info .uptime-status {
@@ -388,6 +447,7 @@
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
+        transition: all 0.3s ease;
     }
 
     .uptime-left .uptime-info .uptime-status.excellent {
@@ -425,6 +485,7 @@
         color: var(--primary);
         line-height: 1;
         white-space: nowrap;
+        transition: color 0.3s ease;
     }
 
     .uptime-right .uptime-value.no-data {
@@ -450,6 +511,7 @@
         border-radius: 20px;
         overflow: hidden;
         box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        transition: background 0.3s ease;
     }
 
     .uptime-right .bar-fill {
@@ -483,6 +545,7 @@
         color: var(--gray-400);
         margin-top: 4px;
         font-weight: 500;
+        transition: color 0.3s ease;
     }
 
     @keyframes shimmer {
@@ -500,16 +563,17 @@
     }
 
     .chart-card {
-        background: white;
+        background: var(--bg-card);
         border-radius: 16px;
         padding: 22px 24px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        border: 1px solid rgba(226, 232, 240, 0.6);
+        box-shadow: 0 4px 20px var(--shadow-dash);
+        border: 1px solid var(--border-dash);
         transition: all 0.3s ease;
+        color: var(--text-dashboard);
     }
 
     .chart-card:hover {
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 8px 30px var(--shadow-hover-dash);
     }
 
     .chart-card .chart-header {
@@ -525,10 +589,11 @@
         margin: 0;
         font-size: 15px;
         font-weight: 600;
-        color: var(--gray-800);
+        color: var(--text-dashboard);
         display: flex;
         align-items: center;
         gap: 8px;
+        transition: color 0.3s ease;
     }
 
     .chart-card h3 i {
@@ -546,6 +611,7 @@
         display: flex;
         align-items: center;
         gap: 4px;
+        transition: all 0.3s ease;
     }
 
     .chart-card .chart-badge i {
@@ -579,6 +645,7 @@
         margin: 0 0 4px 0;
         font-weight: 500;
         font-size: 14px;
+        transition: color 0.3s ease;
     }
 
     .chart-empty p {
@@ -608,7 +675,7 @@
     }
 
     .modal-content {
-        background: white;
+        background: var(--bg-card);
         border-radius: 20px;
         max-width: 700px;
         width: 90%;
@@ -616,25 +683,29 @@
         overflow: hidden;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         animation: slideUp 0.3s ease;
+        border: 1px solid var(--border-dash);
+        color: var(--text-dashboard);
     }
 
     .modal-header {
         padding: 20px 24px;
-        border-bottom: 1px solid var(--gray-200);
+        border-bottom: 1px solid var(--border-dash);
         display: flex;
         justify-content: space-between;
         align-items: center;
         background: var(--gray-50);
+        transition: all 0.3s ease;
     }
 
     .modal-header h2 {
         margin: 0;
         font-size: 18px;
         font-weight: 700;
-        color: var(--gray-800);
+        color: var(--text-dashboard);
         display: flex;
         align-items: center;
         gap: 10px;
+        transition: color 0.3s ease;
     }
 
     .modal-header h2 .status-dot {
@@ -666,6 +737,11 @@
         color: var(--gray-700);
     }
 
+    [data-theme="dark"] .modal-close:hover {
+        background: var(--gray-700);
+        color: var(--gray-200);
+    }
+
     .modal-body {
         padding: 20px 24px;
         max-height: 55vh;
@@ -691,13 +767,18 @@
         align-items: center;
         gap: 14px;
         padding: 12px 14px;
-        border-bottom: 1px solid var(--gray-100);
+        border-bottom: 1px solid var(--border-dash);
         transition: all 0.2s ease;
         border-radius: 8px;
+        color: var(--text-dashboard);
     }
 
     .modal-body .service-item:hover {
         background: var(--gray-50);
+    }
+
+    [data-theme="dark"] .modal-body .service-item:hover {
+        background: var(--gray-700);
     }
 
     .modal-body .service-item:last-child {
@@ -732,8 +813,9 @@
 
     .modal-body .service-item .service-info .service-name {
         font-weight: 600;
-        color: var(--gray-800);
+        color: var(--text-dashboard);
         font-size: 14px;
+        transition: color 0.3s ease;
     }
 
     .modal-body .service-item .service-info .service-detail {
@@ -741,6 +823,7 @@
         color: var(--gray-400);
         display: block;
         margin-top: 1px;
+        transition: color 0.3s ease;
     }
 
     .modal-body .service-item .service-status {
@@ -749,6 +832,7 @@
         padding: 3px 12px;
         border-radius: 20px;
         flex-shrink: 0;
+        transition: all 0.3s ease;
     }
 
     .modal-body .service-item .service-status.up {
@@ -783,6 +867,7 @@
         margin: 0 0 4px 0;
         font-weight: 500;
         font-size: 16px;
+        transition: color 0.3s ease;
     }
 
     .modal-body .empty-services p {
@@ -861,6 +946,12 @@
         border: 1px solid rgba(255, 255, 255, 0.08);
         user-select: none;
         cursor: default;
+        transition: background 0.3s ease;
+    }
+
+    [data-theme="dark"] .auto-refresh-timer {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: rgba(255, 255, 255, 0.05);
     }
 
     .auto-refresh-timer .icon { font-size: 14px; }
@@ -881,6 +972,11 @@
     @keyframes blink {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.3; }
+    }
+
+    /* ================= DARK MODE CHART OVERRIDES ================= */
+    [data-theme="dark"] canvas {
+        filter: brightness(0.9) contrast(1.1);
     }
 
     /* ================= RESPONSIVE ================= */
@@ -1181,7 +1277,7 @@
                     ❌ Tidak ada data (offline)
                 @endif
             </div>
-            <div class="stat-label" style="margin-top: 4px; font-size: 11px; color: #94a3b8;">
+            <div class="stat-label" style="margin-top: 4px; font-size: 11px; color: var(--gray-400);">
                 📊 PPM: <strong id="espPpm">{{ $lastSmokeValue }} ppm</strong>
                 | Status: <span id="espSmokeStatus" class="status-badge {{ strtolower($lastSmokeStatus) }}" style="font-size: 10px; padding: 2px 10px; border-radius: 12px; 
                     @if($lastSmokeStatus == 'DANGER') background: #fee2e2; color: #991b1b;
@@ -1336,9 +1432,13 @@
             const ctx1 = document.getElementById('uptimeChart');
             if (ctx1) {
                 const isMobile = window.innerWidth < 576;
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const textColor = isDark ? '#94a3b8' : '#64748b';
+                const gridColor = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+                
                 const gradient = ctx1.getContext('2d').createLinearGradient(0, 0, 0, 200);
-                gradient.addColorStop(0, 'rgba(99, 102, 241, 0.2)');
-                gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
+                gradient.addColorStop(0, isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.2)');
+                gradient.addColorStop(1, isDark ? 'rgba(99, 102, 241, 0.01)' : 'rgba(99, 102, 241, 0.01)');
 
                 new Chart(ctx1, {
                     type: 'line',
@@ -1358,7 +1458,7 @@
                                 if (value >= 70) return '#f59e0b';
                                 return '#ef4444';
                             },
-                            pointBorderColor: '#fff',
+                            pointBorderColor: isDark ? '#1e293b' : '#fff',
                             pointBorderWidth: 2,
                             pointRadius: isMobile ? 4 : 6,
                             pointHoverRadius: isMobile ? 7 : 9,
@@ -1371,7 +1471,7 @@
                         plugins: {
                             legend: { display: false },
                             tooltip: {
-                                backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                                backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.92)',
                                 titleFont: { size: 12, weight: '600' },
                                 bodyFont: { size: 12 },
                                 padding: 10,
@@ -1395,16 +1495,16 @@
                                     display: true,
                                     text: isMobile ? 'Uptime %' : 'Uptime (%)',
                                     font: { size: isMobile ? 9 : 11, weight: '500' },
-                                    color: '#94a3b8'
+                                    color: textColor
                                 },
                                 grid: {
-                                    color: 'rgba(0, 0, 0, 0.04)',
+                                    color: gridColor,
                                     drawBorder: false,
                                     drawTicks: false,
                                 },
                                 ticks: {
                                     font: { size: isMobile ? 8 : 10 },
-                                    color: '#94a3b8',
+                                    color: textColor,
                                     maxTicksLimit: isMobile ? 5 : 8,
                                     callback: function(value) {
                                         return value + '%';
@@ -1415,7 +1515,7 @@
                                 grid: { display: false },
                                 ticks: {
                                     font: { size: isMobile ? 8 : 10 },
-                                    color: '#94a3b8',
+                                    color: textColor,
                                     maxTicksLimit: 7,
                                 }
                             }
@@ -1434,6 +1534,10 @@
             const ctx2 = document.getElementById('smokeChart');
             if (ctx2) {
                 const isMobile = window.innerWidth < 576;
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const textColor = isDark ? '#94a3b8' : '#64748b';
+                const gridColor = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+                
                 new Chart(ctx2, {
                     type: 'bar',
                     data: {
@@ -1441,7 +1545,7 @@
                         datasets: [{
                             label: 'Smoke Level (ppm)',
                             data: @json($smokeData),
-                            backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                            backgroundColor: isDark ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.6)',
                             borderColor: '#ef4444',
                             borderWidth: 1.5,
                             borderRadius: 6,
@@ -1454,7 +1558,7 @@
                         plugins: {
                             legend: { display: false },
                             tooltip: {
-                                backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                                backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.92)',
                                 titleFont: { size: 12, weight: '600' },
                                 bodyFont: { size: 12 },
                                 padding: 10,
@@ -1473,16 +1577,16 @@
                                     display: true,
                                     text: isMobile ? 'ppm' : 'Nilai Asap (ppm)',
                                     font: { size: isMobile ? 9 : 11, weight: '500' },
-                                    color: '#94a3b8'
+                                    color: textColor
                                 },
                                 grid: {
-                                    color: 'rgba(0, 0, 0, 0.04)',
+                                    color: gridColor,
                                     drawBorder: false,
                                     drawTicks: false,
                                 },
                                 ticks: {
                                     font: { size: isMobile ? 8 : 10 },
-                                    color: '#94a3b8',
+                                    color: textColor,
                                     maxTicksLimit: isMobile ? 5 : 8,
                                 }
                             },
@@ -1490,7 +1594,7 @@
                                 grid: { display: false },
                                 ticks: {
                                     font: { size: isMobile ? 8 : 10 },
-                                    color: '#94a3b8',
+                                    color: textColor,
                                     maxTicksLimit: 7,
                                 }
                             }
@@ -1501,6 +1605,24 @@
             }
         }
         @endif
+
+        // ====================== DARK MODE WATCHER FOR CHARTS ======================
+        function updateChartsForTheme() {
+            // Charts will auto-update when theme changes
+            // Chart.js automatically re-renders on container resize
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        // Listen for theme changes
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'data-theme') {
+                    setTimeout(updateChartsForTheme, 300);
+                }
+            });
+        });
+
+        observer.observe(document.documentElement, { attributes: true });
 
         // Resize handler
         let resizeTimer;

@@ -61,15 +61,26 @@ class LogController extends Controller
         ];
         
         // ==================== PAGINATION ====================
+        $perPage = $request->input('perPage', $request->input('per_page', 10));
+        $perPage = (int) $perPage;
+        
+        if ($perPage < 1) {
+            $perPage = 10;
+        }
+        
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
+        
         $logs = $query->latest('created_at')
-                     ->paginate($request->per_page ?? 10)
+                     ->paginate($perPage)
                      ->withQueryString();
         
         // ==================== AMBIL SERVICE UNTUK FILTER ====================
         $services = Service::orderBy('name')->get();
         
         // ==================== KIRIM KE VIEW ====================
-        return view('logs', compact('logs', 'stats', 'services'));
+        return view('logs', compact('logs', 'stats', 'services', 'perPage'));
     }
     
     /**
@@ -93,20 +104,31 @@ class LogController extends Controller
     
     /**
      * Get count of logs where status changed.
+     * 🔥 DIPERBAIKI: Tidak pakai 'is_status_change' kolom
      */
     private function getStatusChangedCount()
     {
-        return ServiceLog::whereIn('id', function($query) {
-            $query->select(DB::raw('MAX(id)'))
-                ->from('service_logs as sl1')
-                ->whereExists(function($exists) {
-                    $exists->select(DB::raw(1))
-                        ->from('service_logs as sl2')
-                        ->whereColumn('sl2.service_id', 'sl1.service_id')
-                        ->whereColumn('sl2.created_at', '<', 'sl1.created_at')
-                        ->whereRaw('sl2.status != sl1.status');
-                });
-        })->count();
+        // 🔥 PERBAIKAN: Cari log yang statusnya berbeda dari log sebelumnya
+        $logs = ServiceLog::with('service')
+            ->orderBy('service_id')
+            ->orderBy('created_at', 'asc')
+            ->get();
+        
+        $changes = 0;
+        $lastStatusByService = [];
+        
+        foreach ($logs as $log) {
+            $serviceId = $log->service_id;
+            
+            if (isset($lastStatusByService[$serviceId])) {
+                if ($lastStatusByService[$serviceId] !== $log->status) {
+                    $changes++;
+                }
+            }
+            $lastStatusByService[$serviceId] = $log->status;
+        }
+        
+        return $changes;
     }
     
     /**

@@ -105,7 +105,7 @@ class ServiceMonitorService
             $this->networkAlertSent = false;
         }
 
-        // 🔥 JIKA JARINGAN MATI → SKIP CHECK, PERTAHANKAN STATUS LAMA
+        // 🔥🔥🔥 PERUBAHAN: JIKA JARINGAN MATI → SKIP CHECK, PERTAHANKAN STATUS 🔥🔥🔥
         if (!$isNetworkConnected) {
             Log::info("⏭️ Skip check {$service->name} karena jaringan terputus, status tetap {$oldStatus}");
             
@@ -276,6 +276,9 @@ class ServiceMonitorService
         return strlen($cleaned) === 0;
     }
 
+    /**
+     * 🔥 CHECK PING SERVICE - DIPERBAIKI
+     */
     private function checkPing(Service $service)
     {
         $oldStatus = $service->last_status;
@@ -293,16 +296,16 @@ class ServiceMonitorService
             $this->networkAlertSent = false;
         }
 
-        // 🔥 JIKA JARINGAN MATI → SKIP CHECK
+        // 🔥🔥🔥 PERUBAHAN: JIKA JARINGAN MATI → SKIP CHECK, PERTAHANKAN STATUS 🔥🔥🔥
         if (!$isNetworkConnected) {
             Log::info("⏭️ Skip ping check {$service->name} karena jaringan terputus, status tetap {$oldStatus}");
             $service->update([
                 'last_check_at' => now(),
             ]);
-            return;
+            return; // ✅ LANGSUNG KELUAR, TIDAK BUAT LOG
         }
 
-        // 🔥 JARINGAN NORMAL → LANJUTKAN CHECK
+        // 🔥 INTERNET NORMAL → LANJUTKAN CHECK PING
         $start = microtime(true);
         exec("ping -n 1 " . escapeshellarg($service->target), $output, $result);
         $time = round(microtime(true) - $start, 2);

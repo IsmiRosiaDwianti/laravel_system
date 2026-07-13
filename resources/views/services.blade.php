@@ -2,6 +2,64 @@
 
 @section('content')
 <style>
+    /* ================= ROOT VARIABLES ================= */
+    :root {
+        --bg-service: #f0f2f5;
+        --bg-card-service: #ffffff;
+        --bg-table-service: #fafbfc;
+        --bg-hover-service: #f8fafc;
+        --bg-input-service: #ffffff;
+        --bg-toast-service: #ffffff;
+        --bg-modal-service: #ffffff;
+        --bg-modal-header-service: #fafbfc;
+        --bg-modal-footer-service: #fafbfc;
+        --bg-status-bar-service: #f8fafc;
+        --bg-detail-service: #f8fafc;
+        --bg-detail-alt-service: #f1f5f9;
+        --bg-info-box-service: #eff6ff;
+        --border-info-box-service: #93c5fd;
+        --text-info-box-service: #1e40af;
+        --bg-delete-modal-service: #ffffff;
+        
+        --text-service: #1e293b;
+        --text-secondary-service: #475569;
+        --text-muted-service: #94a3b8;
+        --text-light-service: #6b7280;
+        --border-service: #e8ecf1;
+        --border-table-service: #f1f4f8;
+        --shadow-service: rgba(0, 0, 0, 0.04);
+        --shadow-hover-service: rgba(0, 0, 0, 0.08);
+    }
+
+    /* Dark mode override dari layout utama */
+    [data-theme="dark"] {
+        --bg-service: #0f172a;
+        --bg-card-service: #1e293b;
+        --bg-table-service: #1e293b;
+        --bg-hover-service: #2d3a4f;
+        --bg-input-service: #1e293b;
+        --bg-toast-service: #1e293b;
+        --bg-modal-service: #1e293b;
+        --bg-modal-header-service: #1e293b;
+        --bg-modal-footer-service: #1e293b;
+        --bg-status-bar-service: #1e293b;
+        --bg-detail-service: #2d3a4f;
+        --bg-detail-alt-service: #1e293b;
+        --bg-info-box-service: #1a2332;
+        --border-info-box-service: #3b82f6;
+        --text-info-box-service: #93c5fd;
+        --bg-delete-modal-service: #1e293b;
+        
+        --text-service: #e2e8f0;
+        --text-secondary-service: #94a3b8;
+        --text-muted-service: #64748b;
+        --text-light-service: #94a3b8;
+        --border-service: #334155;
+        --border-table-service: #334155;
+        --shadow-service: rgba(0, 0, 0, 0.2);
+        --shadow-hover-service: rgba(0, 0, 0, 0.3);
+    }
+
     /* ================= STYLE UTAMA ================= */
     * {
         box-sizing: border-box;
@@ -14,8 +72,10 @@
         max-width: 1440px;
         margin: 0 auto;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-        background: #f0f2f5;
+        background: var(--bg-service);
         min-height: 100vh;
+        transition: background 0.3s ease, color 0.3s ease;
+        color: var(--text-service);
     }
 
     /* ================= HEADER ================= */
@@ -33,6 +93,7 @@
         overflow: hidden;
         box-shadow: 0 4px 20px rgba(10, 46, 92, 0.25);
         border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: box-shadow 0.3s ease;
     }
 
     .service-header::before {
@@ -153,6 +214,12 @@
         border: 1px solid rgba(255, 255, 255, 0.08);
         user-select: none;
         cursor: default;
+        transition: background 0.3s ease;
+    }
+
+    [data-theme="dark"] .auto-refresh-timer {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: rgba(255, 255, 255, 0.05);
     }
 
     .auto-refresh-timer .icon { font-size: 14px; }
@@ -189,15 +256,17 @@
     }
 
     .toast {
-        background: white;
+        background: var(--bg-toast-service);
         border-radius: 12px;
         padding: 16px 20px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 10px 40px var(--shadow-service);
         border-left: 5px solid;
         animation: slideInRight 0.4s ease;
         display: flex;
         align-items: flex-start;
         gap: 14px;
+        color: var(--text-service);
+        border: 1px solid var(--border-service);
     }
 
     .toast.hide { animation: slideOutRight 0.4s ease forwards; }
@@ -208,19 +277,19 @@
 
     .toast .toast-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
     .toast .toast-content { flex: 1; }
-    .toast .toast-title { font-weight: 600; font-size: 14px; color: #0f172a; }
-    .toast .toast-message { font-size: 13px; color: #64748b; margin-top: 2px; }
+    .toast .toast-title { font-weight: 600; font-size: 14px; color: var(--text-service); }
+    .toast .toast-message { font-size: 13px; color: var(--text-secondary-service); margin-top: 2px; }
     .toast .toast-close {
         background: none;
         border: none;
         font-size: 20px;
-        color: #94a3b8;
+        color: var(--text-muted-service);
         cursor: pointer;
         padding: 0 4px;
         line-height: 1;
         transition: color 0.2s ease;
     }
-    .toast .toast-close:hover { color: #475569; }
+    .toast .toast-close:hover { color: var(--text-service); }
 
     @keyframes slideInRight {
         from { transform: translateX(120%); opacity: 0; }
@@ -240,15 +309,16 @@
     }
 
     .stat-item {
-        background: white;
+        background: var(--bg-card-service);
         padding: 20px 24px;
         border-radius: 14px;
-        border: 1px solid #e8ecf1;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border: 1px solid var(--border-service);
+        box-shadow: 0 2px 8px var(--shadow-service);
         text-align: center;
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
+        color: var(--text-service);
     }
 
     .stat-item::before {
@@ -267,16 +337,17 @@
 
     .stat-item:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 25px var(--shadow-hover-service);
     }
 
     .stat-item .stat-number {
         font-size: 30px;
         font-weight: 800;
-        color: #0f172a;
+        color: var(--text-service);
         display: block;
         letter-spacing: -0.5px;
         line-height: 1.2;
+        transition: color 0.3s ease;
     }
     .stat-item .stat-number.purple { color: #4f46e5; }
     .stat-item .stat-number.green { color: #059669; }
@@ -285,15 +356,16 @@
 
     .stat-item .stat-label {
         font-size: 12px;
-        color: #6b7280;
+        color: var(--text-muted-service);
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-top: 4px;
+        transition: color 0.3s ease;
     }
 
     /* ================= UPTIME ================= */
-    .uptime-value { font-size: 16px; font-weight: 700; }
+    .uptime-value { font-size: 16px; font-weight: 700; transition: color 0.3s ease; }
     .uptime-value.green { color: #059669; }
     .uptime-value.yellow { color: #d97706; }
     .uptime-value.red { color: #dc2626; }
@@ -301,10 +373,11 @@
     .uptime-bar {
         width: 100%;
         height: 4px;
-        background: #e5e7eb;
+        background: var(--border-service);
         border-radius: 2px;
         margin-top: 4px;
         overflow: hidden;
+        transition: background 0.3s ease;
     }
     .uptime-bar .uptime-fill {
         height: 100%;
@@ -334,18 +407,20 @@
         left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        color: #94a3b8;
+        color: var(--text-muted-service);
         font-size: 16px;
         pointer-events: none;
+        transition: color 0.3s ease;
     }
 
     .search-wrapper .search-input-wrap input {
         width: 100%;
         padding: 10px 14px 10px 38px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-service);
         border-radius: 10px;
         font-size: 14px;
-        background: #fafbfc;
+        background: var(--bg-input-service);
+        color: var(--text-service);
         outline: none;
         transition: all 0.2s ease;
         font-family: inherit;
@@ -354,7 +429,11 @@
     .search-wrapper .search-input-wrap input:focus {
         border-color: #4f46e5;
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        background: white;
+        background: var(--bg-input-service);
+    }
+
+    .search-wrapper .search-input-wrap input::placeholder {
+        color: var(--text-muted-service);
     }
 
     .search-wrapper .btn-search {
@@ -379,9 +458,15 @@
         box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
     }
 
+    .search-wrapper .btn-search:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
     .search-wrapper .btn-reset {
-        background: #e2e8f0;
-        color: #475569;
+        background: var(--border-service);
+        color: var(--text-secondary-service);
         padding: 10px 16px;
         border: none;
         border-radius: 10px;
@@ -396,28 +481,82 @@
     }
 
     .search-wrapper .btn-reset:hover {
-        background: #cbd5e1;
+        background: var(--text-muted-service);
+        color: var(--bg-service);
         transform: translateY(-1px);
+    }
+
+    /* ================= SEARCH STATUS BAR ================= */
+    .search-status {
+        display: none;
+        padding: 10px 16px;
+        background: var(--bg-status-bar-service);
+        border-bottom: 1px solid var(--border-service);
+        font-size: 13px;
+        color: var(--text-secondary-service);
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .search-status.active {
+        display: flex;
+    }
+
+    .search-status .status-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border-service);
+        border-top: 2px solid #4f46e5;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+    }
+
+    .search-status .status-text {
+        flex: 1;
+        color: var(--text-secondary-service);
+    }
+
+    .search-status .status-cancel {
+        background: none;
+        border: none;
+        color: var(--text-muted-service);
+        cursor: pointer;
+        font-size: 18px;
+        padding: 0 4px;
+        transition: color 0.2s ease;
+    }
+
+    .search-status .status-cancel:hover {
+        color: var(--text-service);
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
     /* ================= TABLE ================= */
     .table-container {
-        background: white;
+        background: var(--bg-card-service);
         border-radius: 14px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        border: 1px solid #e8ecf1;
+        box-shadow: 0 2px 8px var(--shadow-service);
+        border: 1px solid var(--border-service);
         overflow: hidden;
+        transition: all 0.3s ease;
     }
 
     .table-header {
         padding: 20px 24px;
-        border-bottom: 1px solid #f1f4f8;
+        border-bottom: 1px solid var(--border-table-service);
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
         gap: 12px;
-        background: #fafbfc;
+        background: var(--bg-table-service);
+        transition: all 0.3s ease;
     }
 
     .table-header .header-left {
@@ -430,18 +569,20 @@
     .table-header h2 {
         font-size: 16px;
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-service);
         margin: 0;
         display: flex;
         align-items: center;
         gap: 8px;
+        transition: color 0.3s ease;
     }
 
     .table-header .table-info {
         font-size: 13px;
-        color: #6b7280;
+        color: var(--text-muted-service);
+        transition: color 0.3s ease;
     }
-    .table-header .table-info strong { color: #0f172a; }
+    .table-header .table-info strong { color: var(--text-service); }
 
     /* ===== PAGINATION & PERPAGE ===== */
     .table-header-right {
@@ -456,16 +597,17 @@
         align-items: center;
         gap: 8px;
         font-size: 13px;
-        color: #64748b;
+        color: var(--text-secondary-service);
+        transition: color 0.3s ease;
     }
 
     .perpage-selector select {
         padding: 6px 12px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-service);
         border-radius: 6px;
-        background: white;
+        background: var(--bg-input-service);
+        color: var(--text-service);
         font-size: 13px;
-        color: #0f172a;
         cursor: pointer;
         outline: none;
         transition: all 0.2s ease;
@@ -473,6 +615,10 @@
     .perpage-selector select:focus {
         border-color: #4f46e5;
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .perpage-selector select option {
+        background: var(--bg-input-service);
+        color: var(--text-service);
     }
 
     .table-scroll {
@@ -490,25 +636,27 @@
         padding: 14px 16px;
         font-size: 11px;
         font-weight: 600;
-        color: #6b7280;
+        color: var(--text-muted-service);
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 2px solid #f1f4f8;
-        background: #fafbfc;
+        border-bottom: 2px solid var(--border-table-service);
+        background: var(--bg-table-service);
         position: sticky;
         top: 0;
         z-index: 10;
+        transition: all 0.3s ease;
     }
 
     .table-container tbody td {
         padding: 14px 16px;
-        border-bottom: 1px solid #f1f4f8;
-        color: #1e293b;
+        border-bottom: 1px solid var(--border-table-service);
+        color: var(--text-service);
         font-size: 14px;
         vertical-align: middle;
+        transition: all 0.3s ease;
     }
     .table-container tbody tr:last-child td { border-bottom: none; }
-    .table-container tbody tr:hover { background: #f8fafc; }
+    .table-container tbody tr:hover { background: var(--bg-hover-service); }
 
     /* ================= SERVICE INFO ================= */
     .service-info {
@@ -539,21 +687,27 @@
     .service-avatar.color-7 { background: linear-gradient(135deg, #db2777, #ec4899); }
     .service-avatar.color-8 { background: linear-gradient(135deg, #0d9488, #14b8a6); }
 
-    .service-name { font-weight: 600; color: #0f172a; font-size: 14px; }
+    .service-name {
+        font-weight: 600;
+        color: var(--text-service);
+        font-size: 14px;
+        transition: color 0.3s ease;
+    }
     .service-type {
         font-size: 11px;
-        color: #6b7280;
+        color: var(--text-muted-service);
         display: block;
         margin-top: 1px;
         text-transform: uppercase;
         letter-spacing: 0.3px;
+        transition: color 0.3s ease;
     }
 
     .service-target {
         font-size: 13px;
-        color: #4b5563;
+        color: var(--text-secondary-service);
         font-family: 'SF Mono', 'Courier New', monospace;
-        background: #f8fafc;
+        background: var(--bg-hover-service);
         padding: 3px 12px;
         border-radius: 4px;
         display: inline-block;
@@ -561,7 +715,8 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        border: 1px solid #f1f4f8;
+        border: 1px solid var(--border-service);
+        transition: all 0.3s ease;
     }
 
     /* ================= STATUS BADGE ================= */
@@ -576,6 +731,7 @@
         text-transform: uppercase;
         letter-spacing: 0.3px;
         border: 1px solid;
+        transition: all 0.3s ease;
     }
     .status-badge .status-dot {
         width: 8px;
@@ -615,11 +771,11 @@
     }
 
     .status-badge.unknown {
-        background: #f1f5f9;
-        color: #64748b;
-        border-color: #d1d5db;
+        background: var(--bg-hover-service);
+        color: var(--text-muted-service);
+        border-color: var(--border-service);
     }
-    .status-badge.unknown .status-dot { background: #94a3b8; }
+    .status-badge.unknown .status-dot { background: var(--text-muted-service); }
 
     @keyframes pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
@@ -628,11 +784,12 @@
 
     .service-no {
         font-weight: 600;
-        color: #6b7280;
+        color: var(--text-muted-service);
         font-size: 13px;
         font-family: 'Inter', sans-serif;
         min-width: 30px;
         display: inline-block;
+        transition: color 0.3s ease;
     }
 
     /* ================= BUTTONS ================= */
@@ -700,21 +857,23 @@
     /* ================= PAGINATION ================= */
     .pagination-wrapper {
         padding: 16px 24px 20px;
-        border-top: 1px solid #f1f4f8;
-        background: #fafbfc;
+        border-top: 1px solid var(--border-table-service);
+        background: var(--bg-table-service);
         border-radius: 0 0 14px 14px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
         gap: 12px;
+        transition: all 0.3s ease;
     }
 
     .pagination-info {
         font-size: 13px;
-        color: #64748b;
+        color: var(--text-secondary-service);
+        transition: color 0.3s ease;
     }
-    .pagination-info strong { color: #0f172a; }
+    .pagination-info strong { color: var(--text-service); }
 
     .pagination-links {
         display: flex;
@@ -725,19 +884,19 @@
 
     .pagination-links .page-link {
         padding: 6px 12px;
-        background: white;
-        border: 1px solid #e2e8f0;
+        background: var(--bg-card-service);
+        border: 1px solid var(--border-service);
         border-radius: 6px;
         font-size: 13px;
-        color: #475569;
+        color: var(--text-secondary-service);
         text-decoration: none;
         transition: all 0.2s ease;
         min-width: 36px;
         text-align: center;
     }
     .pagination-links .page-link:hover:not(.active) {
-        background: #f1f5f9;
-        border-color: #94a3b8;
+        background: var(--bg-hover-service);
+        border-color: var(--text-muted-service);
         transform: translateY(-1px);
     }
     .pagination-links .page-link.active {
@@ -746,14 +905,15 @@
         border-color: #4f46e5;
     }
     .pagination-links .page-link.disabled {
-        background: #f1f5f9;
-        color: #94a3b8;
+        background: var(--bg-hover-service);
+        color: var(--text-muted-service);
         cursor: not-allowed;
         pointer-events: none;
+        border-color: var(--border-service);
     }
     .pagination-links .page-dots {
         padding: 6px 4px;
-        color: #94a3b8;
+        color: var(--text-muted-service);
     }
 
     /* ================= CUSTOM MODAL ================= */
@@ -774,13 +934,15 @@
     .custom-modal-overlay.active { display: flex; }
 
     .custom-modal {
-        background: white;
+        background: var(--bg-delete-modal-service);
         border-radius: 20px;
         max-width: 450px;
         width: 92%;
         overflow: hidden;
         box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
         animation: slideUp 0.3s ease;
+        border: 1px solid var(--border-service);
+        color: var(--text-service);
     }
 
     .custom-modal-header {
@@ -822,15 +984,17 @@
     .custom-modal-header h3 {
         font-size: 20px;
         font-weight: 700;
-        color: #0f172a;
+        color: var(--text-service);
         margin: 0 0 6px;
+        transition: color 0.3s ease;
     }
 
     .custom-modal-header p {
         font-size: 14px;
-        color: #64748b;
+        color: var(--text-secondary-service);
         margin: 0;
         line-height: 1.6;
+        transition: color 0.3s ease;
     }
 
     .custom-modal-body {
@@ -839,10 +1003,11 @@
 
     .custom-modal-body .highlight-name {
         font-weight: 700;
-        color: #0f172a;
-        background: #f1f5f9;
+        color: var(--text-service);
+        background: var(--bg-hover-service);
         padding: 2px 10px;
         border-radius: 4px;
+        transition: all 0.3s ease;
     }
 
     .custom-modal-footer {
@@ -850,8 +1015,9 @@
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-        border-top: 1px solid #f1f5f9;
-        background: #fafbfc;
+        border-top: 1px solid var(--border-service);
+        background: var(--bg-modal-footer-service);
+        transition: all 0.3s ease;
     }
 
     .custom-modal-footer .btn-modal {
@@ -873,14 +1039,14 @@
     }
 
     .custom-modal-footer .btn-cancel {
-        background: #f1f5f9;
-        color: #475569;
-        border: 1px solid #e2e8f0;
+        background: var(--bg-hover-service);
+        color: var(--text-secondary-service);
+        border: 1px solid var(--border-service);
     }
 
     .custom-modal-footer .btn-cancel:hover {
-        background: #e5e7eb;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        background: var(--border-service);
+        box-shadow: 0 4px 12px var(--shadow-service);
     }
 
     .custom-modal-footer .btn-confirm {
@@ -919,7 +1085,7 @@
     .modal-overlay.active { display: flex; }
 
     .modal-content {
-        background: white;
+        background: var(--bg-modal-service);
         border-radius: 16px;
         max-width: 580px;
         width: 92%;
@@ -927,25 +1093,29 @@
         overflow: hidden;
         box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
         animation: slideUp 0.3s ease;
+        border: 1px solid var(--border-service);
+        color: var(--text-service);
     }
 
     .modal-header {
         padding: 20px 24px;
-        border-bottom: 1px solid #f1f4f8;
+        border-bottom: 1px solid var(--border-table-service);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #fafbfc;
+        background: var(--bg-modal-header-service);
+        transition: all 0.3s ease;
     }
 
     .modal-header h2 {
         margin: 0;
         font-size: 18px;
         font-weight: 700;
-        color: #0f172a;
+        color: var(--text-service);
         display: flex;
         align-items: center;
         gap: 10px;
+        transition: color 0.3s ease;
     }
     .modal-header h2 .modal-icon {
         width: 36px;
@@ -964,7 +1134,7 @@
         background: none;
         border: none;
         font-size: 26px;
-        color: #9ca3af;
+        color: var(--text-muted-service);
         cursor: pointer;
         padding: 0 8px;
         border-radius: 8px;
@@ -972,8 +1142,8 @@
         line-height: 1;
     }
     .modal-close:hover {
-        background: #f1f5f9;
-        color: #0f172a;
+        background: var(--bg-hover-service);
+        color: var(--text-service);
     }
 
     .modal-close:disabled {
@@ -988,22 +1158,23 @@
     }
     .modal-body::-webkit-scrollbar { width: 5px; }
     .modal-body::-webkit-scrollbar-track {
-        background: #f1f5f9;
+        background: var(--bg-hover-service);
         border-radius: 10px;
     }
     .modal-body::-webkit-scrollbar-thumb {
-        background: #d1d5db;
+        background: var(--text-muted-service);
         border-radius: 10px;
     }
 
     .modal-footer {
         padding: 16px 24px;
-        border-top: 1px solid #f1f4f8;
+        border-top: 1px solid var(--border-table-service);
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-        background: #fafbfc;
+        background: var(--bg-modal-footer-service);
         border-radius: 0 0 16px 16px;
+        transition: all 0.3s ease;
     }
 
     .modal-footer .btn-cancel-modal:disabled {
@@ -1027,27 +1198,30 @@
     }
 
     .detail-item {
-        background: #f8fafc;
+        background: var(--bg-detail-service);
         border-radius: 10px;
         padding: 14px 16px;
-        border: 1px solid #eef2f6;
+        border: 1px solid var(--border-service);
+        transition: all 0.3s ease;
     }
     .detail-item.full-width { grid-column: 1 / -1; }
 
     .detail-item .detail-label {
         font-size: 11px;
         font-weight: 600;
-        color: #6b7280;
+        color: var(--text-muted-service);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
+        transition: color 0.3s ease;
     }
 
     .detail-item .detail-value {
         font-size: 14px;
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-service);
         word-break: break-all;
+        transition: color 0.3s ease;
     }
 
     .detail-item .detail-value .status-badge { font-size: 11px; padding: 4px 12px; }
@@ -1063,13 +1237,25 @@
         background: #d1fae5;
         color: #065f46;
     }
+    [data-theme="dark"] .detail-item .detail-value .response-code.success {
+        background: #064e3b;
+        color: #6ee7b7;
+    }
     .detail-item .detail-value .response-code.error {
         background: #fee2e2;
         color: #991b1b;
     }
+    [data-theme="dark"] .detail-item .detail-value .response-code.error {
+        background: #7f1d1d;
+        color: #fca5a5;
+    }
     .detail-item .detail-value .response-code.warning {
         background: #fef3c7;
         color: #92400e;
+    }
+    [data-theme="dark"] .detail-item .detail-value .response-code.warning {
+        background: #78350f;
+        color: #fcd34d;
     }
 
     .detail-item .detail-value .response-time {
@@ -1082,62 +1268,71 @@
 
     .detail-timestamp {
         font-size: 13px;
-        color: #4b5563;
+        color: var(--text-secondary-service);
         font-family: 'SF Mono', 'Courier New', monospace;
-        background: #f1f5f9;
+        background: var(--bg-hover-service);
         padding: 4px 12px;
         border-radius: 6px;
         display: inline-block;
+        transition: all 0.3s ease;
     }
 
     .detail-message {
-        background: #f1f5f9;
+        background: var(--bg-hover-service);
         border-radius: 8px;
         padding: 12px 16px;
         font-size: 14px;
-        color: #1e293b;
+        color: var(--text-service);
         border-left: 4px solid #4f46e5;
         word-break: break-word;
         max-height: 80px;
         overflow-y: auto;
         font-weight: 400;
+        transition: all 0.3s ease;
     }
 
     .detail-message.empty-message {
         border-left-color: #f59e0b;
-        background: #fffbeb;
-        color: #92400e;
+        background: var(--bg-info-box-service);
+        color: var(--text-info-box-service);
     }
     .detail-message.empty-message::before {
         content: '📄 ';
         font-size: 16px;
     }
 
+    [data-theme="dark"] .detail-message {
+        background: var(--bg-detail-alt-service);
+    }
+
     .detail-action {
-        background: #eff6ff;
-        border: 1px solid #93c5fd;
+        background: var(--bg-info-box-service);
+        border: 1px solid var(--border-info-box-service);
         border-radius: 10px;
         padding: 14px 18px;
         grid-column: 1 / -1;
+        transition: all 0.3s ease;
     }
 
     .detail-action .detail-label {
         font-size: 11px;
         font-weight: 600;
-        color: #3b82f6;
+        color: var(--text-info-box-service);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
         display: flex;
         align-items: center;
         gap: 6px;
+        transition: color 0.3s ease;
     }
 
     .detail-action .detail-value {
         font-size: 14px;
         font-weight: 500;
-        color: #1e293b;
+        color: var(--text-service);
         word-break: break-word;
+        transition: color 0.3s ease;
     }
 
     .detail-action .action-badge {
@@ -1150,8 +1345,8 @@
         font-weight: 500;
     }
     .detail-action .action-badge.no-action {
-        background: #e2e8f0;
-        color: #64748b;
+        background: var(--bg-hover-service);
+        color: var(--text-muted-service);
     }
     .detail-action .action-badge.empty-action {
         background: #f59e0b;
@@ -1160,28 +1355,31 @@
 
     .detail-message::-webkit-scrollbar { width: 4px; }
     .detail-message::-webkit-scrollbar-thumb {
-        background: #9ca3af;
+        background: var(--text-muted-service);
         border-radius: 10px;
     }
 
     /* ================= DOWNLOAD MODAL ================= */
     .download-service-info {
-        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        background: var(--bg-detail-service);
         border-radius: 10px;
         padding: 16px 20px;
         margin-bottom: 20px;
-        border: 1px solid #eef2f6;
+        border: 1px solid var(--border-service);
+        transition: all 0.3s ease;
     }
 
     .download-service-info .service-name-display {
         font-size: 16px;
         font-weight: 700;
-        color: #0f172a;
+        color: var(--text-service);
+        transition: color 0.3s ease;
     }
     .download-service-info .service-meta {
         font-size: 13px;
-        color: #6b7280;
+        color: var(--text-secondary-service);
         margin-top: 4px;
+        transition: color 0.3s ease;
     }
     .download-service-info .service-meta span { margin-right: 16px; }
 
@@ -1194,13 +1392,13 @@
 
     .period-btn {
         padding: 7px 16px;
-        border: 2px solid #e5e7eb;
+        border: 2px solid var(--border-service);
         border-radius: 8px;
-        background: white;
+        background: var(--bg-card-service);
         cursor: pointer;
         font-size: 12px;
         font-weight: 500;
-        color: #4b5563;
+        color: var(--text-secondary-service);
         transition: all 0.2s ease;
         font-family: inherit;
     }
@@ -1214,6 +1412,10 @@
         color: #065f46;
         font-weight: 600;
     }
+    [data-theme="dark"] .period-btn.active {
+        background: #064e3b;
+        color: #6ee7b7;
+    }
 
     .download-date-range {
         display: flex;
@@ -1225,25 +1427,33 @@
     .download-date-range .date-group label {
         font-size: 12px;
         font-weight: 500;
-        color: #6b7280;
+        color: var(--text-secondary-service);
         display: block;
         margin-bottom: 4px;
+        transition: color 0.3s ease;
     }
     .download-date-range .date-group input {
         width: 100%;
         padding: 9px 12px;
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border-service);
         border-radius: 8px;
         font-size: 13px;
-        background: #fafbfc;
+        background: var(--bg-input-service);
+        color: var(--text-service);
         transition: all 0.2s ease;
         outline: none;
         font-family: inherit;
     }
     .download-date-range .date-group input:focus {
         border-color: #059669;
-        background: white;
+        background: var(--bg-input-service);
         box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+    .download-date-range .date-group input::-webkit-calendar-picker-indicator {
+        filter: var(--date-picker-filter);
+    }
+    [data-theme="dark"] .download-date-range .date-group input {
+        --date-picker-filter: invert(1);
     }
 
     /* ================= FORM DALAM MODAL ================= */
@@ -1252,34 +1462,39 @@
         display: block;
         font-size: 14px;
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-service);
         margin-bottom: 6px;
+        transition: color 0.3s ease;
     }
     .modal-body .form-group label .required { color: #dc2626; margin-left: 2px; }
     .modal-body .form-group .helper-text {
         font-size: 12px;
-        color: #6b7280;
+        color: var(--text-muted-service);
         margin-top: 4px;
+        transition: color 0.3s ease;
     }
 
     .modal-body .form-control {
         width: 100%;
         padding: 10px 14px;
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border-service);
         border-radius: 8px;
         font-size: 14px;
-        color: #0f172a;
+        color: var(--text-service);
         transition: all 0.2s ease;
-        background: #fafbfc;
+        background: var(--bg-input-service);
         outline: none;
         font-family: inherit;
     }
     .modal-body .form-control:focus {
         border-color: #4f46e5;
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        background: white;
+        background: var(--bg-input-service);
     }
     .modal-body .form-control.error { border-color: #dc2626; }
+    .modal-body .form-control::placeholder {
+        color: var(--text-muted-service);
+    }
 
     .modal-body select.form-control {
         appearance: none;
@@ -1288,6 +1503,9 @@
         background-position: right 12px center;
         padding-right: 36px;
         cursor: pointer;
+    }
+    [data-theme="dark"] .modal-body select.form-control {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
     }
 
     .modal-body .error-message {
@@ -1360,10 +1578,10 @@
     }
 
     .btn-cancel-modal {
-        background: #f1f5f9;
-        color: #4b5563;
+        background: var(--bg-hover-service);
+        color: var(--text-secondary-service);
         padding: 10px 24px;
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border-service);
         border-radius: 8px;
         font-size: 14px;
         font-weight: 500;
@@ -1375,7 +1593,7 @@
         font-family: inherit;
     }
     .btn-cancel-modal:hover {
-        background: #e5e7eb;
+        background: var(--border-service);
         transform: translateY(-1px);
     }
 
@@ -1389,7 +1607,7 @@
     .empty-state {
         text-align: center;
         padding: 60px 20px;
-        color: #6b7280;
+        color: var(--text-muted-service);
     }
     .empty-state .empty-icon {
         font-size: 48px;
@@ -1398,15 +1616,17 @@
         opacity: 0.6;
     }
     .empty-state h3 {
-        color: #0f172a;
+        color: var(--text-service);
         font-size: 18px;
         margin: 0 0 8px;
         font-weight: 600;
+        transition: color 0.3s ease;
     }
     .empty-state p {
         margin: 0;
         font-size: 14px;
-        color: #6b7280;
+        color: var(--text-secondary-service);
+        transition: color 0.3s ease;
     }
 
     .btn-empty-primary {
@@ -1453,25 +1673,26 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    .stat-card {
+    .stat-item {
         animation: fadeInUp 0.5s ease forwards;
     }
-    .stat-card:nth-child(1) { animation-delay: 0.05s; }
-    .stat-card:nth-child(2) { animation-delay: 0.10s; }
-    .stat-card:nth-child(3) { animation-delay: 0.15s; }
-    .stat-card:nth-child(4) { animation-delay: 0.20s; }
+    .stat-item:nth-child(1) { animation-delay: 0.05s; }
+    .stat-item:nth-child(2) { animation-delay: 0.10s; }
+    .stat-item:nth-child(3) { animation-delay: 0.15s; }
+    .stat-item:nth-child(4) { animation-delay: 0.20s; }
 
-    .uptime-card {
-        animation: fadeInUp 0.5s ease 0.25s forwards;
-        opacity: 0;
+    /* ================= SEARCH HIGHLIGHT ================= */
+    mark {
+        background: #fbbf24;
+        padding: 0 2px;
+        border-radius: 2px;
+        color: #0f172a;
     }
 
-    .chart-card {
-        animation: fadeInUp 0.5s ease forwards;
-        opacity: 0;
+    [data-theme="dark"] mark {
+        background: #f59e0b;
+        color: #0f172a;
     }
-    .chart-card:nth-child(1) { animation-delay: 0.30s; }
-    .chart-card:nth-child(2) { animation-delay: 0.35s; }
 
     /* ================= RESPONSIVE ================= */
     @media (max-width: 1024px) {
@@ -1586,17 +1807,6 @@
             left: 10px;
         }
     }
-
-    /* ================= SPIN ANIMATION ================= */
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    .spin {
-        display: inline-block;
-        animation: spin 1s linear infinite;
-    }
 </style>
 
 <!-- ================= DATA SERVICE UNTUK INSTANT EDIT ================= -->
@@ -1626,7 +1836,7 @@
                 <p id="confirmMessage">Apakah Anda yakin?</p>
             </div>
             <div class="custom-modal-body">
-                <p id="confirmDetail" style="font-size: 14px; color: #475569; text-align: center;"></p>
+                <p id="confirmDetail" style="font-size: 14px; color: var(--text-secondary-service); text-align: center;"></p>
             </div>
             <div class="custom-modal-footer">
                 <button class="btn-modal btn-cancel" onclick="closeConfirmModal()">✕ Batal</button>
@@ -1692,7 +1902,7 @@
                         autocomplete="off"
                     >
                 </div>
-                <button onclick="searchServices()" class="btn-search">🔍 Cari</button>
+                <button onclick="searchServices()" class="btn-search" id="btnSearch">🔍 Cari</button>
                 <button onclick="resetSearch()" class="btn-reset">↺ Reset</button>
             </div>
 
@@ -1700,10 +1910,10 @@
                 <div class="perpage-selector">
                     <label for="perPage">Tampilkan:</label>
                     <select id="perPage" onchange="changePerPage(this.value)">
-                        <option value="10" {{ request('perPage') == 10 ? 'selected' : '' }}>10</option>
-                        <option value="20" {{ request('perPage') == 20 ? 'selected' : '' }}>20</option>
-                        <option value="50" {{ request('perPage') == 50 ? 'selected' : '' }}>50</option>
-                        <option value="100" {{ request('perPage') == 100 ? 'selected' : '' }}>100</option>
+                        <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10</option>
+                        <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20</option>
+                        <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50</option>
+                        <option value="100" {{ ($perPage ?? 10) == 100 ? 'selected' : '' }}>100</option>
                     </select>
                     <span>data</span>
                 </div>
@@ -1711,6 +1921,13 @@
                     Menampilkan <strong>{{ $services->firstItem() ?? 0 }}</strong> - <strong>{{ $services->lastItem() ?? 0 }}</strong> dari <strong>{{ $services->total() }}</strong> service
                 </span>
             </div>
+        </div>
+
+        <!-- ================= SEARCH STATUS BAR ================= -->
+        <div class="search-status" id="searchStatus">
+            <div class="status-spinner"></div>
+            <span class="status-text" id="searchStatusText">🔍 Sedang mencari...</span>
+            <button class="status-cancel" onclick="cancelSearch()" title="Batalkan pencarian">✕</button>
         </div>
 
         <div class="table-scroll">
@@ -1768,10 +1985,10 @@
                                 </div>
                             </td>
                             <td>
-                                <div style="font-size: 12px; color: #6b7280;">
+                                <div style="font-size: 12px; color: var(--text-secondary-service);">
                                     {{ $lastChecked ? \Carbon\Carbon::parse($lastChecked)->diffForHumans() : '-' }}
                                 </div>
-                                <div style="font-size: 11px; color: #94a3b8; font-family: 'Courier New', monospace;">
+                                <div style="font-size: 11px; color: var(--text-muted-service); font-family: 'Courier New', monospace;">
                                     {{ $lastChecked ? \Carbon\Carbon::parse($lastChecked)->setTimezone('Asia/Jakarta')->format('H:i:s') : '-' }}
                                 </div>
                             </td>
@@ -1880,7 +2097,7 @@
             <button class="modal-close" onclick="closeDetailModal()">&times;</button>
         </div>
         <div class="modal-body" id="detailModalBody">
-            <div style="text-align: center; padding: 40px 0; color: #6b7280;">
+            <div style="text-align: center; padding: 40px 0; color: var(--text-secondary-service);">
                 <span style="font-size: 32px; display: block; margin-bottom: 8px;">⏳</span>
                 <p>Memuat data...</p>
             </div>
@@ -1940,7 +2157,7 @@
 
             <div id="downloadLoading" style="display: none; text-align: center; padding: 20px;">
                 <span style="font-size: 24px; display: block; margin-bottom: 8px;">⏳</span>
-                <p style="color: #6b7280;">Sedang memproses laporan PDF...</p>
+                <p style="color: var(--text-secondary-service);">Sedang memproses laporan PDF...</p>
             </div>
         </div>
         <div class="modal-footer">
@@ -2116,20 +2333,59 @@
         });
     })();
 
+    // ================= SEARCH STATUS FUNCTIONS =================
+    function showSearchStatus(text, showSpinner = true) {
+        const status = document.getElementById('searchStatus');
+        const textEl = document.getElementById('searchStatusText');
+        const spinner = status.querySelector('.status-spinner');
+        
+        textEl.textContent = text;
+        spinner.style.display = showSpinner ? 'block' : 'none';
+        status.classList.add('active');
+    }
+
+    function hideSearchStatus() {
+        const status = document.getElementById('searchStatus');
+        status.classList.remove('active');
+    }
+
+    function cancelSearch() {
+        clearTimeout(searchTimeout);
+        hideSearchStatus();
+        document.getElementById('searchService').value = '';
+        resetSearch();
+        showToast('info', 'Info', 'Pencarian dibatalkan');
+    }
+
     // ================= VARIABEL GLOBAL =================
     let currentDetailId = null;
     let currentDownloadId = null;
     let selectedPeriod = 7;
     let searchTimeout = null;
+    let isSearching = false;
 
-    // ================= SEARCH SERVICES (AJAX) - TANPA ALERT PROSES =================
+    // ================= SEARCH SERVICES (AJAX) =================
     function searchServices() {
         const query = document.getElementById('searchService').value.trim();
         
         if (query.length === 0) {
+            hideSearchStatus();
             showToast('warning', 'Peringatan!', 'Masukkan kata kunci pencarian');
             return;
         }
+        
+        if (isSearching) {
+            showToast('info', 'Info', 'Pencarian sedang berlangsung...');
+            return;
+        }
+        
+        isSearching = true;
+        const btnSearch = document.getElementById('btnSearch');
+        
+        // Tampilkan status mencari
+        showSearchStatus('🔍 Sedang mencari "' + query + '"...');
+        btnSearch.disabled = true;
+        btnSearch.textContent = '⏳';
         
         fetch(`/services/search?q=${encodeURIComponent(query)}`, {
             headers: {
@@ -2137,26 +2393,44 @@
                 'Accept': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
+            isSearching = false;
+            btnSearch.disabled = false;
+            btnSearch.textContent = '🔍 Cari';
+            
             if (data.success) {
-                renderSearchResult(data.data, data.pagination);
-                showToast('success', 'Berhasil!', 'Ditemukan ' + data.data.length + ' data');
+                renderSearchResult(data.data, data.pagination, query);
+                hideSearchStatus();
+                showToast('success', 'Berhasil!', `Ditemukan ${data.data.length} data untuk "${query}"`);
             } else {
+                hideSearchStatus();
                 showToast('error', 'Gagal!', data.message || 'Gagal mencari data');
+                window.location.reload();
             }
         })
         .catch(error => {
+            isSearching = false;
+            btnSearch.disabled = false;
+            btnSearch.textContent = '🔍 Cari';
+            hideSearchStatus();
             showToast('error', 'Error!', 'Terjadi kesalahan: ' + error.message);
+            window.location.reload();
         });
     }
 
     function resetSearch() {
         document.getElementById('searchService').value = '';
+        hideSearchStatus();
         window.location.reload();
     }
 
-    function renderSearchResult(services, pagination) {
+    function renderSearchResult(services, pagination, query) {
         const tbody = document.getElementById('tableBody');
         const info = document.getElementById('tableInfo');
         const paginationWrapper = document.getElementById('paginationWrapper');
@@ -2169,8 +2443,8 @@
                     <td colspan="7">
                         <div class="empty-state">
                             <span class="empty-icon">🔍</span>
-                            <h3>Tidak Ditemukan</h3>
-                            <p>Tidak ada service yang sesuai dengan kata kunci pencarian</p>
+                            <h3>Service Tidak Ditemukan</h3>
+                            <p>Tidak ada service yang sesuai dengan "<strong>${query}</strong>"</p>
                             <button onclick="resetSearch()" class="btn-empty-primary">↺ Reset Pencarian</button>
                         </div>
                     </td>
@@ -2192,6 +2466,16 @@
             const uptimeColor = uptime >= 70 ? 'green' : (uptime >= 50 ? 'yellow' : 'red');
             const no = index + 1;
             
+            // Highlight matching text
+            let displayName = service.name;
+            let displayTarget = service.target;
+            
+            if (query) {
+                const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                displayName = service.name.replace(regex, '<mark>$1</mark>');
+                displayTarget = service.target.replace(regex, '<mark>$1</mark>');
+            }
+            
             html += `
                 <tr>
                     <td><span class="service-no">${no}</span></td>
@@ -2199,12 +2483,12 @@
                         <div class="service-info">
                             <div class="service-avatar ${colorClass}">${initials}</div>
                             <div>
-                                <div class="service-name">${service.name}</div>
+                                <div class="service-name">${displayName}</div>
                                 <span class="service-type">${(service.type || 'HTTP').toUpperCase()}</span>
                             </div>
                         </div>
                     </td>
-                    <td><span class="service-target">${service.target}</span></td>
+                    <td><span class="service-target">${displayTarget}</span></td>
                     <td>
                         ${statusLabel == 'UP' ? '<span class="status-badge up"><span class="status-dot"></span> UP</span>' : 
                           statusLabel == 'DOWN' ? '<span class="status-badge down"><span class="status-dot"></span> DOWN</span>' :
@@ -2218,10 +2502,10 @@
                         </div>
                     </td>
                     <td>
-                        <div style="font-size: 12px; color: #6b7280;">
+                        <div style="font-size: 12px; color: var(--text-secondary-service);">
                             ${service.last_check_at ? new Date(service.last_check_at).toLocaleDateString('id-ID') + ' ' + new Date(service.last_check_at).toLocaleTimeString('id-ID') : '-'}
                         </div>
-                        <div style="font-size: 11px; color: #94a3b8; font-family: 'Courier New', monospace;">
+                        <div style="font-size: 11px; color: var(--text-muted-service); font-family: 'Courier New', monospace;">
                             ${service.last_check_at ? new Date(service.last_check_at).toLocaleTimeString('id-ID') : '-'}
                         </div>
                     </td>
@@ -2265,6 +2549,7 @@
 
     // ================= EVENT LISTENER =================
     document.addEventListener('DOMContentLoaded', function() {
+        // Flash message dari server
         @if(session('success'))
             showToast('success', 'Berhasil!', '{{ session('success') }}');
         @endif
@@ -2278,6 +2563,7 @@
             showToast('info', 'Info', '{{ session('info') }}');
         @endif
 
+        // Set default date for download
         const today = new Date();
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -2292,6 +2578,7 @@
             updateHelperText(typeSelect.value);
         }
 
+        // Search with debounce
         const searchInput = document.getElementById('searchService');
         if (searchInput) {
             searchInput.addEventListener('keypress', function(e) {
@@ -2306,23 +2593,50 @@
                 const query = this.value.trim();
                 
                 if (query.length === 0) {
+                    hideSearchStatus();
                     resetSearch();
                     return;
                 }
                 
                 if (query.length >= 2) {
+                    showSearchStatus('✍️ Mengetik...', false);
                     searchTimeout = setTimeout(function() {
                         searchServices();
-                    }, 500);
+                    }, 800);
+                } else {
+                    hideSearchStatus();
                 }
             });
         }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('searchService').focus();
+                document.getElementById('searchService').select();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchService').focus();
+                document.getElementById('searchService').select();
+            }
+        });
     });
 
     // ================= TOAST =================
     function showToast(type, title, message) {
         const container = document.getElementById('toastContainer');
         const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+
+        // Cek apakah toast dengan pesan yang sama sudah ada
+        const existingToasts = container.querySelectorAll('.toast');
+        for (let toast of existingToasts) {
+            const msgEl = toast.querySelector('.toast-message');
+            if (msgEl && msgEl.textContent === message) {
+                return; // Jangan duplikat
+            }
+        }
 
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
@@ -2360,7 +2674,7 @@
         }
     }
 
-    // ================= CHECK SERVICE (CEPAT) - DENGAN ALERT PROSES =================
+    // ================= CHECK SERVICE =================
     function checkService(id) {
         const btn = document.getElementById('checkBtn' + id);
         
@@ -2374,8 +2688,8 @@
             btn.textContent = '⏳';
         }
         
-        // 🔥 ALERT PROSES HANYA UNTUK CHECK MANUAL
-        showToast('info', 'Memproses...', 'Sedang mengecek service...');
+        // Alert proses
+        showToast('info', 'Memproses...', '🔄 Sedang mengecek service...');
         
         fetch(`/services/${id}/check`, {
             method: 'POST',
@@ -2388,10 +2702,11 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showToast('success', 'Berhasil!', data.message || 'Service berhasil di-check');
+                showToast('success', '✅ Berhasil!', data.message || 'Service berhasil di-check');
+                // Reload setelah 1 detik
                 setTimeout(() => location.reload(), 1000);
             } else {
-                showToast('error', 'Gagal!', data.message || 'Gagal check service');
+                showToast('error', '❌ Gagal!', data.message || 'Gagal check service');
                 if (btn) {
                     btn.disabled = false;
                     btn.textContent = '🔄';
@@ -2399,7 +2714,7 @@
             }
         })
         .catch(error => {
-            showToast('error', 'Jaringan Terputus!', 'Tidak ada koneksi internet. Periksa router/modem Anda.');
+            showToast('error', '❌ Error!', 'Terjadi kesalahan: ' + error.message);
             if (btn) {
                 btn.disabled = false;
                 btn.textContent = '🔄';
@@ -2420,7 +2735,7 @@
         currentDetailId = id;
         const modal = document.getElementById('detailModal');
         const body = document.getElementById('detailModalBody');
-        body.innerHTML = `<div style="text-align: center; padding: 40px 0; color: #6b7280;"><span style="font-size: 32px; display: block; margin-bottom: 8px;">⏳</span><p>Memuat data...</p></div>`;
+        body.innerHTML = `<div style="text-align: center; padding: 40px 0; color: var(--text-secondary-service);"><span style="font-size: 32px; display: block; margin-bottom: 8px;">⏳</span><p>Memuat data...</p></div>`;
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         document.dispatchEvent(new Event('modalOpened'));
@@ -2443,7 +2758,7 @@
                     <div style="text-align: center; padding: 40px 0; color: #dc2626;">
                         <span style="font-size: 32px; display: block; margin-bottom: 8px;">❌</span>
                         <p>Gagal memuat data service</p>
-                        <p style="font-size: 13px; color: #6b7280;">${data.message || 'Terjadi kesalahan'}</p>
+                        <p style="font-size: 13px; color: var(--text-secondary-service);">${data.message || 'Terjadi kesalahan'}</p>
                     </div>
                 `;
             }
@@ -2453,7 +2768,7 @@
                 <div style="text-align: center; padding: 40px 0; color: #dc2626;">
                     <span style="font-size: 32px; display: block; margin-bottom: 8px;">❌</span>
                     <p>Gagal memuat data</p>
-                    <p style="font-size: 13px; color: #6b7280;">${error.message}</p>
+                    <p style="font-size: 13px; color: var(--text-secondary-service);">${error.message}</p>
                 </div>
             `;
         });
@@ -2486,15 +2801,14 @@
                 <div class="detail-item full-width"><div class="detail-label">Target URL / IP</div><div class="detail-value" style="font-family: 'SF Mono', 'Courier New', monospace; font-size: 14px; word-break: break-all;">${service.target}</div></div>
                 <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}"><span class="status-dot"></span> ${statusBadge}</span></div></div>
                 <div class="detail-item"><div class="detail-label">Response Code</div><div class="detail-value"><span class="response-code ${codeClass}">${responseCode}</span></div></div>
-                <div class="detail-item"><div class="detail-label">Response Time</div><div class="detail-value"><span class="response-time ${timeClass}">${Number(responseTime).toFixed(2)} <span style="font-size: 12px; color: #6b7280;">s</span></span></div></div>
+                <div class="detail-item"><div class="detail-label">Response Time</div><div class="detail-value"><span class="response-time ${timeClass}">${Number(responseTime).toFixed(2)} <span style="font-size: 12px; color: var(--text-muted-service);">s</span></span></div></div>
                 <div class="detail-item full-width"><div class="detail-label">Pesan</div><div class="detail-message ${messageClass}">${message}</div></div>
                 <div class="detail-action"><div class="detail-label">🔧 Tindakan yang Disarankan</div><div class="detail-value"><span class="action-badge ${actionClass}">${actionBadgeText}</span></div></div>
-                <div class="detail-item full-width" style="background: #f1f5f9; border-color: #d1d5db;"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: #4b5563;"><span><strong>ID:</strong> ${service.id}</span><span><strong>Dibuat:</strong> ${service.created_at || '-'}</span><span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span></div></div>
+                <div class="detail-item full-width" style="background: var(--bg-detail-alt-service); border-color: var(--border-service);"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: var(--text-secondary-service);"><span><strong>ID:</strong> ${service.id}</span><span><strong>Dibuat:</strong> ${service.created_at || '-'}</span><span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span></div></div>
             </div>
         `;
     }
 
-    // 🔥 REFRESH DETAIL - TANPA ALERT PROSES
     function refreshDetail() {
         if (currentDetailId) {
             const btn = document.getElementById('refreshDetailBtn');
@@ -2779,6 +3093,7 @@
             closeDetailModal();
             closeDownloadModal();
             closeConfirmModal();
+            hideSearchStatus();
         }
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             const modal = document.getElementById('serviceModal');

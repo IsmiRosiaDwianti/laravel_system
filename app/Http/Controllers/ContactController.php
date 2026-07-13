@@ -27,7 +27,8 @@ class ContactController extends Controller
             'contacts',
             'totalContacts',
             'totalActive',
-            'totalInactive'
+            'totalInactive',
+            'perPage'  // 🔥 TAMBAHKAN INI
         ));
     }
 

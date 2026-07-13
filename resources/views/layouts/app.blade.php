@@ -7,7 +7,92 @@
     <title>Monitoring System DISKOMINFOTIK</title>
 
     <style>
-        /* ====================== SEMUA STYLE YANG SUDAH ADA ====================== */
+        /* ====================== ROOT VARIABLES ====================== */
+        :root {
+            /* LIGHT MODE (DEFAULT) */
+            --bg-main: #f0f4f8;
+            --bg-content: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border-color: #e8edf5;
+            --shadow-color: rgba(0, 0, 0, 0.04);
+            --shadow-hover: rgba(0, 0, 0, 0.08);
+            
+            /* Sidebar Light */
+            --sidebar-bg: #0f2b4b;
+            --sidebar-text: #e8edf5;
+            --sidebar-text-muted: rgba(255, 255, 255, 0.6);
+            --sidebar-hover: rgba(255, 255, 255, 0.08);
+            --sidebar-active: rgba(37, 99, 235, 0.2);
+            --sidebar-border: rgba(255, 255, 255, 0.05);
+            --sidebar-scrollbar: rgba(255, 255, 255, 0.15);
+            
+            /* Topbar */
+            --topbar-bg: #ffffff;
+            --topbar-border: #e8edf5;
+            
+            /* Dropdown */
+            --dropdown-bg: #ffffff;
+            --dropdown-border: #e8edf5;
+            --dropdown-hover: #f1f5f9;
+            
+            /* Toast/Alert */
+            --alert-success-bg: #d1fae5;
+            --alert-success-text: #065f46;
+            --alert-success-border: #6ee7b7;
+            --alert-error-bg: #fee2e2;
+            --alert-error-text: #991b1b;
+            --alert-error-border: #fca5a5;
+            
+            /* Scrollbar */
+            --scrollbar-track: #f1f5f9;
+            --scrollbar-thumb: #cbd5e1;
+        }
+
+        /* ====================== DARK MODE ====================== */
+        [data-theme="dark"] {
+            --bg-main: #0f172a;
+            --bg-content: #1e293b;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #334155;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --shadow-hover: rgba(0, 0, 0, 0.3);
+            
+            /* Sidebar Dark */
+            --sidebar-bg: #1a2332;
+            --sidebar-text: #e2e8f0;
+            --sidebar-text-muted: rgba(255, 255, 255, 0.5);
+            --sidebar-hover: rgba(255, 255, 255, 0.06);
+            --sidebar-active: rgba(37, 99, 235, 0.15);
+            --sidebar-border: rgba(255, 255, 255, 0.03);
+            --sidebar-scrollbar: rgba(255, 255, 255, 0.08);
+            
+            /* Topbar */
+            --topbar-bg: #1e293b;
+            --topbar-border: #334155;
+            
+            /* Dropdown */
+            --dropdown-bg: #1e293b;
+            --dropdown-border: #334155;
+            --dropdown-hover: #2d3a4f;
+            
+            /* Toast/Alert */
+            --alert-success-bg: #064e3b;
+            --alert-success-text: #6ee7b7;
+            --alert-success-border: #065f46;
+            --alert-error-bg: #7f1d1d;
+            --alert-error-text: #fca5a5;
+            --alert-error-border: #991b1b;
+            
+            /* Scrollbar */
+            --scrollbar-track: #1e293b;
+            --scrollbar-thumb: #475569;
+        }
+
+        /* ====================== SEMUA STYLE ====================== */
         * {
             margin: 0;
             padding: 0;
@@ -16,9 +101,10 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f0f4f8;
-            color: #1e293b;
+            background: var(--bg-main);
+            color: var(--text-primary);
             min-height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         /* ====================== SIDEBAR ====================== */
@@ -28,20 +114,21 @@
             top: 0;
             width: 270px;
             height: 100vh;
-            background: linear-gradient(180deg, #0f2b4b 0%, #1a3a5c 50%, #0f2b4b 100%);
-            color: #e8edf5;
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
             padding: 0;
             overflow-y: auto;
             z-index: 1000;
-            transition: all 0.3s ease;
-            box-shadow: 4px 0 20px rgba(15, 43, 75, 0.3);
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease, background 0.3s ease;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+            border-right: 1px solid var(--sidebar-border);
         }
 
         .sidebar-header {
             padding: 28px 24px 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid var(--sidebar-border);
             background: rgba(255, 255, 255, 0.03);
+            transition: border-color 0.3s ease;
         }
 
         .sidebar .logo {
@@ -88,16 +175,17 @@
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: rgba(255, 255, 255, 0.3);
+            color: var(--sidebar-text-muted);
             margin: 12px 0 8px 14px;
             font-weight: 600;
+            transition: color 0.3s ease;
         }
 
         .sidebar a {
             display: flex;
             align-items: center;
             gap: 14px;
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--sidebar-text-muted);
             text-decoration: none;
             padding: 11px 16px;
             border-radius: 10px;
@@ -112,13 +200,13 @@
             width: 22px;
             text-align: center;
             font-size: 16px;
-            color: rgba(255, 255, 255, 0.4);
+            color: var(--sidebar-text-muted);
             transition: all 0.25s ease;
         }
 
         .sidebar a:hover {
             color: #ffffff;
-            background: rgba(255, 255, 255, 0.08);
+            background: var(--sidebar-hover);
             transform: translateX(4px);
         }
 
@@ -127,7 +215,7 @@
         }
 
         .sidebar a.active {
-            background: rgba(37, 99, 235, 0.2);
+            background: var(--sidebar-active);
             color: #60a5fa;
             box-shadow: inset 3px 0 0 #3b82f6;
         }
@@ -157,8 +245,80 @@
         }
 
         .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.15);
+            background: var(--sidebar-scrollbar);
             border-radius: 10px;
+        }
+
+        /* ====================== DARK MODE TOGGLE ====================== */
+        .theme-toggle-wrapper {
+            padding: 16px 16px 8px;
+            border-top: 1px solid var(--sidebar-border);
+            margin-top: 8px;
+            transition: border-color 0.3s ease;
+        }
+
+        .theme-toggle-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            background: var(--sidebar-hover);
+            color: var(--sidebar-text);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.25s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .theme-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(4px);
+        }
+
+        .theme-toggle-btn .toggle-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .theme-toggle-btn .toggle-content i {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .theme-toggle-btn .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            transition: background 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .theme-toggle-btn .toggle-switch .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .theme-toggle-btn .toggle-switch {
+            background: #3b82f6;
+        }
+
+        [data-theme="dark"] .theme-toggle-btn .toggle-switch .toggle-slider {
+            transform: translateX(20px);
         }
 
         /* ====================== MAIN CONTENT ====================== */
@@ -167,20 +327,21 @@
             padding: 24px 32px 32px;
             min-height: 100vh;
             transition: all 0.3s ease;
-            background: #f0f4f8;
+            background: var(--bg-main);
         }
 
         /* ====================== TOP BAR ====================== */
         .topbar {
-            background: #ffffff;
+            background: var(--topbar-bg);
             border-radius: 16px;
             padding: 16px 28px;
             margin-bottom: 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-            border: 1px solid #e8edf5;
+            box-shadow: 0 2px 12px var(--shadow-color);
+            border: 1px solid var(--topbar-border);
+            transition: all 0.3s ease;
         }
 
         .topbar .page-title {
@@ -192,13 +353,14 @@
         .topbar .page-title h1 {
             font-size: 20px;
             font-weight: 700;
-            color: #0f2b4b;
+            color: var(--text-primary);
             margin: 0;
             display: flex;
             align-items: center;
             gap: 10px;
             font-family: 'Poppins', 'Inter', sans-serif;
             letter-spacing: -0.5px;
+            transition: color 0.3s ease;
         }
 
         .topbar .page-title h1 .welcome-icon {
@@ -213,11 +375,12 @@
 
         .topbar .page-title .breadcrumb {
             font-size: 13px;
-            color: #94a3b8;
+            color: var(--text-muted);
             display: flex;
             align-items: center;
             gap: 6px;
             font-weight: 400;
+            transition: color 0.3s ease;
         }
 
         .topbar .right-section {
@@ -228,18 +391,19 @@
 
         .topbar .right-section .time {
             font-size: 13px;
-            color: #64748b;
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
             gap: 8px;
-            background: #f8fafc;
+            background: var(--bg-main);
             padding: 6px 14px;
             border-radius: 10px;
-            border: 1px solid #e8edf5;
+            border: 1px solid var(--border-color);
             font-weight: 500;
             font-family: 'Poppins', 'Inter', sans-serif;
             min-width: 120px;
             justify-content: center;
+            transition: all 0.3s ease;
         }
 
         .topbar .right-section .time i {
@@ -279,13 +443,14 @@
             position: absolute;
             right: 0;
             top: 50px;
-            background: white;
+            background: var(--dropdown-bg);
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
             min-width: 180px;
             padding: 8px 0;
             z-index: 1000;
-            border: 1px solid #e8edf5;
+            border: 1px solid var(--dropdown-border);
+            transition: all 0.3s ease;
         }
 
         .user-dropdown .dropdown-menu.show {
@@ -300,19 +465,19 @@
 
         .user-dropdown .dropdown-menu .user-info {
             padding: 12px 16px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .user-dropdown .dropdown-menu .user-info .user-username {
             font-size: 14px;
             font-weight: 600;
-            color: #0f172a;
+            color: var(--text-primary);
             font-family: 'Poppins', 'Inter', sans-serif;
         }
 
         .user-dropdown .dropdown-menu .dropdown-divider {
             border: none;
-            border-top: 1px solid #f1f5f9;
+            border-top: 1px solid var(--border-color);
             margin: 4px 12px;
         }
 
@@ -321,7 +486,7 @@
             align-items: center;
             gap: 10px;
             padding: 10px 16px;
-            color: #0f172a;
+            color: var(--text-primary);
             text-decoration: none;
             font-size: 14px;
             transition: background 0.2s ease;
@@ -334,7 +499,7 @@
         }
 
         .user-dropdown .dropdown-menu .dropdown-item:hover {
-            background: #f1f5f9;
+            background: var(--dropdown-hover);
         }
 
         .user-dropdown .dropdown-menu .dropdown-item.logout {
@@ -345,6 +510,10 @@
             background: #fef2f2;
         }
 
+        [data-theme="dark"] .user-dropdown .dropdown-menu .dropdown-item.logout:hover {
+            background: #7f1d1d;
+        }
+
         .user-dropdown .dropdown-menu .dropdown-item i {
             width: 18px;
             text-align: center;
@@ -352,24 +521,24 @@
 
         /* ====================== TOMBOL REFRESH ====================== */
         .btn-refresh {
-            background: #f8fafc;
-            border: 1px solid #e8edf5;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
             padding: 8px 18px;
             border-radius: 10px;
             font-size: 13px;
             font-weight: 500;
-            color: #475569;
+            color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.25s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 1px 4px var(--shadow-color);
             font-family: 'Inter', sans-serif;
         }
 
         .btn-refresh:hover {
-            background: #ffffff;
+            background: var(--bg-content);
             border-color: #3b82f6;
             color: #1d4ed8;
             transform: translateY(-2px);
@@ -391,14 +560,16 @@
 
         /* ====================== CONTENT WRAPPER ====================== */
         .content-wrapper {
-            background: #ffffff;
+            background: var(--bg-content);
             border-radius: 16px;
             padding: 28px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-            border: 1px solid #e8edf5;
+            box-shadow: 0 2px 12px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            min-height: 400px;
         }
 
-        /* ====================== NETWORK ALERT (TOP BAR) ====================== */
+        /* ====================== NETWORK ALERT ====================== */
         .network-alert {
             position: fixed;
             top: 20px;
@@ -423,21 +594,20 @@
             display: flex;
         }
 
-        /* 🔥 HILANGKAN ANIMASI SLIDE UP - LANGSUNG HILANG */
         .network-alert.hide {
             display: none !important;
         }
 
         .network-alert.error {
-            background: #fee2e2;
-            color: #991b1b;
-            border-color: #fca5a5;
+            background: var(--alert-error-bg);
+            color: var(--alert-error-text);
+            border-color: var(--alert-error-border);
         }
 
         .network-alert.success {
-            background: #d1fae5;
-            color: #065f46;
-            border-color: #6ee7b7;
+            background: var(--alert-success-bg);
+            color: var(--alert-success-text);
+            border-color: var(--alert-success-border);
         }
 
         .network-alert .alert-icon {
@@ -530,6 +700,27 @@
                 box-shadow: none;
                 background: rgba(37, 99, 235, 0.25);
             }
+            .theme-toggle-wrapper {
+                padding: 12px 8px;
+            }
+            .theme-toggle-btn {
+                justify-content: center;
+                padding: 8px;
+            }
+            .theme-toggle-btn .toggle-content span {
+                display: none;
+            }
+            .theme-toggle-btn .toggle-switch {
+                width: 36px;
+                height: 20px;
+            }
+            .theme-toggle-btn .toggle-switch .toggle-slider {
+                width: 16px;
+                height: 16px;
+            }
+            [data-theme="dark"] .theme-toggle-btn .toggle-switch .toggle-slider {
+                transform: translateX(16px);
+            }
             .main {
                 margin-left: 80px;
                 padding: 20px 24px;
@@ -558,7 +749,7 @@
                 gap: 4px;
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                 border-right: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                border-bottom: 1px solid var(--sidebar-border);
             }
             .sidebar-header {
                 padding: 12px 16px;
@@ -603,6 +794,20 @@
             }
             .sidebar a.active::before {
                 display: none;
+            }
+            .theme-toggle-wrapper {
+                padding: 8px 12px;
+                border-top: none;
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+            }
+            .theme-toggle-btn {
+                width: auto;
+                padding: 6px 14px;
+            }
+            .theme-toggle-btn .toggle-content span {
+                display: inline;
             }
             .main {
                 margin-left: 0;
@@ -675,6 +880,9 @@
             .network-alert .alert-close {
                 font-size: 18px;
             }
+            .theme-toggle-btn .toggle-content span {
+                display: none;
+            }
         }
     </style>
 
@@ -740,6 +948,19 @@
             <span>Monitoring Logs</span>
         </a>
     </div>
+
+    <!-- ====================== DARK/LIGHT MODE TOGGLE ====================== -->
+    <div class="theme-toggle-wrapper">
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggleBtn">
+            <span class="toggle-content">
+                <i class="fas fa-moon" id="themeIcon"></i>
+                <span id="themeLabel">Mode Gelap</span>
+            </span>
+            <span class="toggle-switch">
+                <span class="toggle-slider"></span>
+            </span>
+        </button>
+    </div>
 </div>
 
 <!-- ====================== MAIN CONTENT ====================== -->
@@ -798,6 +1019,36 @@
 </div>
 
 <script>
+    // ====================== THEME TOGGLE ======================
+    function toggleTheme() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeUI(newTheme);
+    }
+
+    function updateThemeUI(theme) {
+        const icon = document.getElementById('themeIcon');
+        const label = document.getElementById('themeLabel');
+        
+        if (theme === 'dark') {
+            icon.className = 'fas fa-sun';
+            label.textContent = 'Mode Terang';
+        } else {
+            icon.className = 'fas fa-moon';
+            label.textContent = 'Mode Gelap';
+        }
+    }
+
+    function loadTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeUI(savedTheme);
+    }
+
     // ====================== REFRESH ======================
     function refreshPage() {
         const btn = document.querySelector('.btn-refresh svg');
@@ -848,17 +1099,14 @@
 
         if (!alert) return;
 
-        // 🔥 Jika user sudah close manual, jangan tampilkan alert apapun di halaman ini
         if (isAlertManuallyClosed) {
             console.log('📡 Alert sudah ditutup manual, tidak ditampilkan lagi di halaman ini');
             return;
         }
 
-        // Reset class
         alert.classList.remove('show', 'hide', 'error', 'success');
 
         if (isConnected) {
-            // 🔥 Jaringan Normal - tampilkan alert hijau
             icon.textContent = '🟢';
             title.textContent = '✅ Jaringan Normal';
             message.textContent = 'Koneksi internet telah pulih. Semua sistem berjalan normal.';
@@ -866,14 +1114,12 @@
             networkAlertShown = true;
             alert.classList.add('show');
 
-            // Auto close setelah 5 detik
             clearTimeout(networkAlertTimer);
             networkAlertTimer = setTimeout(function() {
                 closeNetworkAlert();
             }, 5000);
 
         } else {
-            // 🔥 Jaringan Terputus - tampilkan alert merah
             icon.textContent = '🚨';
             title.textContent = '⚠️ Jaringan Terputus!';
             message.textContent = 'Tidak ada koneksi internet. Periksa router/modem dan kabel jaringan.';
@@ -881,7 +1127,6 @@
             networkAlertShown = true;
             alert.classList.add('show');
 
-            // Auto close setelah 15 detik (jika tidak di-close manual)
             clearTimeout(networkAlertTimer);
             networkAlertTimer = setTimeout(function() {
                 if (!isAlertManuallyClosed) {
@@ -891,20 +1136,14 @@
         }
     }
 
-    // 🔥 CLOSE ALERT - LANGSUNG HILANG TANPA ANIMASI
     function closeNetworkAlert() {
         const alert = document.getElementById('networkAlert');
-
         if (!alert) return;
 
-        // 🔥 Tandai user sudah close manual (berlaku untuk semua alert)
         isAlertManuallyClosed = true;
-
-        // 🔥 LANGSUNG HILANGKAN - TANPA ANIMASI
         alert.classList.remove('show', 'hide', 'error', 'success');
         alert.style.display = 'none';
         networkAlertShown = false;
-        
         clearTimeout(networkAlertTimer);
     }
 
@@ -928,20 +1167,15 @@
             if (data.success) {
                 const currentStatus = data.connected;
                 
-                // 🔥 CEK PERUBAHAN STATUS
                 if (currentStatus !== lastNetworkStatus) {
                     lastNetworkStatus = currentStatus;
                     isNetworkConnected = currentStatus;
-                    
-                    // 🔥 Reset flag manual close saat status berubah
                     isAlertManuallyClosed = false;
                     
                     if (!currentStatus) {
-                        // Terhubung → Terputus
                         console.log('📡 Network: CONNECTED → DISCONNECTED');
                         showNetworkAlert(false);
                     } else {
-                        // Terputus → Terhubung
                         console.log('📡 Network: DISCONNECTED → CONNECTED');
                         showNetworkAlert(true);
                     }
@@ -950,12 +1184,9 @@
         })
         .catch(function(error) {
             console.error('Error checking network:', error);
-            
-            // 🔥 Jika fetch gagal, anggap jaringan terputus
             if (lastNetworkStatus !== false) {
                 lastNetworkStatus = false;
                 isNetworkConnected = false;
-                // 🔥 Reset flag manual close saat jaringan terputus
                 isAlertManuallyClosed = false;
                 if (!networkAlertShown) {
                     showNetworkAlert(false);
@@ -994,23 +1225,21 @@
 
     // ====================== INITIALIZATION ======================
     document.addEventListener('DOMContentLoaded', function() {
+        loadTheme();
         updateTime();
         updateDate();
         setInterval(updateTime, 10000);
         setInterval(updateDate, 60000);
 
-        // 🔥 CEK STATUS AWAL
         setTimeout(function() {
             checkNetworkStatus();
         }, 1000);
 
-        // 🔥 CEK SETIAP 3 DETIK
         setInterval(checkNetworkStatus, 3000);
 
         console.log('✅ Monitoring System DISKOMINFOTIK Loaded');
         console.log('📡 Network status check interval: 3 seconds');
-        console.log('📡 Close alert dengan klik X (langsung hilang)');
-        console.log('📡 Alert akan muncul lagi jika pindah halaman atau status berubah');
+        console.log('🌓 Dark/Light mode available');
     });
 </script>
 
