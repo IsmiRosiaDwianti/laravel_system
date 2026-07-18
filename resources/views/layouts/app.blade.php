@@ -954,7 +954,7 @@
         <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggleBtn">
             <span class="toggle-content">
                 <i class="fas fa-moon" id="themeIcon"></i>
-                <span id="themeLabel">Mode Gelap</span>
+                <span id="themeLabel">Dark Mode</span>
             </span>
             <span class="toggle-switch">
                 <span class="toggle-slider"></span>
@@ -1036,10 +1036,10 @@
         
         if (theme === 'dark') {
             icon.className = 'fas fa-sun';
-            label.textContent = 'Mode Terang';
+            label.textContent = 'Light Mode';
         } else {
             icon.className = 'fas fa-moon';
-            label.textContent = 'Mode Gelap';
+            label.textContent = 'Dark Mode';
         }
     }
 

@@ -53,6 +53,9 @@ Route::middleware('auth')->group(function () {
     // 🔍 SEARCH ROUTE
     Route::get('/services/search', [ServiceController::class, 'search'])->name('services.search');
 
+    // 🔥 CHECK ALL SERVICES (untuk auto-check di frontend)
+    Route::post('/services/check-all', [ServiceController::class, 'checkAll'])->name('services.check-all');
+
     // Service Details & Reports
     Route::get('/services/{id}/detail', [ServiceController::class, 'detail'])->name('services.detail');
     Route::get('/services/{id}/logs', [ServiceController::class, 'logs'])->name('services.logs');
@@ -62,6 +65,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/services/bulk-delete', [ServiceController::class, 'bulkDelete'])->name('services.bulk-delete');
     Route::get('/services/{id}/health', [ServiceController::class, 'health'])->name('services.health');
     Route::get('/services/{id}/download-report', [ServiceController::class, 'downloadReport'])->name('services.download-report');
+
+    // 🔥 🔥 🔥 TAMBAHKAN ROUTE INI!
+    Route::post('/services/{id}/wa-interval', [ServiceController::class, 'updateWaInterval'])->name('services.wa-interval');
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 API STATUS (untuk AJAX Polling Frontend)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/api/services/status', [ServiceController::class, 'apiStatus'])->name('api.services.status');
 
     /*
     |--------------------------------------------------------------------------
@@ -103,7 +116,7 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| API Routes (Untuk Postman / Mobile App) - Tanpa Auth
+| API Routes (Untuk Postman / Mobile App)
 |--------------------------------------------------------------------------
 */
 Route::prefix('api')->group(function () {
@@ -125,6 +138,12 @@ Route::prefix('api')->group(function () {
 
     // 🔍 API SEARCH SERVICES
     Route::get('/services/search', [ServiceController::class, 'apiSearch']);
+
+    // 🔥 API STATUS (untuk polling)
+    Route::get('/services/status', [ServiceController::class, 'apiStatus']);
+
+    // 🔥 API CHECK ALL SERVICES
+    Route::post('/services/check-all', [ServiceController::class, 'apiCheckAll']);
 
     /*
     |--------------------------------------------------------------------------

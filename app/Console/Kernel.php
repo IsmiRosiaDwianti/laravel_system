@@ -19,11 +19,16 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // ==================== SMOKE/ESP MONITOR ====================
-        // 🔥 PAKAI CARA INI (LANGSUNG PAKAI CLASS)
-        $schedule->command(\App\Console\Commands\CheckSmokeDevices::class)->everyMinute();
+        $schedule->command(\App\Console\Commands\CheckSmokeDevices::class)
+            ->everyMinute()
+            ->withoutOverlapping();
         
         // ==================== SERVICE MONITOR ====================
-        $schedule->command('monitor:services')->everyFiveMinutes();
+        // 🔥 KEMBALI KE everyFiveMinutes() UNTUK STABILITAS
+        $schedule->command('monitor:services')
+            ->everyFiveMinutes()  // ← DIKEMBALIKAN!
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     protected function commands(): void

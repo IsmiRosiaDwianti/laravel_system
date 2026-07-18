@@ -17,6 +17,14 @@ class ServiceController extends Controller
      */
     public function index(Request $request)
     {
+        // 🔥 AMBIL INTERVAL WA DARI REQUEST ATAU SESSION
+        $waInterval = $request->input('wa_interval', session('wa_interval', 0));
+        
+        // 🔥 SIMPAN KE SESSION
+        if ($request->has('wa_interval')) {
+            session(['wa_interval' => $waInterval]);
+        }
+
         $perPage = $request->input('perPage', 10);
         
         $totalServices = Service::count();
@@ -39,7 +47,8 @@ class ServiceController extends Controller
             'totalUp', 
             'totalWarning', 
             'totalDown',
-            'perPage'  // 🔥 TAMBAHKAN INI
+            'perPage',
+            'waInterval'
         ));
     }
 
@@ -99,7 +108,6 @@ class ServiceController extends Controller
                     'required',
                     'string',
                     'max:255',
-                    // ✅ PING: Boleh IP atau hostname, tidak wajib URL
                 ];
             }
 
@@ -126,11 +134,12 @@ class ServiceController extends Controller
                     ->with('error', 'Nama service "' . $validated['name'] . '" sudah digunakan');
             }
 
+            // 🔥 BUAT SERVICE
             $service = Service::create([
                 'name' => $validated['name'],
                 'target' => $validated['target'],
                 'type' => $validated['type'],
-                'last_status' => 'UNKNOWN'
+                'last_status' => 'UNKNOWN',
             ]);
 
             $monitor->check($service);
@@ -200,7 +209,6 @@ class ServiceController extends Controller
                     'required',
                     'string',
                     'max:255',
-                    // ✅ PING: Boleh IP atau hostname, tidak wajib URL
                 ];
             }
 
@@ -231,6 +239,7 @@ class ServiceController extends Controller
                     ->with('error', 'Nama service "' . $validated['name'] . '" sudah digunakan');
             }
 
+            // 🔥 UPDATE SERVICE
             $service->update([
                 'name' => $validated['name'],
                 'target' => $validated['target'],
@@ -485,14 +494,17 @@ class ServiceController extends Controller
     }
 
     /**
-     * Force check a service.
+     * 🔥 FORCE CHECK A SERVICE (DIPERBAIKI)
      */
     public function check($id, ServiceMonitorService $monitor)
     {
         try {
             $service = Service::findOrFail($id);
+            
+            // 🔥 JALANKAN PROSES CHECK
             $monitor->check($service);
 
+            // 🔥 AMBIL LOG TERBARU
             $latestLog = $service->logs()->latest()->first();
 
             if (request()->ajax()) {
@@ -500,11 +512,11 @@ class ServiceController extends Controller
                     'success' => true,
                     'message' => 'Service "' . $service->name . '" berhasil di-check',
                     'data' => [
-                        'status' => $service->last_status,
-                        'response_code' => $latestLog?->response_code,
-                        'response_time' => $latestLog?->response_time,
-                        'message' => $latestLog?->message,
-                        'checked_at' => $latestLog?->created_at?->format('d/m/Y H:i:s')
+                        'status' => $service->last_status ?? 'UNKNOWN',
+                        'response_code' => $latestLog?->response_code ?? 'N/A',
+                        'response_time' => $latestLog?->response_time ?? 0,
+                        'message' => $latestLog?->message ?? '-',
+                        'checked_at' => $latestLog?->created_at?->format('d/m/Y H:i:s') ?? '-'
                     ]
                 ]);
             }
@@ -848,7 +860,7 @@ class ServiceController extends Controller
                 'name' => $service->name,
                 'target' => $service->target,
                 'type' => $service->type,
-                'last_status' => $service->last_status ?? 'UNKNOWN'
+                'last_status' => $service->last_status ?? 'UNKNOWN',
             ],
             'period' => [
                 'date_from' => $dateFrom,
@@ -989,7 +1001,7 @@ class ServiceController extends Controller
     public function apiStore(Request $request, ServiceMonitorService $monitor)
     {
         try {
-            // 🔥 VALIDASI DINAMIS BERDASARKAN TIPE
+            // 🔥 VALIDASI DINAMIS BERDASARKAN TIPE           
             $rules = [
                 'name' => 'required|string|max:255',
                 'type' => ['required', Rule::in(['http', 'https', 'ping', 'port'])],
@@ -1034,11 +1046,12 @@ class ServiceController extends Controller
                 ], 422);
             }
 
+            // 🔥 BUAT SERVICE
             $service = Service::create([
                 'name' => $validated['name'],
                 'target' => $validated['target'],
                 'type' => $validated['type'],
-                'last_status' => 'UNKNOWN'
+                'last_status' => 'UNKNOWN',
             ]);
 
             $monitor->check($service);
@@ -1121,10 +1134,11 @@ class ServiceController extends Controller
                 ], 422);
             }
 
+            // 🔥 UPDATE SERVICE
             $service->update([
                 'name' => $validated['name'],
                 'target' => $validated['target'],
-                'type' => $validated['type']
+                'type' => $validated['type'],
             ]);
 
             $monitor->check($service);
@@ -1179,7 +1193,7 @@ class ServiceController extends Controller
 
     /**
      * ============================================================
-     *  📡 API: CHECK SERVICE (MANUAL)
+     *  📡 API: CHECK SERVICE (MANUAL) - DIPERBAIKI
      *  ============================================================
      *  🔗 URL: POST /api/services/{id}/check
      *  🔑 Butuh Auth: Sanctum Token
@@ -1198,11 +1212,11 @@ class ServiceController extends Controller
                 'success' => true,
                 'message' => 'Service "' . $service->name . '" berhasil di-check',
                 'data' => [
-                    'status' => $service->last_status,
-                    'response_code' => $latestLog?->response_code,
-                    'response_time' => $latestLog?->response_time,
-                    'message' => $latestLog?->message,
-                    'checked_at' => $latestLog?->created_at?->format('Y-m-d H:i:s')
+                    'status' => $service->last_status ?? 'UNKNOWN',
+                    'response_code' => $latestLog?->response_code ?? 'N/A',
+                    'response_time' => $latestLog?->response_time ?? 0,
+                    'message' => $latestLog?->message ?? '-',
+                    'checked_at' => $latestLog?->created_at?->format('Y-m-d H:i:s') ?? '-'
                 ]
             ]);
 
@@ -1374,6 +1388,46 @@ class ServiceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membuat laporan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  🔥 API STATUS UNTUK AJAX POLLING
+     *  ============================================================
+     *  🔗 URL: GET /api/services/status
+     *  🔑 Butuh Auth: Sanctum Token (optional)
+     * ============================================================
+     */
+    public function apiStatus()
+    {
+        try {
+            $services = Service::all();
+            
+            return response()->json([
+                'success' => true,
+                'services' => $services->map(function ($service) {
+                    return [
+                        'id' => $service->id,
+                        'last_status' => $service->last_status ?? 'UNKNOWN',
+                        'last_check_at' => $service->last_check_at 
+                            ? \Carbon\Carbon::parse($service->last_check_at)
+                                ->setTimezone('Asia/Jakarta')
+                                ->format('H:i:s') 
+                            : '-',
+                        'name' => $service->name,
+                        'target' => $service->target,
+                    ];
+                })
+            ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+              ->header('Pragma', 'no-cache')
+              ->header('Expires', '0');
+              
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil status: ' . $e->getMessage()
             ], 500);
         }
     }

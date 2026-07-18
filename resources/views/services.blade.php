@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+<!-- 🔥 FORCE NO CACHE -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
 <style>
     /* ================= ROOT VARIABLES ================= */
     :root {
@@ -165,6 +170,64 @@
         flex-wrap: wrap;
         position: relative;
         z-index: 1;
+    }
+
+    /* 🔥 STYLE UNTUK WA INTERVAL DROPDOWN */
+    .wa-interval-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 4px 12px 4px 16px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+    }
+
+    .wa-interval-wrapper .wa-label {
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        letter-spacing: 0.3px;
+    }
+
+    .wa-interval-wrapper .wa-label .wa-icon {
+        margin-right: 4px;
+    }
+
+    .wa-interval-wrapper select {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.2s ease;
+        font-family: inherit;
+        min-width: 100px;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.7)' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 30px;
+    }
+
+    .wa-interval-wrapper select:hover {
+        background-color: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .wa-interval-wrapper select:focus {
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+    }
+
+    .wa-interval-wrapper select option {
+        background: #1e293b;
+        color: white;
     }
 
     .btn-primary {
@@ -1764,6 +1827,16 @@
             padding: 8px 12px;
             font-size: 12px;
         }
+        .wa-interval-wrapper {
+            width: 100%;
+            justify-content: center;
+            padding: 6px 12px;
+        }
+        .wa-interval-wrapper select {
+            min-width: 80px;
+            font-size: 11px;
+            padding: 4px 24px 4px 8px;
+        }
     }
 
     @media (max-width: 480px) {
@@ -1855,6 +1928,23 @@
             </div>
         </div>
         <div class="header-actions">
+            <!-- 🔥 WA INTERVAL DROPDOWN (GLOBAL) -->
+            <div class="wa-interval-wrapper">
+                <span class="wa-label">
+                    <span class="wa-icon">📱</span> WA Interval:
+                </span>
+                <select id="waInterval" onchange="changeWaInterval(this.value)">
+                    <option value="0" {{ ($waInterval ?? 0) == 0 ? 'selected' : '' }}>Sekali</option>
+                    <option value="1" {{ ($waInterval ?? 0) == 1 ? 'selected' : '' }}>1 menit</option>
+                    <option value="3" {{ ($waInterval ?? 0) == 3 ? 'selected' : '' }}>3 menit</option>
+                    <option value="5" {{ ($waInterval ?? 0) == 5 ? 'selected' : '' }}>5 menit</option>
+                    <option value="10" {{ ($waInterval ?? 0) == 10 ? 'selected' : '' }}>10 menit</option>
+                    <option value="15" {{ ($waInterval ?? 0) == 15 ? 'selected' : '' }}>15 menit</option>
+                    <option value="30" {{ ($waInterval ?? 0) == 30 ? 'selected' : '' }}>30 menit</option>
+                    <option value="60" {{ ($waInterval ?? 0) == 60 ? 'selected' : '' }}>1 jam</option>
+                </select>
+            </div>
+
             <button class="btn-primary" onclick="openCreateModal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                     <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
@@ -1955,7 +2045,7 @@
                             $uptime = $service->uptime ?? 0;
                             $uptimeColor = $uptime >= 70 ? 'green' : ($uptime >= 50 ? 'yellow' : 'red');
                         @endphp
-                        <tr>
+                        <tr data-service-id="{{ $service->id }}">
                             <td><span class="service-no">{{ $no }}</span></td>
                             <td>
                                 <div class="service-info">
@@ -1969,13 +2059,21 @@
                             <td><span class="service-target">{{ $service->target }}</span></td>
                             <td>
                                 @if($statusLabel == 'UP')
-                                    <span class="status-badge up"><span class="status-dot"></span> UP</span>
+                                    <span class="status-badge up" id="status-{{ $service->id }}">
+                                        <span class="status-dot"></span> UP
+                                    </span>
                                 @elseif($statusLabel == 'DOWN')
-                                    <span class="status-badge down"><span class="status-dot"></span> DOWN</span>
+                                    <span class="status-badge down" id="status-{{ $service->id }}">
+                                        <span class="status-dot"></span> DOWN
+                                    </span>
                                 @elseif($statusLabel == 'WARNING')
-                                    <span class="status-badge warning"><span class="status-dot"></span> WARNING</span>
+                                    <span class="status-badge warning" id="status-{{ $service->id }}">
+                                        <span class="status-dot"></span> WARNING
+                                    </span>
                                 @else
-                                    <span class="status-badge unknown"><span class="status-dot"></span> UNKNOWN</span>
+                                    <span class="status-badge unknown" id="status-{{ $service->id }}">
+                                        <span class="status-dot"></span> UNKNOWN
+                                    </span>
                                 @endif
                             </td>
                             <td>
@@ -1985,19 +2083,16 @@
                                 </div>
                             </td>
                             <td>
-                                <div style="font-size: 12px; color: var(--text-secondary-service);">
-                                    {{ $lastChecked ? \Carbon\Carbon::parse($lastChecked)->diffForHumans() : '-' }}
-                                </div>
-                                <div style="font-size: 11px; color: var(--text-muted-service); font-family: 'Courier New', monospace;">
+                                <div style="font-size: 13px; color: var(--text-secondary-service); font-family: 'Courier New', monospace; font-weight: 600;" id="time-{{ $service->id }}">
                                     {{ $lastChecked ? \Carbon\Carbon::parse($lastChecked)->setTimezone('Asia/Jakarta')->format('H:i:s') : '-' }}
                                 </div>
                             </td>
                             <td>
                                 <div class="action-buttons">
-                                    <button onclick="openDetailModal({{ $service->id }})" class="btn-action btn-detail" title="Detail">👁️ Detail</button>
-                                    <button onclick="openDownloadModal({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-download" title="Download Laporan PDF">📥 PDF</button>
-                                    <button onclick="openEditModal({{ $service->id }})" class="btn-action btn-edit" title="Edit">✏️ Edit</button>
-                                    <button onclick="confirmDelete({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-delete" title="Hapus">🗑️ Hapus</button>
+                                    <button onclick="openDetailModal({{ $service->id }})" class="btn-action btn-detail" title="Detail">👁️</button>
+                                    <button onclick="openDownloadModal({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-download" title="Download PDF">📥</button>
+                                    <button onclick="openEditModal({{ $service->id }})" class="btn-action btn-edit" title="Edit">✏️</button>
+                                    <button onclick="confirmDelete({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-delete" title="Hapus">🗑️</button>
                                     <button onclick="checkService({{ $service->id }})" class="btn-check" title="Check Now" id="checkBtn{{ $service->id }}">🔄</button>
                                 </div>
                             </td>
@@ -2083,7 +2178,7 @@
 <div class="auto-refresh-timer" id="autoRefreshTimer">
     <span class="icon">🔄</span>
     <span class="label">Refresh</span>
-    <span class="countdown" id="countdownTimer">5:00</span>
+    <span class="countdown" id="countdownTimer">0:30</span>
 </div>
 
 <!-- ================= MODAL DETAIL ================= -->
@@ -2279,23 +2374,43 @@
         closeConfirmModal();
     }
 
-    // ================= AUTO REFRESH =================
+    // ================= 🔥 WA INTERVAL (GLOBAL) =================
+    function changeWaInterval(value) {
+        let url = new URL(window.location.href);
+        url.searchParams.set('wa_interval', value);
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }
+
+    // ================= AUTO REFRESH TIMER =================
     (function() {
         'use strict';
         
-        const REFRESH_INTERVAL = 300;
+        const REFRESH_INTERVAL = 30;
         let seconds = REFRESH_INTERVAL;
         let countdownElement = document.getElementById('countdownTimer');
         let refreshTimer = null;
+        let isReloading = false;
         
         function updateCountdown() {
+            if (isNaN(seconds) || seconds < 0) {
+                seconds = REFRESH_INTERVAL;
+            }
+            
             seconds--;
+            
+            if (seconds < 0) {
+                seconds = REFRESH_INTERVAL;
+            }
+            
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
             
             if (countdownElement) {
-                countdownElement.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                const timeString = `${mins}:${secs.toString().padStart(2, '0')}`;
+                countdownElement.textContent = timeString;
                 countdownElement.className = 'countdown';
+                
                 if (seconds < 10) {
                     countdownElement.classList.add('danger');
                 } else if (seconds < 30) {
@@ -2303,17 +2418,20 @@
                 }
             }
             
-            if (seconds <= 0) {
-                window.location.reload();
-                return;
+            if (seconds <= 0 && !isReloading) {
+                isReloading = true;
+                window.location.href = window.location.pathname + '?_=' + Date.now();
             }
         }
         
         function startCountdown() {
             if (refreshTimer) {
                 clearInterval(refreshTimer);
+                refreshTimer = null;
             }
+            
             seconds = REFRESH_INTERVAL;
+            isReloading = false;
             updateCountdown();
             refreshTimer = setInterval(updateCountdown, 1000);
         }
@@ -2325,11 +2443,94 @@
         document.addEventListener('modalOpened', function() {
             if (refreshTimer) {
                 clearInterval(refreshTimer);
+                refreshTimer = null;
             }
         });
         
         document.addEventListener('modalClosed', function() {
-            startCountdown();
+            if (!refreshTimer) {
+                startCountdown();
+            }
+        });
+    })();
+
+    // ================= 🔥 AJAX POLLING =================
+    (function() {
+        'use strict';
+        
+        let pollingInterval = null;
+        let isPolling = false;
+
+        function fetchLatestStatus() {
+            if (isPolling) return;
+            isPolling = true;
+            
+            fetch('/api/services/status?_=' + Date.now(), {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    data.services.forEach(service => {
+                        const badge = document.getElementById('status-' + service.id);
+                        if (badge) {
+                            const status = service.last_status || 'UNKNOWN';
+                            const statusLower = status.toLowerCase();
+                            badge.className = `status-badge ${statusLower}`;
+                            badge.innerHTML = `<span class="status-dot"></span> ${status}`;
+                            if (statusLower === 'down') {
+                                badge.style.animation = 'pulse 1s infinite';
+                            } else if (statusLower === 'warning') {
+                                badge.style.animation = 'pulse 1.5s infinite';
+                            } else if (statusLower === 'up') {
+                                badge.style.animation = 'pulse 2s infinite';
+                            }
+                        }
+                        
+                        const timeEl = document.getElementById('time-' + service.id);
+                        if (timeEl && service.last_check_at) {
+                            timeEl.textContent = service.last_check_at;
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.log('Status poll error:', error);
+            })
+            .finally(() => {
+                isPolling = false;
+            });
+        }
+
+        function startPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+            pollingInterval = setInterval(fetchLatestStatus, 5000);
+            setTimeout(fetchLatestStatus, 2000);
+        }
+
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            startPolling();
+        });
+
+        document.addEventListener('modalOpened', function() {
+            stopPolling();
+        });
+
+        document.addEventListener('modalClosed', function() {
+            startPolling();
         });
     })();
 
@@ -2382,15 +2583,15 @@
         isSearching = true;
         const btnSearch = document.getElementById('btnSearch');
         
-        // Tampilkan status mencari
         showSearchStatus('🔍 Sedang mencari "' + query + '"...');
         btnSearch.disabled = true;
         btnSearch.textContent = '⏳';
         
-        fetch(`/services/search?q=${encodeURIComponent(query)}`, {
+        fetch(`/services/search?q=${encodeURIComponent(query)}&_=${Date.now()}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
             }
         })
         .then(response => {
@@ -2427,7 +2628,7 @@
     function resetSearch() {
         document.getElementById('searchService').value = '';
         hideSearchStatus();
-        window.location.reload();
+        window.location.href = window.location.pathname + '?_=' + Date.now();
     }
 
     function renderSearchResult(services, pagination, query) {
@@ -2466,7 +2667,6 @@
             const uptimeColor = uptime >= 70 ? 'green' : (uptime >= 50 ? 'yellow' : 'red');
             const no = index + 1;
             
-            // Highlight matching text
             let displayName = service.name;
             let displayTarget = service.target;
             
@@ -2477,7 +2677,7 @@
             }
             
             html += `
-                <tr>
+                <tr data-service-id="${service.id}">
                     <td><span class="service-no">${no}</span></td>
                     <td>
                         <div class="service-info">
@@ -2490,10 +2690,10 @@
                     </td>
                     <td><span class="service-target">${displayTarget}</span></td>
                     <td>
-                        ${statusLabel == 'UP' ? '<span class="status-badge up"><span class="status-dot"></span> UP</span>' : 
-                          statusLabel == 'DOWN' ? '<span class="status-badge down"><span class="status-dot"></span> DOWN</span>' :
-                          statusLabel == 'WARNING' ? '<span class="status-badge warning"><span class="status-dot"></span> WARNING</span>' :
-                          '<span class="status-badge unknown"><span class="status-dot"></span> UNKNOWN</span>'}
+                        ${statusLabel == 'UP' ? `<span class="status-badge up" id="status-${service.id}"><span class="status-dot"></span> UP</span>` : 
+                          statusLabel == 'DOWN' ? `<span class="status-badge down" id="status-${service.id}"><span class="status-dot"></span> DOWN</span>` :
+                          statusLabel == 'WARNING' ? `<span class="status-badge warning" id="status-${service.id}"><span class="status-dot"></span> WARNING</span>` :
+                          `<span class="status-badge unknown" id="status-${service.id}"><span class="status-dot"></span> UNKNOWN</span>`}
                     </td>
                     <td>
                         <div class="uptime-value ${uptimeColor}">${Number(uptime).toFixed(2)}%</div>
@@ -2502,19 +2702,16 @@
                         </div>
                     </td>
                     <td>
-                        <div style="font-size: 12px; color: var(--text-secondary-service);">
-                            ${service.last_check_at ? new Date(service.last_check_at).toLocaleDateString('id-ID') + ' ' + new Date(service.last_check_at).toLocaleTimeString('id-ID') : '-'}
-                        </div>
-                        <div style="font-size: 11px; color: var(--text-muted-service); font-family: 'Courier New', monospace;">
-                            ${service.last_check_at ? new Date(service.last_check_at).toLocaleTimeString('id-ID') : '-'}
+                        <div style="font-size: 13px; color: var(--text-secondary-service); font-family: 'Courier New', monospace; font-weight: 600;" id="time-${service.id}">
+                            ${service.last_check_at || '-'}
                         </div>
                     </td>
                     <td>
                         <div class="action-buttons">
-                            <button onclick="openDetailModal(${service.id})" class="btn-action btn-detail" title="Detail">👁️ Detail</button>
-                            <button onclick="openDownloadModal(${service.id}, '${service.name.replace(/'/g, "\\'")}')" class="btn-action btn-download" title="Download Laporan PDF">📥 PDF</button>
-                            <button onclick="openEditModal(${service.id})" class="btn-action btn-edit" title="Edit">✏️ Edit</button>
-                            <button onclick="confirmDelete(${service.id}, '${service.name.replace(/'/g, "\\'")}')" class="btn-action btn-delete" title="Hapus">🗑️ Hapus</button>
+                            <button onclick="openDetailModal(${service.id})" class="btn-action btn-detail" title="Detail">👁️</button>
+                            <button onclick="openDownloadModal(${service.id}, '${service.name.replace(/'/g, "\\'")}')" class="btn-action btn-download" title="Download PDF">📥</button>
+                            <button onclick="openEditModal(${service.id})" class="btn-action btn-edit" title="Edit">✏️</button>
+                            <button onclick="confirmDelete(${service.id}, '${service.name.replace(/'/g, "\\'")}')" class="btn-action btn-delete" title="Hapus">🗑️</button>
                             <button onclick="checkService(${service.id})" class="btn-check" title="Check Now" id="checkBtn${service.id}">🔄</button>
                         </div>
                     </td>
@@ -2549,7 +2746,6 @@
 
     // ================= EVENT LISTENER =================
     document.addEventListener('DOMContentLoaded', function() {
-        // Flash message dari server
         @if(session('success'))
             showToast('success', 'Berhasil!', '{{ session('success') }}');
         @endif
@@ -2563,7 +2759,6 @@
             showToast('info', 'Info', '{{ session('info') }}');
         @endif
 
-        // Set default date for download
         const today = new Date();
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -2578,7 +2773,6 @@
             updateHelperText(typeSelect.value);
         }
 
-        // Search with debounce
         const searchInput = document.getElementById('searchService');
         if (searchInput) {
             searchInput.addEventListener('keypress', function(e) {
@@ -2609,7 +2803,6 @@
             });
         }
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                 e.preventDefault();
@@ -2629,12 +2822,11 @@
         const container = document.getElementById('toastContainer');
         const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
 
-        // Cek apakah toast dengan pesan yang sama sudah ada
         const existingToasts = container.querySelectorAll('.toast');
         for (let toast of existingToasts) {
             const msgEl = toast.querySelector('.toast-message');
             if (msgEl && msgEl.textContent === message) {
-                return; // Jangan duplikat
+                return;
             }
         }
 
@@ -2688,22 +2880,21 @@
             btn.textContent = '⏳';
         }
         
-        // Alert proses
         showToast('info', 'Memproses...', '🔄 Sedang mengecek service...');
         
-        fetch(`/services/${id}/check`, {
+        fetch(`/services/${id}/check?_=${Date.now()}`, {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Cache-Control': 'no-cache'
             }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 showToast('success', '✅ Berhasil!', data.message || 'Service berhasil di-check');
-                // Reload setelah 1 detik
                 setTimeout(() => location.reload(), 1000);
             } else {
                 showToast('error', '❌ Gagal!', data.message || 'Gagal check service');
@@ -2727,7 +2918,7 @@
         let url = new URL(window.location.href);
         url.searchParams.set('perPage', value);
         url.searchParams.set('page', '1');
-        window.location.href = url.toString();
+        window.location.href = url.toString() + '&_=' + Date.now();
     }
 
     // ================= DETAIL MODAL =================
@@ -2743,10 +2934,11 @@
     }
 
     function fetchDetailData(id) {
-        fetch(`/services/${id}/detail`, {
+        fetch(`/services/${id}/detail?_=${Date.now()}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
             }
         })
         .then(response => response.json())
@@ -2838,10 +3030,11 @@
         document.getElementById('downloadModalTitle').textContent = '📥 Download Laporan PDF';
         document.getElementById('downloadServiceName').textContent = name;
         
-        fetch(`/services/${id}/detail`, {
+        fetch(`/services/${id}/detail?_=${Date.now()}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
             }
         })
         .then(response => response.json())
@@ -2908,7 +3101,8 @@
         const url = `/services/${currentDownloadId}/download-report?` + new URLSearchParams({
             date_from: dateFrom,
             date_to: dateTo,
-            format: 'pdf'
+            format: 'pdf',
+            _: Date.now()
         });
         
         window.open(url, '_blank');
@@ -3024,7 +3218,6 @@
         const target = document.getElementById('modal_target');
         const type = document.getElementById('modal_type');
         const serviceId = document.getElementById('serviceId').value;
-        const isEdit = serviceId !== '';
         
         let hasError = false;
         
