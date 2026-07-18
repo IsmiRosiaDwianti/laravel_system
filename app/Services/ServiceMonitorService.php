@@ -370,14 +370,15 @@ class ServiceMonitorService
 
     /**
      * ============================================================
-     * 🔥🔥🔥 SAVE RESULT - VERSI FINAL (DIPERBAIKI) 🔥🔥🔥
+     * 🔥🔥🔥 SAVE RESULT - PAKAI DATABASE (BUKAN SESSION!) 🔥🔥🔥
      * ============================================================
      * 
      * PERBAIKAN:
-     * 1. First Check dicek SEBELUM log dibuat
-     * 2. First Check UP → TIDAK kirim WA
-     * 3. First Check DOWN/WARNING → KIRIM WA
-     * 4. Interval logic berjalan normal setelah first check
+     * 1. First Check pakai last_wa_sent_at (BUKAN ServiceLog)
+     * 2. Interval pakai database (BUKAN session)
+     * 3. First Check UP → TIDAK kirim WA
+     * 4. First Check DOWN/WARNING → KIRIM WA
+     * 5. Bandingkan AWAL vs AKHIR interval
      */
     private function saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action)
     {
@@ -387,10 +388,9 @@ class ServiceMonitorService
         }
 
         // ============================================================
-        // 🔥🔥🔥 CEK FIRST CHECK SEBELUM UPDATE STATUS! 🔥🔥🔥
+        // 🔥🔥🔥 CEK FIRST CHECK (Pakai last_wa_sent_at) 🔥🔥🔥
         // ============================================================
-        $existingLogs = ServiceLog::where('service_id', $service->id)->count();
-        $isFirstCheck = ($existingLogs === 0);
+        $isFirstCheck = empty($service->last_wa_sent_at);
         
         Log::info("📊 First check status: " . ($isFirstCheck ? 'YES' : 'NO') . " for {$service->name}");
 
@@ -432,6 +432,8 @@ class ServiceMonitorService
                 $service->update([
                     'last_wa_sent_at' => now(),
                     'last_notified_status' => $status,
+                    'last_interval_status' => $status,
+                    'last_interval_checked_at' => now(),
                 ]);
                 Log::info("📱 First check WA: {$service->name} → {$status}");
             } else {
@@ -439,6 +441,8 @@ class ServiceMonitorService
                 $service->update([
                     'last_wa_sent_at' => now(),
                     'last_notified_status' => 'UP',
+                    'last_interval_status' => 'UP',
+                    'last_interval_checked_at' => now(),
                 ]);
             }
             
@@ -451,36 +455,75 @@ class ServiceMonitorService
         }
 
         // ============================================================
-        // 🔥 BUKAN FIRST CHECK: Logika normal dengan interval
+        // 🔥 BUKAN FIRST CHECK: Logika interval PAKAI DATABASE!
         // ============================================================
-        $interval = session('wa_interval', 0);
+        $interval = $service->wa_interval_minutes ?? 0;
+        $lastIntervalCheck = $service->last_interval_checked_at;
+        $intervalStartStatus = $service->last_interval_status ?? $oldStatus;
         
-        if (empty($service->last_wa_sent_at)) {
+        // ============================================================
+        // 🔥 INTERVAL PERTAMA (BELUM PERNAH DISET)
+        // ============================================================
+        if (empty($lastIntervalCheck)) {
+            Log::info("📌 Interval pertama untuk {$service->name}, status awal: {$status}");
             $service->update([
-                'last_wa_sent_at' => now()->subMinutes($interval),
+                'last_interval_status' => $status,
+                'last_interval_checked_at' => now(),
             ]);
-            $service->refresh();
-            Log::info("📝 Set last_wa_sent_at ke: " . now()->subMinutes($interval) . " (karena NULL)");
-        }
-
-        // ============================================================
-        // 📌 CEK INTERVAL & KIRIM WA (HANYA JIKA STATUS BERUBAH)
-        // ============================================================
-        if ($oldStatus != $status) {
-            if ($this->isIntervalMet($service, $interval)) {
-                $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
-                
+            
+            // Update last_wa_sent_at jika NULL
+            if (empty($service->last_wa_sent_at)) {
                 $service->update([
-                    'last_wa_sent_at' => now(),
-                    'last_notified_status' => $status,
+                    'last_wa_sent_at' => now()->subMinutes($interval),
                 ]);
-                
-                Log::info("📱 WA terkirim: {$service->name} {$oldStatus} → {$status} (interval tercapai)");
-            } else {
-                Log::info("⏭️ Skip WA: {$service->name} - Status berubah {$oldStatus} → {$status} (interval BELUM tercapai)");
             }
+            
+            $lastLog = ServiceLog::where('service_id', $service->id)->latest()->first();
+            if ($lastLog) {
+                $lastLog->update(['checked_at' => now()]);
+            }
+            return;
+        }
+        
+        // ============================================================
+        // 🔥 HITUNG SELISIH WAKTU DARI INTERVAL TERAKHIR
+        // ============================================================
+        $lastCheck = Carbon::parse($lastIntervalCheck);
+        $minutesSinceLastCheck = $lastCheck->diffInRealMinutes(now());
+        $intervalReached = $minutesSinceLastCheck >= $interval;
+        
+        // ============================================================
+        // 🔥 INTERVAL BELUM TERCAPAI → UPDATE TAPI TIDAK KIRIM
+        // ============================================================
+        if (!$intervalReached) {
+            Log::info("⏭️ Interval belum tercapai ({$minutesSinceLastCheck} menit), status sementara: {$status}");
+            
+            $lastLog = ServiceLog::where('service_id', $service->id)->latest()->first();
+            if ($lastLog) {
+                $lastLog->update(['checked_at' => now()]);
+            }
+            return;
+        }
+        
+        // ============================================================
+        // 🔥🔥🔥 INTERVAL TERCAPAI! BANDINGKAN AWAL vs AKHIR 🔥🔥🔥
+        // ============================================================
+        if ($status !== $intervalStartStatus) {
+            // ✅ Status BERUBAH dari awal interval → KIRIM WA!
+            Log::info("📱 WA terkirim: {$intervalStartStatus} → {$status} (interval {$interval} menit)");
+            $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
+            $service->update([
+                'last_wa_sent_at' => now(),
+                'last_notified_status' => $status,
+                'last_interval_status' => $status,
+                'last_interval_checked_at' => now(),
+            ]);
         } else {
-            Log::info("⏭️ Skip WA: {$service->name} - Status sama ({$status})");
+            // ❌ Status SAMA → TIDAK KIRIM
+            Log::info("⏭️ Skip WA: status tetap {$status} (sama dengan awal interval)");
+            $service->update([
+                'last_interval_checked_at' => now(),
+            ]);
         }
 
         $lastLog = ServiceLog::where('service_id', $service->id)->latest()->first();
@@ -491,39 +534,27 @@ class ServiceMonitorService
 
     /**
      * ============================================================
-     * 🔥 CEK APAKAH INTERVAL SUDAH TERPENUHI?
+     * 🔥 CEK APAKAH INTERVAL SUDAH TERPENUHI? (TIDAK DIPAKAI)
      * ============================================================
+     * Method ini TIDAK dipakai karena interval sudah dihandle di saveResult()
+     * Tapi tetap dipertahankan untuk kompatibilitas.
      */
     private function isIntervalMet(Service $service, int $interval): bool
     {
         if ($interval <= 0) {
-            Log::info("✅ Interval 0, selalu kirim WA");
             return true;
         }
 
         $lastWaSent = $service->last_wa_sent_at;
         
         if (empty($lastWaSent)) {
-            $service->update([
-                'last_wa_sent_at' => now()->subMinutes($interval),
-            ]);
-            $service->refresh();
-            $lastWaSent = $service->last_wa_sent_at;
-            Log::info("📝 Set last_wa_sent_at ke: {$lastWaSent} (karena NULL)");
+            return true;
         }
 
         $lastSent = Carbon::parse($lastWaSent);
         $minutesSinceLastWa = $lastSent->diffInRealMinutes(now());
-        
-        Log::info("⏱️ WA terakhir: {$minutesSinceLastWa} menit yang lalu, interval: {$interval} menit");
 
-        if ($minutesSinceLastWa >= $interval) {
-            Log::info("✅ Interval {$interval} menit TERPENUHI, boleh kirim WA");
-            return true;
-        }
-
-        Log::info("⏭️ Interval BELUM terpenuhi ({$minutesSinceLastWa} < {$interval} menit), SKIP WA");
-        return false;
+        return $minutesSinceLastWa >= $interval;
     }
 
     /**

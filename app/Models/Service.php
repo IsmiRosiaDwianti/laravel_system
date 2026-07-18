@@ -22,9 +22,9 @@ class Service extends Model
         'last_check_at',
         'last_wa_sent_at',
         'last_wa_status',
-        // ❌ HAPUS 'wa_interval_minutes' - karena global
-        // 'wa_interval_minutes',
-        // 🔥 FIELD BARU (tetap dipertahankan untuk kompatibilitas)
+        // 🔥 DIPAKAI UNTUK INTERVAL (MANUAL & SCHEDULE)
+        'wa_interval_minutes',
+        // 🔥 FIELD UNTUK TRACKING INTERVAL
         'last_interval_checked_at',
         'last_interval_status',
         'interval_wa_sent_in_this_cycle',
@@ -38,10 +38,9 @@ class Service extends Model
     protected $casts = [
         'last_check_at' => 'datetime',
         'last_wa_sent_at' => 'datetime',
-        // ❌ HAPUS 'wa_interval_minutes' - karena global
-        // 'wa_interval_minutes' => 'integer',
         'last_response_time' => 'float',
-        // 🔥 FIELD BARU
+        // 🔥 DIPAKAI UNTUK INTERVAL
+        'wa_interval_minutes' => 'integer',
         'last_interval_checked_at' => 'datetime',
         'last_interval_status' => 'string',
         'interval_wa_sent_in_this_cycle' => 'boolean',
@@ -56,13 +55,11 @@ class Service extends Model
     }
 
     // ================================================================
-    // 🔥 🔥 🔥 LOGIKA INTERVAL (TETAP DIPERTAHANKAN UNTUK KOMPATIBILITAS)
+    // 🔥 LOGIKA INTERVAL (DIPERTAHANKAN UNTUK KOMPATIBILITAS)
     // ================================================================
 
     /**
      * 🔥 CEK APAKAH SUDAH MELEWATI INTERVAL
-     * 🔥 CATATAN: Method ini TIDAK dipakai untuk logika GLOBAL
-     * Tapi tetap dipertahankan untuk kompatibilitas
      */
     public function isIntervalReached(): bool
     {
@@ -83,8 +80,6 @@ class Service extends Model
 
     /**
      * 🔥 MULAI INTERVAL BARU
-     * 🔥 CATATAN: Method ini TIDAK dipakai untuk logika GLOBAL
-     * Tapi tetap dipertahankan untuk kompatibilitas
      */
     public function startNewInterval(string $currentStatus): void
     {
@@ -97,8 +92,6 @@ class Service extends Model
 
     /**
      * 🔥 TANDAI WA SUDAH TERKIRIM DI INTERVAL INI
-     * 🔥 CATATAN: Method ini TIDAK dipakai untuk logika GLOBAL
-     * Tapi tetap dipertahankan untuk kompatibilitas
      */
     public function markWaSentInThisCycle(): void
     {
@@ -109,19 +102,15 @@ class Service extends Model
 
     /**
      * 🔥 CEK APAKAH PERLU KIRIM WA (LOGIKA PER-SERVICE)
-     * 🔥 CATATAN: Method ini TIDAK dipakai untuk logika GLOBAL
-     * Tapi tetap dipertahankan untuk kompatibilitas
      */
     public function shouldSendWaByInterval(string $currentStatus): bool
     {
         $interval = $this->wa_interval_minutes ?? 0;
         
-        // Jika interval 0 → TIDAK kirim periodik
         if ($interval <= 0) {
             return false;
         }
 
-        // Jika status UP → TIDAK kirim (kecuali first check)
         if ($currentStatus === 'UP') {
             if (empty($this->last_interval_checked_at)) {
                 return true;
@@ -129,19 +118,14 @@ class Service extends Model
             return false;
         }
 
-        // LOGIKA UTAMA UNTUK DOWN / WARNING:
-        
-        // Kondisi 1: Belum pernah interval check → FIRST CHECK
         if (empty($this->last_interval_checked_at)) {
             return true;
         }
 
-        // Kondisi 2: Sudah melewati interval DAN belum kirim
         if ($this->isIntervalReached() && !$this->interval_wa_sent_in_this_cycle) {
             return true;
         }
 
-        // Kondisi 3: Status BERUBAH menjadi DOWN/WARNING di interval yang sama
         if ($this->last_interval_status !== $currentStatus && 
             !$this->interval_wa_sent_in_this_cycle) {
             return true;
@@ -152,7 +136,6 @@ class Service extends Model
 
     /**
      * 🔥 UPDATE WAKTU TERAKHIR KIRIM WA
-     * 🔥 Method ini TETAP dipakai untuk mencatat per-service
      */
     public function updateLastWaSent($status)
     {
@@ -166,9 +149,6 @@ class Service extends Model
     // METHOD EXISTING (TIDAK BERUBAH)
     // ================================================================
 
-    /**
-     * 🔥 GET UPTIME PERCENTAGE (30 days)
-     */
     public function getUptime($days = 30)
     {
         $logs = $this->logs()
@@ -199,9 +179,6 @@ class Service extends Model
         return max(0, min(100, $uptime));
     }
 
-    /**
-     * 🔥 GET STATUS LABEL WITH COLOR
-     */
     public function getStatusInfo()
     {
         $status = $this->last_status ?? 'UNKNOWN';
@@ -236,33 +213,21 @@ class Service extends Model
         return $statusMap[$status] ?? $statusMap['UNKNOWN'];
     }
 
-    /**
-     * 🔥 CEK APAKAH SERVICE SEDANG DOWN
-     */
     public function isDown()
     {
         return $this->last_status === 'DOWN';
     }
 
-    /**
-     * 🔥 CEK APAKAH SERVICE SEDANG UP
-     */
     public function isUp()
     {
         return $this->last_status === 'UP';
     }
 
-    /**
-     * 🔥 CEK APAKAH SERVICE SEDANG WARNING
-     */
     public function isWarning()
     {
         return $this->last_status === 'WARNING';
     }
 
-    /**
-     * 🔥 GET RESPONSE TIME IN HUMAN FORMAT
-     */
     public function getResponseTimeHuman()
     {
         if ($this->last_response_time === null) {
@@ -276,9 +241,6 @@ class Service extends Model
         return number_format($this->last_response_time, 2) . ' s';
     }
 
-    /**
-     * 🔥 GET LAST CHECK AT IN HUMAN FORMAT
-     */
     public function getLastCheckAtHuman()
     {
         if (!$this->last_check_at) {
@@ -288,9 +250,6 @@ class Service extends Model
         return $this->last_check_at->setTimezone('Asia/Jakarta')->format('H:i:s');
     }
 
-    /**
-     * 🔥 GET LAST WA SENT IN HUMAN FORMAT
-     */
     public function getLastWaSentHuman()
     {
         if (!$this->last_wa_sent_at) {
@@ -300,9 +259,6 @@ class Service extends Model
         return $this->last_wa_sent_at->setTimezone('Asia/Jakarta')->format('d/m/Y H:i:s');
     }
 
-    /**
-     * 🔥 GET TIME SINCE LAST WA SENT
-     */
     public function getTimeSinceLastWa()
     {
         if (!$this->last_wa_sent_at) {
@@ -336,10 +292,6 @@ class Service extends Model
         return $query->where('last_status', 'WARNING');
     }
 
-    /**
-     * 🔥 SCOPE WA INTERVAL (TIDAK DIPAKAI UNTUK GLOBAL)
-     * Tapi tetap dipertahankan untuk kompatibilitas
-     */
     public function scopeWaInterval($query, $minutes)
     {
         return $query->where('wa_interval_minutes', $minutes);
@@ -350,10 +302,6 @@ class Service extends Model
         return $query->whereNull('last_wa_sent_at');
     }
 
-    /**
-     * 🔥 SCOPE READY FOR WA REMINDER (TIDAK DIPAKAI UNTUK GLOBAL)
-     * Tapi tetap dipertahankan untuk kompatibilitas
-     */
     public function scopeReadyForWaReminder($query)
     {
         return $query->where('wa_interval_minutes', '>', 0)
@@ -363,9 +311,6 @@ class Service extends Model
             });
     }
 
-    /**
-     * 🔥 GET STATISTICS UNTUK DASHBOARD
-     */
     public static function getStatistics()
     {
         $total = self::count();

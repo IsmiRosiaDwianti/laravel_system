@@ -9,6 +9,7 @@ use App\Services\ServiceMonitorService;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log; 
 
 class ServiceController extends Controller
 {
@@ -20,9 +21,12 @@ class ServiceController extends Controller
         // 🔥 AMBIL INTERVAL WA DARI REQUEST ATAU SESSION
         $waInterval = $request->input('wa_interval', session('wa_interval', 0));
         
-        // 🔥 SIMPAN KE SESSION
+        // 🔥 SIMPAN KE SESSION DAN DATABASE
         if ($request->has('wa_interval')) {
             session(['wa_interval' => $waInterval]);
+            // 🔥 SIMPAN JUGA KE DATABASE UNTUK SCHEDULE!
+            Service::query()->update(['wa_interval_minutes' => $waInterval]);
+            Log::info("📝 WA Interval updated to {$waInterval} minutes for all services");
         }
 
         $perPage = $request->input('perPage', 10);
@@ -140,6 +144,8 @@ class ServiceController extends Controller
                 'target' => $validated['target'],
                 'type' => $validated['type'],
                 'last_status' => 'UNKNOWN',
+                // 🔥 SET WA INTERVAL DARI SESSION/GLOBAL
+                'wa_interval_minutes' => session('wa_interval', 0),
             ]);
 
             $monitor->check($service);
@@ -1052,6 +1058,7 @@ class ServiceController extends Controller
                 'target' => $validated['target'],
                 'type' => $validated['type'],
                 'last_status' => 'UNKNOWN',
+                'wa_interval_minutes' => session('wa_interval', 0),
             ]);
 
             $monitor->check($service);
