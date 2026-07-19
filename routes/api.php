@@ -25,6 +25,10 @@ Route::withoutMiddleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequest
 
         Route::get('/smoke/status', [SmokeController::class, 'getStatus']);
         Route::get('/smoke/logs', [SmokeController::class, 'getLogs']);
+        
+        // 🔥🔥🔥 TAMBAHKAN ROUTE INI 🔥🔥🔥
+        Route::get('/smoke/check-esp-status', [SmokeController::class, 'checkEspStatus']);
+        Route::get('/smoke/device/{id}', [SmokeController::class, 'checkSingleDevice']);
 
         Route::get('/test-api', function () {
             return response()->json([

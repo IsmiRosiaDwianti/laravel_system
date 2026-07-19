@@ -2966,40 +2966,52 @@
         });
     }
 
+    
     function renderDetail(service) {
-        const body = document.getElementById('detailModalBody');
-        document.getElementById('detailModalTitle').textContent = `📊 Detail Service: ${service.name}`;
+    const body = document.getElementById('detailModalBody');
+    document.getElementById('detailModalTitle').textContent = `📊 Detail Service: ${service.name}`;
 
-        const statusClass = service.last_status?.toLowerCase() || 'unknown';
-        const statusBadge = service.last_status || 'UNKNOWN';
-        const responseCode = service.last_response_code ?? '-';
-        const responseTime = service.last_response_time ?? 0;
-        const timeClass = responseTime < 1 ? 'fast' : (responseTime < 3 ? 'medium' : 'slow');
-        const codeClass = responseCode < 400 ? 'success' : (responseCode < 500 ? 'warning' : 'error');
-        const action = service.last_action || '-';
-        const isNoAction = action === '-';
-        const isEmptyAction = action.includes('kosong') || action.includes('EMPTY');
-        const message = service.last_message || '-';
-        const isEmptyPage = message.includes('konten kosong') || message.includes('EMPTY_RESPONSE');
+    // ✅ PERBAIKAN: Gunakan properti yang BENAR dari service
+    const statusClass = service.last_status?.toLowerCase() || 'unknown';
+    const statusBadge = service.last_status || 'UNKNOWN';
+    
+    // 🔥 INI MASALAHNYA! Harusnya last_code BUKAN last_response_code
+    const responseCode = service.last_code ?? '-';  // ✅ PERBAIKAN
+    
+    // 🔥 INI JUGA! Harusnya last_response_time
+    const responseTime = service.last_response_time ?? 0;  // ✅ PERBAIKAN
+    
+    const timeClass = responseTime < 1 ? 'fast' : (responseTime < 3 ? 'medium' : 'slow');
+    const codeClass = responseCode < 400 ? 'success' : (responseCode < 500 ? 'warning' : 'error');
+    
+    // 🔥 INI JUGA! Harusnya last_action
+    const action = service.last_action || '-';  // ✅ PERBAIKAN
+    
+    // 🔥 INI JUGA! Harusnya last_message
+    const message = service.last_message || '-';  // ✅ PERBAIKAN
+    
+    const isNoAction = action === '-';
+    const isEmptyAction = action.includes('kosong') || action.includes('EMPTY');
+    const isEmptyPage = message.includes('konten kosong') || message.includes('EMPTY_RESPONSE');
 
-        const messageClass = isEmptyPage ? 'empty-message' : '';
-        const actionClass = isEmptyAction ? 'empty-action' : (isNoAction ? 'no-action' : '');
-        const actionBadgeText = isEmptyAction ? '📄 ' + action : action;
+    const messageClass = isEmptyPage ? 'empty-message' : '';
+    const actionClass = isEmptyAction ? 'empty-action' : (isNoAction ? 'no-action' : '');
+    const actionBadgeText = isEmptyAction ? '📄 ' + action : action;
 
-        body.innerHTML = `
-            <div class="detail-grid">
-                <div class="detail-item"><div class="detail-label">Nama Service</div><div class="detail-value">${service.name}</div></div>
-                <div class="detail-item"><div class="detail-label">Tipe</div><div class="detail-value">${service.type?.toUpperCase() || '-'}</div></div>
-                <div class="detail-item full-width"><div class="detail-label">Target URL / IP</div><div class="detail-value" style="font-family: 'SF Mono', 'Courier New', monospace; font-size: 14px; word-break: break-all;">${service.target}</div></div>
-                <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}"><span class="status-dot"></span> ${statusBadge}</span></div></div>
-                <div class="detail-item"><div class="detail-label">Response Code</div><div class="detail-value"><span class="response-code ${codeClass}">${responseCode}</span></div></div>
-                <div class="detail-item"><div class="detail-label">Response Time</div><div class="detail-value"><span class="response-time ${timeClass}">${Number(responseTime).toFixed(2)} <span style="font-size: 12px; color: var(--text-muted-service);">s</span></span></div></div>
-                <div class="detail-item full-width"><div class="detail-label">Pesan</div><div class="detail-message ${messageClass}">${message}</div></div>
-                <div class="detail-action"><div class="detail-label">🔧 Tindakan yang Disarankan</div><div class="detail-value"><span class="action-badge ${actionClass}">${actionBadgeText}</span></div></div>
-                <div class="detail-item full-width" style="background: var(--bg-detail-alt-service); border-color: var(--border-service);"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: var(--text-secondary-service);"><span><strong>ID:</strong> ${service.id}</span><span><strong>Dibuat:</strong> ${service.created_at || '-'}</span><span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span></div></div>
-            </div>
-        `;
-    }
+    body.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Nama Service</div><div class="detail-value">${service.name}</div></div>
+            <div class="detail-item"><div class="detail-label">Tipe</div><div class="detail-value">${service.type?.toUpperCase() || '-'}</div></div>
+            <div class="detail-item full-width"><div class="detail-label">Target URL / IP</div><div class="detail-value" style="font-family: 'SF Mono', 'Courier New', monospace; font-size: 14px; word-break: break-all;">${service.target}</div></div>
+            <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}"><span class="status-dot"></span> ${statusBadge}</span></div></div>
+            <div class="detail-item"><div class="detail-label">Response Code</div><div class="detail-value"><span class="response-code ${codeClass}">${responseCode}</span></div></div>
+            <div class="detail-item"><div class="detail-label">Response Time</div><div class="detail-value"><span class="response-time ${timeClass}">${Number(responseTime).toFixed(2)} <span style="font-size: 12px; color: var(--text-muted-service);">s</span></span></div></div>
+            <div class="detail-item full-width"><div class="detail-label">Pesan</div><div class="detail-message ${messageClass}">${message}</div></div>
+            <div class="detail-action"><div class="detail-label">🔧 Tindakan yang Disarankan</div><div class="detail-value"><span class="action-badge ${actionClass}">${actionBadgeText}</span></div></div>
+            <div class="detail-item full-width" style="background: var(--bg-detail-alt-service); border-color: var(--border-service);"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: var(--text-secondary-service);"><span><strong>ID:</strong> ${service.id}</span><span><strong>Terakhir Check:</strong> ${service.last_check_at || '-'}</span><span><strong>Dibuat:</strong> ${service.created_at || '-'}</span><span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span></div></div>
+        </div>
+    `;
+}
 
     function refreshDetail() {
         if (currentDetailId) {

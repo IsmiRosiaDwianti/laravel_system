@@ -293,18 +293,16 @@ class ServiceController extends Controller
     }
 
     /**
-     * Get detailed information of a service.
+     * ============================================================
+     *  🔥 DETAIL SERVICE - DIPERBAIKI
+     *  ============================================================
+     *  Ambil data dari SERVICE (bukan dari LOG) agar response code
+     *  selalu update meskipun status sama (200→403 tetap terlihat)
      */
     public function detail($id)
     {
         try {
-            $service = Service::with(['logs' => function($query) {
-                $query->latest()->limit(10);
-            }])->findOrFail($id);
-
-            $latestLog = $service->logs()->latest()->first();
-            $stats = $this->getServiceStats($service->id);
-            $action = $latestLog?->action ?? '-';
+            $service = Service::findOrFail($id);
 
             if (request()->ajax()) {
                 return response()->json([
@@ -314,30 +312,24 @@ class ServiceController extends Controller
                         'name' => $service->name,
                         'target' => $service->target,
                         'type' => $service->type,
+                        
+                        // ✅ AMBIL DARI SERVICE, BUKAN DARI LOG!
                         'last_status' => $service->last_status ?? 'UNKNOWN',
-                        'last_response_code' => $latestLog?->response_code,
-                        'last_response_time' => $latestLog?->response_time,
-                        'last_message' => $latestLog?->message ?? '-',
-                        'last_action' => $action,
-                        'last_checked_at' => $latestLog?->created_at?->format('d/m/Y H:i:s') ?? $service->updated_at?->format('d/m/Y H:i:s'),
-                        'created_at' => $service->created_at?->format('d/m/Y H:i:s'),
-                        'updated_at' => $service->updated_at?->format('d/m/Y H:i:s'),
-                        'stats' => $stats,
-                        'recent_logs' => $service->logs()->latest()->limit(5)->get()->map(function($log) {
-                            return [
-                                'status' => $log->status,
-                                'response_code' => $log->response_code,
-                                'response_time' => $log->response_time,
-                                'message' => $log->message,
-                                'action' => $log->action ?? '-',
-                                'created_at' => $log->created_at->format('d/m/Y H:i:s')
-                            ];
-                        })
+                        'last_code' => $service->last_code ?? '-',
+                        'last_response_time' => $service->last_response_time ?? 0,
+                        'last_message' => $service->last_message ?? '-',
+                        'last_action' => $service->last_action ?? '-',
+                        'last_check_at' => $service->last_check_at 
+                            ? $service->last_check_at->format('Y-m-d H:i:s') 
+                            : null,
+                        
+                        'created_at' => $service->created_at?->format('Y-m-d H:i:s'),
+                        'updated_at' => $service->updated_at?->format('Y-m-d H:i:s'),
                     ]
                 ]);
             }
 
-            return view('services-detail', compact('service', 'latestLog', 'stats', 'action'));
+            return view('services-detail', compact('service'));
 
         } catch (\Exception $e) {
             if (request()->ajax()) {
@@ -500,7 +492,10 @@ class ServiceController extends Controller
     }
 
     /**
-     * 🔥 FORCE CHECK A SERVICE (DIPERBAIKI)
+     * ============================================================
+     *  🔥 FORCE CHECK SERVICE - DIPERBAIKI
+     *  ============================================================
+     *  Ambil data dari SERVICE setelah check
      */
     public function check($id, ServiceMonitorService $monitor)
     {
@@ -510,19 +505,22 @@ class ServiceController extends Controller
             // 🔥 JALANKAN PROSES CHECK
             $monitor->check($service);
 
-            // 🔥 AMBIL LOG TERBARU
-            $latestLog = $service->logs()->latest()->first();
+            // 🔥 REFRESH SERVICE DARI DATABASE
+            $service->refresh();
 
             if (request()->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Service "' . $service->name . '" berhasil di-check',
                     'data' => [
+                        // ✅ AMBIL DARI SERVICE
                         'status' => $service->last_status ?? 'UNKNOWN',
-                        'response_code' => $latestLog?->response_code ?? 'N/A',
-                        'response_time' => $latestLog?->response_time ?? 0,
-                        'message' => $latestLog?->message ?? '-',
-                        'checked_at' => $latestLog?->created_at?->format('d/m/Y H:i:s') ?? '-'
+                        'response_code' => $service->last_code ?? 'N/A',
+                        'response_time' => $service->last_response_time ?? 0,
+                        'message' => $service->last_message ?? '-',
+                        'checked_at' => $service->last_check_at 
+                            ? $service->last_check_at->format('Y-m-d H:i:s') 
+                            : '-'
                     ]
                 ]);
             }
@@ -976,10 +974,7 @@ class ServiceController extends Controller
     public function apiShow($id)
     {
         try {
-            $service = Service::with(['logs' => function($query) {
-                $query->latest()->limit(5);
-            }])->findOrFail($id);
-            
+            $service = Service::findOrFail($id);
             $service->uptime = $this->calculateUptime($service->id, 30);
             
             return response()->json([
@@ -1212,18 +1207,22 @@ class ServiceController extends Controller
         try {
             $service = Service::findOrFail($id);
             $monitor->check($service);
-
-            $latestLog = $service->logs()->latest()->first();
+            
+            // 🔥 REFRESH SERVICE DARI DATABASE
+            $service->refresh();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Service "' . $service->name . '" berhasil di-check',
                 'data' => [
+                    // ✅ AMBIL DARI SERVICE
                     'status' => $service->last_status ?? 'UNKNOWN',
-                    'response_code' => $latestLog?->response_code ?? 'N/A',
-                    'response_time' => $latestLog?->response_time ?? 0,
-                    'message' => $latestLog?->message ?? '-',
-                    'checked_at' => $latestLog?->created_at?->format('Y-m-d H:i:s') ?? '-'
+                    'response_code' => $service->last_code ?? 'N/A',
+                    'response_time' => $service->last_response_time ?? 0,
+                    'message' => $service->last_message ?? '-',
+                    'checked_at' => $service->last_check_at 
+                        ? $service->last_check_at->format('Y-m-d H:i:s') 
+                        : '-'
                 ]
             ]);
 
@@ -1291,7 +1290,7 @@ class ServiceController extends Controller
 
     /**
      * ============================================================
-     *  📡 API: GET SERVICE DETAIL (LENGKAP)
+     *  📡 API: GET SERVICE DETAIL (LENGKAP) - DIPERBAIKI
      *  ============================================================
      *  🔗 URL: GET /api/services/{id}/detail
      *  🔑 Butuh Auth: Sanctum Token
@@ -1300,11 +1299,7 @@ class ServiceController extends Controller
     public function apiDetail($id)
     {
         try {
-            $service = Service::with(['logs' => function($query) {
-                $query->latest()->limit(10);
-            }])->findOrFail($id);
-
-            $latestLog = $service->logs()->latest()->first();
+            $service = Service::findOrFail($id);
             $stats = $this->getServiceStats($service->id);
             $uptime = $this->calculateUptime($service->id, 30);
 
@@ -1315,24 +1310,21 @@ class ServiceController extends Controller
                     'name' => $service->name,
                     'target' => $service->target,
                     'type' => $service->type,
+                    
+                    // ✅ AMBIL DARI SERVICE, BUKAN DARI LOG!
                     'last_status' => $service->last_status ?? 'UNKNOWN',
-                    'last_response_code' => $latestLog?->response_code,
-                    'last_response_time' => $latestLog?->response_time,
-                    'last_message' => $latestLog?->message ?? '-',
-                    'last_checked_at' => $latestLog?->created_at?->format('Y-m-d H:i:s'),
+                    'last_code' => $service->last_code ?? '-',
+                    'last_response_time' => $service->last_response_time ?? 0,
+                    'last_message' => $service->last_message ?? '-',
+                    'last_action' => $service->last_action ?? '-',
+                    'last_check_at' => $service->last_check_at 
+                        ? $service->last_check_at->format('Y-m-d H:i:s') 
+                        : null,
+                    
                     'uptime_30d' => $uptime,
                     'created_at' => $service->created_at?->format('Y-m-d H:i:s'),
                     'updated_at' => $service->updated_at?->format('Y-m-d H:i:s'),
                     'stats' => $stats,
-                    'recent_logs' => $service->logs()->latest()->limit(5)->get()->map(function($log) {
-                        return [
-                            'status' => $log->status,
-                            'response_code' => $log->response_code,
-                            'response_time' => $log->response_time,
-                            'message' => $log->message,
-                            'created_at' => $log->created_at->format('Y-m-d H:i:s')
-                        ];
-                    })
                 ]
             ]);
 
@@ -1401,7 +1393,7 @@ class ServiceController extends Controller
 
     /**
      * ============================================================
-     *  🔥 API STATUS UNTUK AJAX POLLING
+     *  🔥 API STATUS UNTUK AJAX POLLING - DIPERBAIKI
      *  ============================================================
      *  🔗 URL: GET /api/services/status
      *  🔑 Butuh Auth: Sanctum Token (optional)
@@ -1417,14 +1409,15 @@ class ServiceController extends Controller
                 'services' => $services->map(function ($service) {
                     return [
                         'id' => $service->id,
+                        'name' => $service->name,
+                        'target' => $service->target,
                         'last_status' => $service->last_status ?? 'UNKNOWN',
+                        'last_code' => $service->last_code ?? '-', // ✅ Tambahkan last_code
                         'last_check_at' => $service->last_check_at 
                             ? \Carbon\Carbon::parse($service->last_check_at)
                                 ->setTimezone('Asia/Jakarta')
                                 ->format('H:i:s') 
                             : '-',
-                        'name' => $service->name,
-                        'target' => $service->target,
                     ];
                 })
             ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')

@@ -370,15 +370,18 @@ class ServiceMonitorService
 
     /**
      * ============================================================
-     * 🔥🔥🔥 SAVE RESULT - PAKAI DATABASE (BUKAN SESSION!) 🔥🔥🔥
+     * 🔥🔥🔥 SAVE RESULT - PERBAIKAN LENGKAP 🔥🔥🔥
      * ============================================================
      * 
      * PERBAIKAN:
-     * 1. First Check pakai last_wa_sent_at (BUKAN ServiceLog)
-     * 2. Interval pakai database (BUKAN session)
-     * 3. First Check UP → TIDAK kirim WA
-     * 4. First Check DOWN/WARNING → KIRIM WA
-     * 5. Bandingkan AWAL vs AKHIR interval
+     * 1. UPDATE data service SETIAP KALI (termasuk response code)
+     * 2. LOG hanya dibuat saat STATUS BERUBAH (UP↔DOWN)
+     * 3. UPDATE log terakhir dengan data terbaru jika status SAMA
+     * 4. First Check: kirim WA hanya jika DOWN/WARNING
+     * 5. Interval: bandingkan STATUS (UP/DOWN/WARNING), BUKAN response code
+     * 6. 200→403 = SAMA (UP) → UPDATE service, TIDAK buat log baru, TIDAK kirim WA
+     * 7. 403→200 = SAMA (UP) → UPDATE service, TIDAK buat log baru, TIDAK kirim WA
+     * 8. 200→503 = BERUBAH (UP→DOWN) → UPDATE service, BUAT log baru, KIRIM WA
      */
     private function saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action)
     {
@@ -388,27 +391,23 @@ class ServiceMonitorService
         }
 
         // ============================================================
-        // 🔥🔥🔥 CEK FIRST CHECK (Pakai last_wa_sent_at) 🔥🔥🔥
-        // ============================================================
-        $isFirstCheck = empty($service->last_wa_sent_at);
-        
-        Log::info("📊 First check status: " . ($isFirstCheck ? 'YES' : 'NO') . " for {$service->name}");
-
-        // ============================================================
-        // 📌 UPDATE STATUS SERVICE
+        // 🔥 1. UPDATE DATA SERVICE (SELALU DIUPDATE)
         // ============================================================
         $service->update([
             'last_status' => $status,
-            'last_code' => $code,
-            'last_response_time' => $time,
-            'last_message' => $detail,
+            'last_code' => $code,              // ✅ 200→403 akan update di sini
+            'last_response_time' => $time,     // ✅ Response time selalu update
+            'last_message' => $detail,         // ✅ Message selalu update
             'last_check_at' => now(),
         ]);
 
         // ============================================================
-        // 📌 BUAT LOG JIKA STATUS BERUBAH
+        // 🔥 2. CEK APAKAH STATUS BERUBAH
         // ============================================================
-        if ($oldStatus != $status) {
+        $statusChanged = ($oldStatus != $status);
+
+        if ($statusChanged) {
+            // ✅ Status BERUBAH: BUAT LOG BARU
             ServiceLog::create([
                 'service_id' => $service->id,
                 'status' => $status,
@@ -418,14 +417,45 @@ class ServiceMonitorService
                 'action' => $action,
                 'checked_at' => now(),
             ]);
-            Log::info("📝 Log: {$service->name} {$oldStatus} → {$status}");
+            Log::info("📝 LOG BARU: {$service->name} {$oldStatus} → {$status}, Code: {$code}");
+        } else {
+            // ❌ Status SAMA: UPDATE LOG TERAKHIR dengan data terbaru
+            $lastLog = ServiceLog::where('service_id', $service->id)
+                ->latest()
+                ->first();
+            
+            if ($lastLog) {
+                $oldCode = $lastLog->response_code;
+                $lastLog->update([
+                    'response_code' => $code,
+                    'response_time' => $time,
+                    'message' => $detail,
+                    'action' => $action,
+                    'checked_at' => now(),
+                ]);
+                Log::info("📝 LOG DIUPDATE: {$service->name} status tetap {$status}, code: {$oldCode} → {$code}");
+            } else {
+                // 🔥 Jika tidak ada log sama sekali (kemungkinan error), buat log baru
+                ServiceLog::create([
+                    'service_id' => $service->id,
+                    'status' => $status,
+                    'response_code' => $code,
+                    'response_time' => $time,
+                    'message' => $detail,
+                    'action' => $action,
+                    'checked_at' => now(),
+                ]);
+                Log::info("📝 LOG BARU (force): {$service->name} {$status}, Code: {$code}");
+            }
         }
 
         // ============================================================
-        // 📌 LOGIKA FIRST CHECK (HANYA 1 KALI) - PRIORITAS UTAMA!
+        // 🔥 3. LOGIKA FIRST CHECK
         // ============================================================
+        $isFirstCheck = empty($service->last_wa_sent_at);
+        
         if ($isFirstCheck) {
-            Log::info("🆕 FIRST CHECK: {$service->name} - Pertama kali di-monitoring");
+            Log::info("🆕 FIRST CHECK: {$service->name}");
             
             if ($status === 'DOWN' || $status === 'WARNING') {
                 $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
@@ -446,70 +476,71 @@ class ServiceMonitorService
                 ]);
             }
             
-            // 🔥 LANGSUNG KELUAR, TIDAK PROSES INTERVAL!
-            $lastLog = ServiceLog::where('service_id', $service->id)->latest()->first();
-            if ($lastLog) {
-                $lastLog->update(['checked_at' => now()]);
+            return;
+        }
+
+        // ============================================================
+        // 🔥 4. LOGIKA WHATSAPP INTERVAL
+        // ============================================================
+        $interval = $service->wa_interval_minutes ?? 0;
+        
+        // 🔥 Interval = 0 (sekali): kirim WA setiap DOWN/WARNING
+        if ($interval == 0) {
+            if ($status === 'DOWN' || $status === 'WARNING') {
+                $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
+                $service->update([
+                    'last_wa_sent_at' => now(),
+                    'last_notified_status' => $status,
+                ]);
+                Log::info("📱 WA terkirim (interval 0): {$service->name} → {$status}");
             }
             return;
         }
 
         // ============================================================
-        // 🔥 BUKAN FIRST CHECK: Logika interval PAKAI DATABASE!
+        // 🔥 5. CEK INTERVAL > 0
         // ============================================================
-        $interval = $service->wa_interval_minutes ?? 0;
         $lastIntervalCheck = $service->last_interval_checked_at;
-        $intervalStartStatus = $service->last_interval_status ?? $oldStatus;
         
-        // ============================================================
-        // 🔥 INTERVAL PERTAMA (BELUM PERNAH DISET)
-        // ============================================================
         if (empty($lastIntervalCheck)) {
-            Log::info("📌 Interval pertama untuk {$service->name}, status awal: {$status}");
+            // Interval pertama kali
+            Log::info("📌 Interval pertama: {$service->name}, status awal: {$status}");
             $service->update([
                 'last_interval_status' => $status,
                 'last_interval_checked_at' => now(),
             ]);
             
-            // Update last_wa_sent_at jika NULL
-            if (empty($service->last_wa_sent_at)) {
+            if ($status === 'DOWN' || $status === 'WARNING') {
+                $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
                 $service->update([
-                    'last_wa_sent_at' => now()->subMinutes($interval),
+                    'last_wa_sent_at' => now(),
+                    'last_notified_status' => $status,
                 ]);
-            }
-            
-            $lastLog = ServiceLog::where('service_id', $service->id)->latest()->first();
-            if ($lastLog) {
-                $lastLog->update(['checked_at' => now()]);
+                Log::info("📱 WA terkirim (awal interval): {$service->name} → {$status}");
             }
             return;
         }
-        
+
         // ============================================================
-        // 🔥 HITUNG SELISIH WAKTU DARI INTERVAL TERAKHIR
+        // 🔥 6. CEK APAKAH INTERVAL SUDAH TERCAPAI
         // ============================================================
         $lastCheck = Carbon::parse($lastIntervalCheck);
         $minutesSinceLastCheck = $lastCheck->diffInRealMinutes(now());
-        $intervalReached = $minutesSinceLastCheck >= $interval;
         
-        // ============================================================
-        // 🔥 INTERVAL BELUM TERCAPAI → UPDATE TAPI TIDAK KIRIM
-        // ============================================================
-        if (!$intervalReached) {
-            Log::info("⏭️ Interval belum tercapai ({$minutesSinceLastCheck} menit), status sementara: {$status}");
-            
-            $lastLog = ServiceLog::where('service_id', $service->id)->latest()->first();
-            if ($lastLog) {
-                $lastLog->update(['checked_at' => now()]);
-            }
+        if ($minutesSinceLastCheck < $interval) {
+            Log::info("⏭️ Interval belum tercapai ({$minutesSinceLastCheck}/{$interval} menit), status: {$status}");
             return;
         }
+
+        // ============================================================
+        // 🔥 7. INTERVAL TERCAPAI! BANDINGKAN STATUS
+        // ============================================================
+        $intervalStartStatus = $service->last_interval_status ?? $oldStatus;
         
-        // ============================================================
-        // 🔥🔥🔥 INTERVAL TERCAPAI! BANDINGKAN AWAL vs AKHIR 🔥🔥🔥
-        // ============================================================
+        Log::info("📊 Interval reached! Start: {$intervalStartStatus}, Current: {$status}");
+        
         if ($status !== $intervalStartStatus) {
-            // ✅ Status BERUBAH dari awal interval → KIRIM WA!
+            // ✅ Status BERUBAH → KIRIM WA
             Log::info("📱 WA terkirim: {$intervalStartStatus} → {$status} (interval {$interval} menit)");
             $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
             $service->update([
@@ -519,42 +550,12 @@ class ServiceMonitorService
                 'last_interval_checked_at' => now(),
             ]);
         } else {
-            // ❌ Status SAMA → TIDAK KIRIM
+            // ❌ Status SAMA → TIDAK KIRIM WA
             Log::info("⏭️ Skip WA: status tetap {$status} (sama dengan awal interval)");
             $service->update([
                 'last_interval_checked_at' => now(),
             ]);
         }
-
-        $lastLog = ServiceLog::where('service_id', $service->id)->latest()->first();
-        if ($lastLog) {
-            $lastLog->update(['checked_at' => now()]);
-        }
-    }
-
-    /**
-     * ============================================================
-     * 🔥 CEK APAKAH INTERVAL SUDAH TERPENUHI? (TIDAK DIPAKAI)
-     * ============================================================
-     * Method ini TIDAK dipakai karena interval sudah dihandle di saveResult()
-     * Tapi tetap dipertahankan untuk kompatibilitas.
-     */
-    private function isIntervalMet(Service $service, int $interval): bool
-    {
-        if ($interval <= 0) {
-            return true;
-        }
-
-        $lastWaSent = $service->last_wa_sent_at;
-        
-        if (empty($lastWaSent)) {
-            return true;
-        }
-
-        $lastSent = Carbon::parse($lastWaSent);
-        $minutesSinceLastWa = $lastSent->diffInRealMinutes(now());
-
-        return $minutesSinceLastWa >= $interval;
     }
 
     /**
