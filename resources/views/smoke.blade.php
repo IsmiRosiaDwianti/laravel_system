@@ -1290,8 +1290,8 @@
         $smokeStatus = strtolower($device?->status ?? 'normal');
         $statusClass = $smokeStatus;
         $statusLabel = $smokeStatus == 'danger' ? '🔴 BAHAYA' : ($smokeStatus == 'warning' ? '🟡 WARNING' : '🟢 NORMAL');
-        $maxPpm = 1000;
-        $percentage = min(($smokeValue / $maxPpm) * 100, 100);
+        $maxAdc = 1000;
+        $percentage = min(($smokeValue / $maxAdc) * 100, 100);
     @endphp
 
     <div class="smoke-status-card" id="smokeStatusCard">
@@ -1315,18 +1315,18 @@
         <div class="smoke-status-right">
             <div class="smoke-value-wrapper">
                 <div class="smoke-value {{ $statusClass }}" id="smokeValue">
-                    {{ number_format($smokeValue, 0) }}<small>ppm</small>
+                    {{ number_format($smokeValue, 0) }}<small>ADC</small>
                 </div>
-                <div class="smoke-label">Nilai Asap</div>
+                <div class="smoke-label">Nilai ADC</div>
             </div>
             <div class="smoke-bar-container">
                 <div class="bar-track">
                     <div class="bar-fill {{ $statusClass }}" id="smokeBar" style="width: {{ $percentage }}%;"></div>
                 </div>
                 <div class="bar-labels">
-                    <span class="min-label">0 ppm</span>
-                    <span class="current-value">{{ number_format($smokeValue, 0) }} ppm</span>
-                    <span class="max-label">⚠️ {{ $maxPpm }} ppm</span>
+                    <span class="min-label">0 ADC</span>
+                    <span class="current-value">{{ number_format($smokeValue, 0) }} ADC</span>
+                    <span class="max-label">⚠️ {{ $maxAdc }} ADC</span>
                 </div>
             </div>
         </div>
@@ -1362,7 +1362,7 @@
                     <tr>
                         <th style="width: 40px;">No</th>
                         <th style="width: 180px;">🕐 Waktu</th>
-                        <th style="width: 120px;">📊 Nilai Asap</th>
+                        <th style="width: 120px;">📊 Nilai ADC</th>
                         <th style="width: 140px;">📌 Status</th>
                         <th>📝 Keterangan</th>
                     </tr>
@@ -1389,7 +1389,7 @@
                             <td>
                                 <span class="value-cell {{ $valueClass }}">
                                     {{ $log->smoke_value ?? 0 }}
-                                    <span style="font-size: 11px; font-weight: 400; color: var(--text-muted);">ppm</span>
+                                    <span style="font-size: 11px; font-weight: 400; color: var(--text-muted);">ADC</span>
                                 </span>
                             </td>
                             <td>
@@ -1522,9 +1522,9 @@
     let lastLogId = null;
     let isFirstLoad = true;
     
-    // 🔥 TRACK STATUS DAN PPM SAAT INI
+    // 🔥 TRACK STATUS DAN ADC SAAT INI
     let currentStatus = '{{ strtoupper($smokeStatus) }}';
-    let currentPpm = {{ $smokeValue }};
+    let currentAdc = {{ $smokeValue }};
 
     // ========== UPDATE TOTAL LOGS ==========
     function updateTotalLogs(count) {
@@ -1591,10 +1591,10 @@
             if (data.success) {
                 const esp = data.data;
                 const isOnline = esp.device_status === 'ONLINE';
-                const ppm = esp.ppm || 0;
+                const adc = esp.adc || 0;
                 const status = esp.status || 'NORMAL';
                 const isStatusChanged = esp.is_status_changed || false;
-                const isPpmUpdated = esp.is_ppm_updated || false;
+                const isAdcUpdated = esp.is_adc_updated || false;
                 const latestLog = esp.latest_log || null;
                 const serverLogId = latestLog ? latestLog.id : null;
                 
@@ -1612,7 +1612,7 @@
                 
                 // 🔥 LOGIKA DETEKSI PERUBAHAN
                 const oldStatus = currentStatus;
-                const oldPpm = currentPpm;
+                const oldAdc = currentAdc;
                 
                 // 🔥 1. CEK STATUS BERUBAH (LOG BARU)
                 if (isStatusChanged || status !== oldStatus) {
@@ -1620,19 +1620,19 @@
                     addNewLog(esp, latestLog);
                     lastLogId = serverLogId;
                     currentStatus = status;
-                    currentPpm = ppm;
+                    currentAdc = adc;
                 }
-                // 🔥 2. PPM BERUBAH TAPI STATUS SAMA
-                else if ((isPpmUpdated || ppm !== oldPpm) && status === oldStatus) {
-                    console.log('🔄 PPM UPDATED:', oldPpm, '→', ppm);
-                    updateLastLogPpm(esp);
-                    currentPpm = ppm;
+                // 🔥 2. ADC BERUBAH TAPI STATUS SAMA
+                else if ((isAdcUpdated || adc !== oldAdc) && status === oldStatus) {
+                    console.log('🔄 ADC UPDATED:', oldAdc, '→', adc);
+                    updateLastLogAdc(esp);
+                    currentAdc = adc;
                 }
                 
                 if (isFirstLoad) {
                     lastLogId = serverLogId;
                     currentStatus = status;
-                    currentPpm = ppm;
+                    currentAdc = adc;
                     isFirstLoad = false;
                 }
             }
@@ -1650,7 +1650,7 @@
         if (!tbody) return;
         
         const status = data.status || 'NORMAL';
-        const ppm = data.ppm || 0;
+        const adc = data.adc || 0;
         const statusClass = getStatusClass(status);
         const statusIcon = getStatusIcon(status);
         const logMessage = logData ? logData.message : getStatusMessage(status);
@@ -1691,7 +1691,7 @@
                 <span class="row-number">${rowNumber}</span>
             </td>
             <td><span class="time-cell" data-updated-at="${createdAt}">${currentTime}</span></td>
-            <td><span class="value-cell ${statusClass}">${numberFormat(ppm)} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">ppm</span></span></td>
+            <td><span class="value-cell ${statusClass}">${numberFormat(adc)} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">ADC</span></span></td>
             <td><span class="status-badge ${statusClass}">${statusIcon} ${status}</span></td>
             <td><div class="message-cell" title="${logMessage}">${logMessage}</div></td>
         `;
@@ -1713,11 +1713,11 @@
         }, 600);
         
         lastLogId = logId;
-        console.log('✅ Log baru ditambahkan:', status, ppm, 'ID:', logId);
+        console.log('✅ Log baru ditambahkan:', status, adc, 'ID:', logId);
     }
 
-    // ========== UPDATE PPM DI LOG TERAKHIR ==========
-    function updateLastLogPpm(data) {
+    // ========== UPDATE ADC DI LOG TERAKHIR ==========
+    function updateLastLogAdc(data) {
         const tbody = document.getElementById('logTableBody');
         if (!tbody) return;
         
@@ -1729,11 +1729,11 @@
         
         const currentTime = formatDate(new Date().toISOString());
         const statusClass = getStatusClass(data.status || 'NORMAL');
-        const ppm = data.ppm || 0;
+        const adc = data.adc || 0;
         
         const valueCell = targetRow.querySelector('.value-cell');
         if (valueCell) {
-            valueCell.innerHTML = `${numberFormat(ppm)} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">ppm</span>`;
+            valueCell.innerHTML = `${numberFormat(adc)} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">ADC</span>`;
             valueCell.className = 'value-cell ' + statusClass;
         }
         
@@ -1748,18 +1748,18 @@
             targetRow.classList.remove('new-log-flash');
         }, 600);
         
-        console.log('✅ Log diupdate PPM:', ppm);
+        console.log('✅ Log diupdate ADC:', adc);
     }
 
     // ========== UPDATE TAMPILAN SMOKE ==========
     function updateSmokeDisplay(data) {
-        const ppm = data.ppm || 0;
+        const adc = data.adc || 0;
         const status = data.status || 'NORMAL';
         const statusClass = getStatusClass(status);
 
         const smokeValueElement = document.getElementById('smokeValue');
         if (smokeValueElement) {
-            smokeValueElement.innerHTML = numberFormat(ppm) + '<small>ppm</small>';
+            smokeValueElement.innerHTML = numberFormat(adc) + '<small>ADC</small>';
             smokeValueElement.className = 'smoke-value ' + statusClass;
         }
 
@@ -1777,8 +1777,8 @@
             smokeIcon.className = 'smoke-icon ' + statusClass;
         }
 
-        const maxPpm = 1000;
-        const percentage = Math.min((ppm / maxPpm) * 100, 100);
+        const maxAdc = 1000;
+        const percentage = Math.min((adc / maxAdc) * 100, 100);
         const barFill = document.getElementById('smokeBar');
         if (barFill) {
             barFill.style.width = percentage + '%';
@@ -1788,7 +1788,7 @@
         const currentValueLabels = document.querySelectorAll('.bar-labels .current-value');
         if (currentValueLabels.length > 0) {
             currentValueLabels.forEach(el => {
-                el.textContent = numberFormat(ppm) + ' ppm';
+                el.textContent = numberFormat(adc) + ' ADC';
             });
         }
     }
@@ -1836,13 +1836,13 @@
             currentStatus = firstRow.dataset.logStatus || 'NORMAL';
         }
         
-        // AMBIL PPM PERTAMA
+        // AMBIL ADC PERTAMA
         const firstValue = document.querySelector('#logTableBody tr:first-child .value-cell');
         if (firstValue) {
-            const ppmText = firstValue.textContent.trim();
-            const ppmMatch = ppmText.match(/(\d+)/);
-            if (ppmMatch) {
-                currentPpm = parseInt(ppmMatch[0]);
+            const adcText = firstValue.textContent.trim();
+            const adcMatch = adcText.match(/(\d+)/);
+            if (adcMatch) {
+                currentAdc = parseInt(adcMatch[0]);
             }
         }
         

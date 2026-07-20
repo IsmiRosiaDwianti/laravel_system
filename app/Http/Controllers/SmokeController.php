@@ -14,11 +14,12 @@ class SmokeController extends Controller
 {
     /**
      * ============================================================
-     *  🔥 KONFIGURASI THRESHOLD PPM
+     *  🔥 KONFIGURASI THRESHOLD (LANGSUNG ADC DARI ARDUINO)
+     *  SAMA PERSIS DENGAN ARDUINO
      * ============================================================
      */
-    private const WARNING_THRESHOLD = 700;
-    private const DANGER_THRESHOLD  = 1000;
+    private const WARNING_THRESHOLD = 700;   // SAMA DENGAN ARDUINO
+    private const DANGER_THRESHOLD  = 1000;  // SAMA DENGAN ARDUINO
     private const DEFAULT_DEVICE_NAME = 'ESP32-Smoke';
     private const DEFAULT_DEVICE_LOCATION = 'Ruang Server';
 
@@ -49,15 +50,15 @@ class SmokeController extends Controller
         $danger = 0;
 
         foreach ($devices as $device) {
-            $ppm = $device->smoke_value ?? 0;
+            $adc = $device->smoke_value ?? 0;
             
-            if ($ppm >= self::DANGER_THRESHOLD) {
+            if ($adc >= self::DANGER_THRESHOLD) {
                 $danger++;
                 $device->status = 'DANGER';
                 $device->status_label = '🔴 DANGER';
                 $device->status_class = 'danger';
                 $device->status_icon = '🔥';
-            } elseif ($ppm >= self::WARNING_THRESHOLD) {
+            } elseif ($adc >= self::WARNING_THRESHOLD) {
                 $warning++;
                 $device->status = 'WARNING';
                 $device->status_label = '🟡 WARNING';
@@ -83,13 +84,11 @@ class SmokeController extends Controller
         $perPage = $request->input('perPage', 10);
         $page = $request->input('page', 1);
         
-        // 🔥 AMBIL SEMUA LOG, FILTER HANYA NORMAL, WARNING, DANGER
         $allLogs = SmokeLog::with('device')
             ->whereIn('status', ['NORMAL', 'WARNING', 'DANGER'])
             ->orderBy('created_at', 'desc')
             ->get();
         
-        // 🔥 FILTER: HANYA TAMPILKAN LOG YANG STATUSNYA BERUBAH
         $filteredLogs = [];
         $lastStatus = null;
         
@@ -100,14 +99,10 @@ class SmokeController extends Controller
             }
         }
         
-        // 🔥🔥🔥 HITUNG TOTAL DATA YANG DIFILTER 🔥🔥🔥
         $totalFiltered = count($filteredLogs);
-        
-        // Paginasi manual
         $offset = ($page - 1) * $perPage;
         $paginatedLogs = array_slice($filteredLogs, $offset, $perPage);
         
-        // 🔥🔥🔥 BUAT PAGINATOR DENGAN DATA YANG SUDAH DIFILTER 🔥🔥🔥
         $smokeLogs = new \Illuminate\Pagination\LengthAwarePaginator(
             $paginatedLogs,
             $totalFiltered,
@@ -115,8 +110,6 @@ class SmokeController extends Controller
             $page,
             ['path' => $request->url(), 'query' => $request->query()]
         );
-        
-        // 🔥🔥🔥 SET COLLECTION DENGAN DATA YANG SUDAH DIPAGINASI 🔥🔥🔥
         $smokeLogs->setCollection(collect($paginatedLogs));
 
         $onlineCount = $online;
@@ -139,16 +132,18 @@ class SmokeController extends Controller
     /**
      * ============================================================
      *  📡 ESP32 KIRIM DATA (POST /api/smoke)
+     *  MENERIMA ADC DARI ARDUINO
      * ============================================================
      */
     public function receiveData(Request $request)
     {
         try {
+            // 🔥 UBAH: Terima 'adc' bukan 'ppm'
             $validated = $request->validate([
-                'ppm' => 'required|integer|min:0|max:10000',
+                'adc' => 'required|integer|min:0|max:4095',
             ]);
 
-            $ppm = $validated['ppm'];
+            $adc = $validated['adc'];
 
             // CARI ATAU BUAT DEVICE
             $device = SmokeDevice::first();
@@ -157,7 +152,7 @@ class SmokeController extends Controller
                     'name' => self::DEFAULT_DEVICE_NAME,
                     'location' => self::DEFAULT_DEVICE_LOCATION,
                     'device_status' => 'ONLINE',
-                    'smoke_value' => $ppm,
+                    'smoke_value' => $adc,
                     'status' => 'NORMAL',
                     'last_seen_at' => Carbon::now(),
                     'last_wa_sent_at' => null,
@@ -167,34 +162,32 @@ class SmokeController extends Controller
             // 🔥 CEK APAKAH SEBELUMNYA OFFLINE
             $wasOffline = ($device->device_status === 'OFFLINE');
 
-            // STATUS LAMA & PPM LAMA
+            // STATUS LAMA & ADC LAMA
             $oldStatus = $device->status;
-            $oldPpm = $device->smoke_value ?? 0;
+            $oldAdc = $device->smoke_value ?? 0;
 
-            // TENTUKAN STATUS
-            if ($ppm >= self::DANGER_THRESHOLD) {
+            // 🔥 TENTUKAN STATUS (SAMA PERSIS DENGAN ARDUINO)
+            if ($adc >= self::DANGER_THRESHOLD) {
                 $status = 'DANGER';
-                $message = "🔥 Asap tinggi!  - Segera periksa!";
+                $message = "🔥 Asap tinggi! ADC: {$adc}";
                 $icon = '🔥';
-            } elseif ($ppm >= self::WARNING_THRESHOLD) {
+            } elseif ($adc >= self::WARNING_THRESHOLD) {
                 $status = 'WARNING';
-                $message = "⚠️ Asap terdeteksi! - Waspada!";
+                $message = "⚠️ Asap terdeteksi! ADC: {$adc}";
                 $icon = '⚠️';
             } else {
                 $status = 'NORMAL';
-                $message = "✅ Kondisi aman";
+                $message = "✅ Kondisi aman | ADC: {$adc}";
                 $icon = '✅';
             }
 
             // ============================================================
-            // 🔥 LOGIKA UTAMA: 
-            // 1. HANYA SAVE LOG JIKA STATUS BERUBAH
-            // 2. UPDATE PPM DI LOG TERAKHIR JIKA STATUS SAMA
+            // 🔥 LOGIKA: SAVE LOG HANYA KETIKA STATUS BERUBAH
             // ============================================================
             $isStatusChanged = ($oldStatus != $status);
             $log = null;
             $isNewLogSaved = false;
-            $isPpmUpdated = false;
+            $isAdcUpdated = false;
             $lastLog = null;
             $updatedLog = null;
 
@@ -202,104 +195,87 @@ class SmokeController extends Controller
                 // 🔥 STATUS BERUBAH → SAVE LOG BARU
                 $log = SmokeLog::create([
                     'smoke_device_id' => $device->id,
-                    'smoke_value' => $ppm,
+                    'smoke_value' => $adc,
                     'status' => $status,
                     'message' => $message,
                 ]);
                 $isNewLogSaved = true;
                 $updatedLog = $log;
                 
-                Log::info("📝 Log baru tersimpan: Status berubah dari {$oldStatus} ke {$status} ({$ppm} ppm)");
+                Log::info("📝 Log baru: Status berubah dari {$oldStatus} ke {$status} (ADC: {$adc})");
             } else {
-                // 🔥 STATUS SAMA → UPDATE PPM DAN WAKTU LOG TERAKHIR
+                // 🔥 STATUS SAMA → UPDATE ADC DI LOG TERAKHIR
                 $lastLog = SmokeLog::where('smoke_device_id', $device->id)
                     ->whereIn('status', ['NORMAL', 'WARNING', 'DANGER'])
                     ->orderBy('created_at', 'desc')
                     ->first();
                 
                 if ($lastLog) {
-                    // Update nilai PPM dan waktu
-                    $lastLog->smoke_value = $ppm;
+                    $lastLog->smoke_value = $adc;
                     $lastLog->updated_at = Carbon::now();
                     $lastLog->save();
-                    $isPpmUpdated = true;
+                    $isAdcUpdated = true;
                     $updatedLog = $lastLog;
                     
-                    Log::info("🔄 Log diupdate: Status {$status} tetap, PPM diupdate dari {$oldPpm} ke {$ppm}");
+                    Log::info("🔄 Log diupdate: Status {$status} tetap, ADC: {$oldAdc} → {$adc}");
                 } else {
-                    // Jika tidak ada log sama sekali (first time)
+                    // FIRST TIME
                     $log = SmokeLog::create([
                         'smoke_device_id' => $device->id,
-                        'smoke_value' => $ppm,
+                        'smoke_value' => $adc,
                         'status' => $status,
                         'message' => $message,
                     ]);
                     $isNewLogSaved = true;
                     $updatedLog = $log;
-                    Log::info("📝 Log pertama tersimpan: {$status} ({$ppm} ppm)");
+                    Log::info("📝 Log pertama: {$status} (ADC: {$adc})");
                 }
             }
 
-            // UPDATE DEVICE (SELALU UPDATE)
+            // UPDATE DEVICE
             $device->update([
-                'smoke_value' => $ppm,
+                'smoke_value' => $adc,
                 'status' => $status,
                 'device_status' => 'ONLINE',
                 'last_seen_at' => Carbon::now(),
             ]);
 
-            // 🔥🔥🔥 KIRIM WA JIKA SEBELUMNYA OFFLINE (ESP KEMBALI ONLINE) 🔥🔥🔥
+            // KIRIM WA JIKA KEMBALI ONLINE
             if ($wasOffline) {
                 Log::info("📱 ESP kembali online, kirim WA online alert");
                 $this->sendEspOnlineAlert($device);
             }
 
             // ============================================================
-            // 🔥🔥🔥 KIRIM WA HANYA KETIKA STATUS NAIK 🔥🔥🔥
+            // 🔥 KIRIM WA HANYA KETIKA STATUS NAIK
             // ============================================================
             $shouldSendWA = false;
             $waReason = '';
 
-            // 🔥 HANYA PROSES JIKA STATUS BERUBAH
             if ($isStatusChanged) {
-                // 🔥 CEK APAKAH STATUS NAIK (MEMBURUK)
                 $isStatusUp = false;
                 
-                // CEK STATUS NAIK
                 if ($oldStatus == 'NORMAL' && in_array($status, ['WARNING', 'DANGER'])) {
-                    $isStatusUp = true; // NORMAL → WARNING/DANGER
+                    $isStatusUp = true;
                 } elseif ($oldStatus == 'WARNING' && $status == 'DANGER') {
-                    $isStatusUp = true; // WARNING → DANGER
+                    $isStatusUp = true;
                 }
-                // SELAIN ITU (DANGER→WARNING, WARNING→NORMAL, DANGER→NORMAL) = TURUN
                 
                 if ($isStatusUp) {
-                    // 🔥 KIRIM WA KETIKA STATUS NAIK:
-                    // 1. NORMAL → WARNING  ✅ KIRIM
-                    // 2. NORMAL → DANGER   ✅ KIRIM
-                    // 3. WARNING → DANGER  ✅ KIRIM
                     $shouldSendWA = true;
                     $waReason = 'Status naik dari ' . $oldStatus . ' ke ' . $status;
-                    
-                    Log::info("📱 WA akan dikirim (status naik): {$oldStatus} → {$status} ({$ppm} ppm)");
+                    Log::info("📱 WA akan dikirim (status naik): {$oldStatus} → {$status} (ADC: {$adc})");
                 } else {
-                    // Status turun (DANGER→WARNING, WARNING→NORMAL, DANGER→NORMAL)
-                    Log::info("⏭️ WA tidak dikirim (status turun): {$oldStatus} → {$status} ({$ppm} ppm)");
+                    Log::info("⏭️ WA tidak dikirim (status turun): {$oldStatus} → {$status} (ADC: {$adc})");
                 }
             } else {
-                // STATUS SAMA → TIDAK KIRIM WA (walaupun PPM berubah)
-                Log::info("⏭️ WA tidak dikirim: Status {$status} tetap (PPM diupdate dari {$oldPpm} ke {$ppm})");
+                Log::info("⏭️ WA tidak dikirim: Status {$status} tetap (ADC: {$oldAdc} → {$adc})");
             }
 
-            // KIRIM WA JIKA MEMENUHI SYARAT
             if ($shouldSendWA) {
-                $this->sendSmokeAlert($device, $ppm, $status);
-                
-                $device->update([
-                    'last_wa_sent_at' => Carbon::now(),
-                ]);
-                
-                Log::info("📱 WA berhasil dikirim: {$waReason} - {$status} ({$ppm} ppm)");
+                $this->sendSmokeAlert($device, $adc, $status);
+                $device->update(['last_wa_sent_at' => Carbon::now()]);
+                Log::info("📱 WA berhasil dikirim: {$waReason} - {$status} (ADC: {$adc})");
             }
 
             // ============================================================
@@ -309,8 +285,8 @@ class SmokeController extends Controller
                 'success' => true,
                 'message' => 'Data berhasil diproses',
                 'data' => [
-                    'ppm' => $ppm,
-                    'old_ppm' => $oldPpm,
+                    'adc' => $adc,
+                    'old_adc' => $oldAdc,
                     'status' => $status,
                     'old_status' => $oldStatus,
                     'status_label' => $this->getStatusLabel($status),
@@ -319,7 +295,7 @@ class SmokeController extends Controller
                     'log_id' => $log?->id ?? $lastLog?->id,
                     'is_status_changed' => $isStatusChanged,
                     'is_new_log_saved' => $isNewLogSaved,
-                    'is_ppm_updated' => $isPpmUpdated,
+                    'is_adc_updated' => $isAdcUpdated,
                     'device_name' => $device->name,
                     'was_offline' => $wasOffline,
                     'created_at' => $log?->created_at?->format('Y-m-d H:i:s') ?? $lastLog?->created_at?->format('Y-m-d H:i:s') ?? now()->format('Y-m-d H:i:s'),
@@ -328,7 +304,7 @@ class SmokeController extends Controller
                     'wa_reason' => $waReason,
                     'latest_log' => $updatedLog ? [
                         'id' => $updatedLog->id,
-                        'ppm' => $updatedLog->smoke_value,
+                        'adc' => $updatedLog->smoke_value,
                         'status' => $updatedLog->status,
                         'status_label' => $this->getStatusLabel($updatedLog->status),
                         'status_class' => $this->getStatusClass($updatedLog->status),
@@ -379,18 +355,14 @@ class SmokeController extends Controller
             $results = [];
             
             foreach ($devices as $device) {
-                // Cek online/offline (2 menit terakhir)
                 $isOnline = $device->last_seen_at &&
                             Carbon::parse($device->last_seen_at)->diffInMinutes(now()) < 2;
                 
-                // Simpan status lama
                 $oldDeviceStatus = $device->device_status;
                 
-                // Update status device
                 $device->device_status = $isOnline ? 'ONLINE' : 'OFFLINE';
                 $device->save();
                 
-                // 🔥🔥🔥 LANGSUNG KIRIM WA KETIKA OFFLINE 🔥🔥🔥
                 if (!$isOnline) {
                     Log::info("🚨🚨🚨 Device {$device->name} OFFLINE!");
                     Log::info("   - oldDeviceStatus: {$oldDeviceStatus}");
@@ -464,7 +436,7 @@ class SmokeController extends Controller
 
 📡 ESP tidak mengirim data selama {$minutesDiff} menit.
 📍 Lokasi: {$device->location}
-📊 Status terakhir: {$device->smoke_value} ppm
+📊 Status terakhir: {$device->smoke_value} ADC
 
 🔍 TINDAKAN YANG HARUS DILAKUKAN:
 1️⃣ Cek power / sumber listrik ESP
@@ -503,7 +475,7 @@ class SmokeController extends Controller
 
 📡 ESP kembali mengirim data.
 📍 Lokasi: {$device->location}
-📊 Smoke Value: {$device->smoke_value} ppm
+📊 Smoke Value: {$device->smoke_value} ADC
 📟 Status: {$device->status}
 
 ✅ ESP telah kembali online dan berfungsi normal.
@@ -522,58 +494,10 @@ class SmokeController extends Controller
 
     /**
      * ============================================================
-     *  🔍 CEK SATU DEVICE
+     *  🔥 KIRIM WHATSAPP ALERT (DENGAN ADC)
      * ============================================================
      */
-    public function checkSingleDevice($id)
-    {
-        try {
-            $device = SmokeDevice::find($id);
-
-            if (!$device) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Device tidak ditemukan'
-                ], 404);
-            }
-
-            $isOnline = $device->last_seen_at &&
-                        Carbon::parse($device->last_seen_at)->diffInMinutes(now()) < 2;
-
-            $device->device_status = $isOnline ? 'ONLINE' : 'OFFLINE';
-            $device->save();
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id' => $device->id,
-                    'name' => $device->name,
-                    'location' => $device->location,
-                    'is_online' => $isOnline,
-                    'device_status' => $device->device_status,
-                    'smoke_value' => $device->smoke_value,
-                    'status' => $device->status,
-                    'last_seen_at' => $device->last_seen_at?->format('d-m-Y H:i:s'),
-                    'last_seen_human' => $device->last_seen_at?->diffForHumans(),
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error("❌ Error check device: " . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal cek device: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * ============================================================
-     *  🔥 KIRIM WHATSAPP ALERT
-     * ============================================================
-     */
-    private function sendSmokeAlert($device, $ppm, $status)
+    private function sendSmokeAlert($device, $adc, $status)
     {
         if (!in_array($status, ['WARNING', 'DANGER'])) {
             Log::info("⏭️ WA tidak dikirim: Status {$status} (hanya WARNING/DANGER)");
@@ -591,7 +515,7 @@ class SmokeController extends Controller
             $message = 
 "🔴 DANGER! ASAP TINGGI!
 
-📊 Nilai Asap : {$ppm} ppm
+📊 Nilai ADC : {$adc}
 ⚠️ Status    : DANGER
 📍 Lokasi    : {$device->location}
 
@@ -606,7 +530,7 @@ class SmokeController extends Controller
             $message = 
 "🟡 PERINGATAN ASAP!
 
-📊 Nilai Asap : {$ppm} ppm
+📊 Nilai ADC : {$adc}
 ⚠️ Status    : WARNING
 📍 Lokasi    : {$device->location}
 
@@ -643,26 +567,26 @@ class SmokeController extends Controller
                 return response()->json([
                     'success' => true,
                     'data' => [
-                        'ppm' => 0,
+                        'adc' => 0,
                         'status' => 'NORMAL',
                         'status_label' => '🟢 NORMAL',
                         'status_class' => 'normal',
                         'device_status' => 'OFFLINE',
                         'last_seen_at' => null,
                         'is_status_changed' => false,
-                        'is_ppm_updated' => false,
+                        'is_adc_updated' => false,
                         'latest_log' => null,
                     ]
                 ]);
             }
 
-            $ppm = $device->smoke_value ?? 0;
+            $adc = $device->smoke_value ?? 0;
             
-            if ($ppm >= self::DANGER_THRESHOLD) {
+            if ($adc >= self::DANGER_THRESHOLD) {
                 $status = 'DANGER';
                 $label = '🔴 DANGER';
                 $class = 'danger';
-            } elseif ($ppm >= self::WARNING_THRESHOLD) {
+            } elseif ($adc >= self::WARNING_THRESHOLD) {
                 $status = 'WARNING';
                 $label = '🟡 WARNING';
                 $class = 'warning';
@@ -674,21 +598,20 @@ class SmokeController extends Controller
 
             $isOnline = $device->last_seen_at && Carbon::parse($device->last_seen_at)->diffInMinutes(now()) < 2;
 
-            // 🔥 AMBIL LOG TERAKHIR
             $lastLog = SmokeLog::where('smoke_device_id', $device->id)
                 ->whereIn('status', ['NORMAL', 'WARNING', 'DANGER'])
                 ->orderBy('created_at', 'desc')
                 ->first();
             
             $isStatusChanged = false;
-            $isPpmUpdated = false;
+            $isAdcUpdated = false;
             
             if ($lastLog) {
                 if ($lastLog->status != $status) {
                     $isStatusChanged = true;
                 }
-                elseif ($lastLog->status == $status && $lastLog->smoke_value != $ppm) {
-                    $isPpmUpdated = true;
+                elseif ($lastLog->status == $status && $lastLog->smoke_value != $adc) {
+                    $isAdcUpdated = true;
                 }
             }
 
@@ -696,7 +619,7 @@ class SmokeController extends Controller
             if ($lastLog) {
                 $latestLogData = [
                     'id' => $lastLog->id,
-                    'ppm' => $lastLog->smoke_value,
+                    'adc' => $lastLog->smoke_value,
                     'status' => $lastLog->status,
                     'status_label' => $this->getStatusLabel($lastLog->status),
                     'status_class' => $this->getStatusClass($lastLog->status),
@@ -709,7 +632,7 @@ class SmokeController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'ppm' => $ppm,
+                    'adc' => $adc,
                     'status' => $status,
                     'status_label' => $label,
                     'status_class' => $class,
@@ -717,9 +640,9 @@ class SmokeController extends Controller
                     'last_seen_at' => $device->last_seen_at?->format('Y-m-d H:i:s'),
                     'last_seen_human' => $device->last_seen_at?->diffForHumans(),
                     'is_status_changed' => $isStatusChanged,
-                    'is_ppm_updated' => $isPpmUpdated,
+                    'is_adc_updated' => $isAdcUpdated,
                     'last_log_status' => $lastLog?->status,
-                    'last_log_ppm' => $lastLog?->smoke_value,
+                    'last_log_adc' => $lastLog?->smoke_value,
                     'latest_log' => $latestLogData,
                 ]
             ]);
@@ -765,7 +688,7 @@ class SmokeController extends Controller
             $logs = collect($filteredLogs)->map(function($log) {
                 return [
                     'id' => $log->id,
-                    'ppm' => $log->smoke_value,
+                    'adc' => $log->smoke_value,
                     'status' => $log->status,
                     'status_label' => $this->getStatusLabel($log->status),
                     'status_class' => $this->getStatusClass($log->status),
@@ -840,13 +763,13 @@ class SmokeController extends Controller
     {
         try {
             $devices = SmokeDevice::all()->map(function($device) {
-                $ppm = $device->smoke_value ?? 0;
+                $adc = $device->smoke_value ?? 0;
                 
-                if ($ppm >= self::DANGER_THRESHOLD) {
+                if ($adc >= self::DANGER_THRESHOLD) {
                     $status = 'DANGER';
                     $label = '🔴 DANGER';
                     $class = 'danger';
-                } elseif ($ppm >= self::WARNING_THRESHOLD) {
+                } elseif ($adc >= self::WARNING_THRESHOLD) {
                     $status = 'WARNING';
                     $label = '🟡 WARNING';
                     $class = 'warning';
@@ -860,7 +783,7 @@ class SmokeController extends Controller
                     'id' => $device->id,
                     'name' => $device->name,
                     'location' => $device->location,
-                    'smoke_value' => $ppm,
+                    'smoke_value' => $adc,
                     'status' => $status,
                     'status_label' => $label,
                     'status_class' => $class,
@@ -975,7 +898,7 @@ class SmokeController extends Controller
                     'No',
                     'Tanggal & Waktu',
                     'Device',
-                    'Nilai Asap (ppm)',
+                    'Nilai ADC',
                     'Status',
                     'Durasi Status (menit)',
                     'Keterangan'
