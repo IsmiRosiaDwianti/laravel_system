@@ -26,7 +26,6 @@
         --gray-800: #1e293b;
         --gray-900: #0f172a;
         
-        /* Dark mode support - akan di-override oleh layout */
         --bg-dashboard: #ffffff;
         --bg-card: #ffffff;
         --text-dashboard: #1e293b;
@@ -36,7 +35,6 @@
         --shadow-hover-dash: rgba(0, 0, 0, 0.12);
     }
 
-    /* Dark mode override dari layout utama */
     [data-theme="dark"] {
         --bg-dashboard: #0f172a;
         --bg-card: #1e293b;
@@ -55,17 +53,13 @@
         --gray-700: #cbd5e1;
         --gray-800: #e2e8f0;
         --gray-900: #f1f5f9;
-        
-        /* Dark mode status badges */
         --success-light: #064e3b;
         --warning-light: #78350f;
         --danger-light: #7f1d1d;
         --purple-light: #2e1065;
     }
 
-    * {
-        box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     .dashboard-container {
         padding: 24px;
@@ -156,9 +150,7 @@
         font-weight: 400;
     }
 
-    .dashboard-header .subtitle i {
-        font-size: 12px;
-    }
+    .dashboard-header .subtitle i { font-size: 12px; }
 
     .status-legend {
         display: flex;
@@ -250,9 +242,7 @@
         border-color: var(--gray-300);
     }
 
-    .stat-card:active {
-        transform: scale(0.97);
-    }
+    .stat-card:active { transform: scale(0.97); }
 
     .stat-card.total::before { background: var(--primary); }
     .stat-card.total::after { background: var(--primary); }
@@ -348,16 +338,13 @@
         background: rgba(255,255,255,0.12);
     }
 
-    .stat-clickable i {
-        font-size: 11px;
-    }
+    .stat-clickable i { font-size: 11px; }
 
     .stat-card.total .stat-clickable { color: var(--primary); }
     .stat-card.up .stat-clickable { color: var(--success); }
     .stat-card.warning .stat-clickable { color: var(--warning); }
     .stat-card.down .stat-clickable { color: var(--danger); }
 
-    /* Click Ripple Effect */
     .stat-card .ripple {
         position: absolute;
         border-radius: 50%;
@@ -372,10 +359,7 @@
     }
 
     @keyframes ripple-animation {
-        to {
-            transform: scale(4);
-            opacity: 0;
-        }
+        to { transform: scale(4); opacity: 0; }
     }
 
     /* ================= UPTIME CARD ================= */
@@ -614,9 +598,7 @@
         transition: all 0.3s ease;
     }
 
-    .chart-card .chart-badge i {
-        font-size: 11px;
-    }
+    .chart-card .chart-badge i { font-size: 11px; }
 
     .chart-container {
         position: relative;
@@ -670,9 +652,7 @@
         animation: fadeIn 0.3s ease;
     }
 
-    .modal-overlay.active {
-        display: flex;
-    }
+    .modal-overlay.active { display: flex; }
 
     .modal-content {
         background: var(--bg-card);
@@ -891,16 +871,9 @@
         }
     }
 
-    /* ================= ANIMATIONS ================= */
     @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .stat-card {
@@ -926,7 +899,6 @@
     .chart-card:nth-child(1) { animation-delay: 0.35s; }
     .chart-card:nth-child(2) { animation-delay: 0.40s; }
 
-    /* ================= AUTO REFRESH TIMER ================= */
     .auto-refresh-timer {
         position: fixed;
         bottom: 20px;
@@ -974,199 +946,68 @@
         50% { opacity: 0.3; }
     }
 
-    /* ================= DARK MODE CHART OVERRIDES ================= */
     [data-theme="dark"] canvas {
         filter: brightness(0.9) contrast(1.1);
     }
 
-    /* ================= RESPONSIVE ================= */
     @media (max-width: 1024px) {
-        .stats-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-        .charts-grid {
-            grid-template-columns: 1fr;
-        }
-        .uptime-card {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        .uptime-right {
-            max-width: 100%;
-            flex-wrap: wrap;
-        }
+        .stats-grid { grid-template-columns: repeat(3, 1fr); }
+        .charts-grid { grid-template-columns: 1fr; }
+        .uptime-card { flex-direction: column; align-items: stretch; }
+        .uptime-right { max-width: 100%; flex-wrap: wrap; }
     }
 
     @media (max-width: 768px) {
-        .dashboard-container {
-            padding: 16px;
-        }
-
+        .dashboard-container { padding: 16px; }
         .dashboard-header {
             flex-direction: column;
             align-items: stretch;
             padding: 20px 24px;
             border-radius: 16px;
         }
-
-        .dashboard-header h1 {
-            font-size: 1.2rem;
-        }
-
-        .status-legend {
-            justify-content: center;
-            padding: 6px 14px;
-        }
-
-        .status-legend span {
-            font-size: 10px;
-        }
-
-        .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .stat-card {
-            padding: 16px 18px;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-        }
-
-        .uptime-card {
-            padding: 20px 24px;
-        }
-
-        .uptime-left .uptime-icon {
-            width: 44px;
-            height: 44px;
-            font-size: 20px;
-        }
-
-        .uptime-right .uptime-value {
-            font-size: 2.2rem;
-        }
-
-        .charts-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-        }
-
-        .chart-container {
-            height: 200px;
-        }
-
-        .chart-card {
-            padding: 16px 18px;
-        }
-
-        .chart-card .chart-header h3 {
-            font-size: 14px;
-        }
-
-        .modal-content {
-            width: 95%;
-            max-height: 90vh;
-        }
-
-        .modal-header h2 {
-            font-size: 16px;
-        }
-
-        .modal-body .service-item {
-            padding: 10px 12px;
-            flex-wrap: wrap;
-        }
-
-        .modal-body .service-item .service-status {
-            font-size: 11px;
-            padding: 2px 10px;
-        }
-
-        .stat-clickable {
-            font-size: 9px;
-            padding: 3px 10px;
-        }
-
+        .dashboard-header h1 { font-size: 1.2rem; }
+        .status-legend { justify-content: center; padding: 6px 14px; }
+        .status-legend span { font-size: 10px; }
+        .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .stat-card { padding: 16px 18px; }
+        .stat-value { font-size: 1.8rem; }
+        .uptime-card { padding: 20px 24px; }
+        .uptime-left .uptime-icon { width: 44px; height: 44px; font-size: 20px; }
+        .uptime-right .uptime-value { font-size: 2.2rem; }
+        .charts-grid { grid-template-columns: 1fr; gap: 16px; }
+        .chart-container { height: 200px; }
+        .chart-card { padding: 16px 18px; }
+        .chart-card .chart-header h3 { font-size: 14px; }
+        .modal-content { width: 95%; max-height: 90vh; }
+        .modal-header h2 { font-size: 16px; }
+        .modal-body .service-item { padding: 10px 12px; flex-wrap: wrap; }
+        .modal-body .service-item .service-status { font-size: 11px; padding: 2px 10px; }
+        .stat-clickable { font-size: 9px; padding: 3px 10px; }
         .auto-refresh-timer {
             bottom: 10px;
             right: 10px;
             padding: 6px 12px;
             font-size: 10px;
         }
-        .auto-refresh-timer .countdown {
-            font-size: 12px;
-            min-width: 30px;
-        }
+        .auto-refresh-timer .countdown { font-size: 12px; min-width: 30px; }
     }
 
     @media (max-width: 480px) {
-        .stats-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
-        .stat-card {
-            padding: 12px 14px;
-            border-radius: 12px;
-        }
-
-        .stat-value {
-            font-size: 1.4rem;
-        }
-
-        .stat-header h3 {
-            font-size: 10px;
-        }
-
-        .stat-header i {
-            font-size: 16px;
-        }
-
-        .uptime-card {
-            padding: 16px 18px;
-        }
-
-        .uptime-left {
-            flex-wrap: wrap;
-        }
-
-        .uptime-right .uptime-value {
-            font-size: 1.8rem;
-        }
-
-        .dashboard-header {
-            padding: 16px 18px;
-        }
-
-        .dashboard-header h1 {
-            font-size: 1rem;
-        }
-
-        .chart-card .chart-badge {
-            font-size: 10px;
-            padding: 3px 10px;
-        }
-
-        .modal-header {
-            padding: 14px 16px;
-        }
-
-        .modal-body {
-            padding: 14px 16px;
-        }
-
-        .modal-header h2 {
-            font-size: 14px;
-        }
-
-        .stat-clickable {
-            font-size: 8px;
-            padding: 2px 8px;
-            margin-top: 6px;
-        }
+        .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+        .stat-card { padding: 12px 14px; border-radius: 12px; }
+        .stat-value { font-size: 1.4rem; }
+        .stat-header h3 { font-size: 10px; }
+        .stat-header i { font-size: 16px; }
+        .uptime-card { padding: 16px 18px; }
+        .uptime-left { flex-wrap: wrap; }
+        .uptime-right .uptime-value { font-size: 1.8rem; }
+        .dashboard-header { padding: 16px 18px; }
+        .dashboard-header h1 { font-size: 1rem; }
+        .chart-card .chart-badge { font-size: 10px; padding: 3px 10px; }
+        .modal-header { padding: 14px 16px; }
+        .modal-body { padding: 14px 16px; }
+        .modal-header h2 { font-size: 14px; }
+        .stat-clickable { font-size: 8px; padding: 2px 8px; margin-top: 6px; }
     }
 </style>
 
@@ -1252,7 +1093,7 @@
             </div>
         </div>
 
-        <!-- ================= ESP STATUS ================= -->
+        <!-- ================= 🔥 ESP STATUS - UBAH PPM MENJADI NILAI ASAP ================= -->
         <div class="stat-card esp" id="espCard">
             <div class="stat-header">
                 <h3>ESP Status</h3>
@@ -1277,8 +1118,9 @@
                     ❌ Tidak ada data (offline)
                 @endif
             </div>
+            <!-- 🔥 UBAH INI: PPM → Nilai Asap (tanpa satuan) -->
             <div class="stat-label" style="margin-top: 4px; font-size: 11px; color: var(--gray-400);">
-                📊 PPM: <strong id="espPpm">{{ $lastSmokeValue }} ppm</strong>
+                📊 Nilai Asap: <strong id="espSmokeValue">{{ $lastSmokeValue }}</strong>
                 | Status: <span id="espSmokeStatus" class="status-badge {{ strtolower($lastSmokeStatus) }}" style="font-size: 10px; padding: 2px 10px; border-radius: 12px; 
                     @if($lastSmokeStatus == 'DANGER') background: #fee2e2; color: #991b1b;
                     @elseif($lastSmokeStatus == 'WARNING') background: #fef3c7; color: #92400e;
@@ -1543,7 +1385,8 @@
                     data: {
                         labels: @json($smokeLabels),
                         datasets: [{
-                            label: 'Smoke Level (ppm)',
+                            // 🔥 UBAH LABEL
+                            label: 'Nilai Asap',
                             data: @json($smokeData),
                             backgroundColor: isDark ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.6)',
                             borderColor: '#ef4444',
@@ -1565,7 +1408,8 @@
                                 cornerRadius: 8,
                                 callbacks: {
                                     label: function(context) {
-                                        return '🔥 ' + context.parsed.y + ' ppm';
+                                        // 🔥 UBAH TOOLTIP
+                                        return '🔥 ' + context.parsed.y;
                                     }
                                 }
                             }
@@ -1575,7 +1419,8 @@
                                 beginAtZero: true,
                                 title: {
                                     display: true,
-                                    text: isMobile ? 'ppm' : 'Nilai Asap (ppm)',
+                                    // 🔥 UBAH LABEL Y AXIS
+                                    text: isMobile ? 'Nilai' : 'Nilai Asap',
                                     font: { size: isMobile ? 9 : 11, weight: '500' },
                                     color: textColor
                                 },
@@ -1608,12 +1453,9 @@
 
         // ====================== DARK MODE WATCHER FOR CHARTS ======================
         function updateChartsForTheme() {
-            // Charts will auto-update when theme changes
-            // Chart.js automatically re-renders on container resize
             window.dispatchEvent(new Event('resize'));
         }
 
-        // Listen for theme changes
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.attributeName === 'data-theme') {
@@ -1624,13 +1466,10 @@
 
         observer.observe(document.documentElement, { attributes: true });
 
-        // Resize handler
         let resizeTimer;
         window.addEventListener('resize', function() {
             clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {
-                // Charts will auto-resize
-            }, 250);
+            resizeTimer = setTimeout(function() {}, 250);
         });
     });
 </script>
@@ -1753,7 +1592,7 @@
         }
     }
 
-    // ====================== FETCH ESP STATUS REAL-TIME ======================
+    // ====================== 🔥 FETCH ESP STATUS REAL-TIME (UBAH PPM JADI NILAI ASAP) ======================
     function fetchEspStatus() {
         fetch('/api/smoke/status')
             .then(response => response.json())
@@ -1785,10 +1624,12 @@
                         }
                     }
                     
-                    // Update PPM
-                    const ppm = document.getElementById('espPpm');
-                    if (ppm) {
-                        ppm.textContent = esp.ppm + ' ppm';
+                    // 🔥 UPDATE NILAI ASAP (tanpa satuan)
+                    const smokeValue = document.getElementById('espSmokeValue');
+                    if (smokeValue) {
+                        // Gunakan adc atau smoke_value atau ppm dari response
+                        const value = esp.adc || esp.smoke_value || esp.ppm || 0;
+                        smokeValue.textContent = value;
                     }
                     
                     // Update smoke status
@@ -1821,8 +1662,8 @@
         // Fetch ESP status pertama kali
         setTimeout(fetchEspStatus, 1000);
         
-        // Fetch ESP status setiap 3 detik
-        setInterval(fetchEspStatus, 3000);
+        // Fetch ESP status setiap 5 detik (lebih ringan dari 3 detik)
+        setInterval(fetchEspStatus, 5000);
     });
 </script>
 @endsection

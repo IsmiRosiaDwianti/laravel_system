@@ -77,7 +77,7 @@ class ServiceMonitorService
         $this->handleNetworkStatus($isNetworkConnected);
 
         if (!$isNetworkConnected) {
-            Log::info("⏭️ Skip check {$service->name} karena jaringan terputus");
+            Log::info("Skip check {$service->name} karena jaringan terputus");
             $service->update(['last_check_at' => now()]);
             return;
         }
@@ -94,10 +94,10 @@ class ServiceMonitorService
             $time = round(microtime(true) - $start, 2);
             $code = $response->status();
 
-            Log::info("📊 HTTP Response {$service->name}: code={$code}, time={$time}s");
+            Log::info("HTTP Response {$service->name}: code={$code}, time={$time}s");
 
             $analysis = $this->analyzeResponseByCode($code, $response->body(), $time);
-            Log::info("📝 Analysis {$service->name}: " . json_encode($analysis));
+            Log::info("Analysis {$service->name}: " . json_encode($analysis));
 
         } catch (ConnectionException $e) {
             $time = round(microtime(true) - $start, 2);
@@ -105,8 +105,8 @@ class ServiceMonitorService
             $analysis = [
                 'status' => 'DOWN',
                 'reason' => 'CONNECTION_TIMEOUT',
-                'detail' => 'Koneksi timeout - Pengguna TIDAK bisa akses',
-                'action' => 'Cek firewall, pastikan server menyala'
+                'detail' => 'Koneksi timeout - Pengguna tidak bisa akses',
+                'action' => 'Periksa firewall dan pastikan server menyala'
             ];
             Log::error("Connection timeout {$service->name}: " . $e->getMessage());
             
@@ -120,6 +120,11 @@ class ServiceMonitorService
         $this->saveResult($service, $oldStatus, $analysis['status'], $code, $time, $analysis['reason'], $analysis['detail'], $analysis['action']);
     }
 
+    /**
+     * ============================================================
+     * CHECK PING - TIMEOUT 5 DETIK
+     * ============================================================
+     */
     private function checkPing(Service $service)
     {
         $oldStatus = $service->last_status;
@@ -130,7 +135,7 @@ class ServiceMonitorService
         $this->handleNetworkStatus($isNetworkConnected);
 
         if (!$isNetworkConnected) {
-            Log::info("⏭️ Skip ping check {$service->name} karena jaringan terputus");
+            Log::info("Skip ping check {$service->name} karena jaringan terputus");
             $service->update(['last_check_at' => now()]);
             return;
         }
@@ -141,11 +146,12 @@ class ServiceMonitorService
         $port = isset($parts[1]) ? (int)$parts[1] : null;
         $start = microtime(true);
 
+        // PORT CHECK
         if ($port) {
             if ($port < 1 || $port > 65535) {
                 $time = round(microtime(true) - $start, 2);
                 $code = 'INVALID_PORT';
-                $this->saveResult($service, $oldStatus, 'DOWN', $code, $time, 'INVALID_PORT', "Port {$port} tidak valid", 'Periksa format port');
+                $this->saveResult($service, $oldStatus, 'DOWN', $code, $time, 'INVALID_PORT', "Port {$port} tidak valid", 'Periksa format port (1-65535)');
                 return;
             }
 
@@ -155,56 +161,326 @@ class ServiceMonitorService
             if ($connection) {
                 fclose($connection);
                 $code = 'PORT_OPEN';
-                $this->saveResult($service, $oldStatus, 'UP', $code, $time, 'PORT_OK', "Host {$host} merespon port {$port}", '-');
+                $this->saveResult($service, $oldStatus, 'UP', $code, $time, 'PORT_OK', "Host {$host} merespon port {$port}", 'Port terbuka, service berjalan normal');
             } else {
                 $code = 'PORT_CLOSED';
-                $this->saveResult($service, $oldStatus, 'DOWN', $code, $time, 'PORT_CLOSED', "Port {$port} tidak merespon", 'Periksa firewall');
+                $this->saveResult($service, $oldStatus, 'DOWN', $code, $time, 'PORT_CLOSED', "Port {$port} tidak merespon", 'Periksa firewall dan pastikan service berjalan di port tersebut');
             }
             return;
         }
 
-        if (filter_var($host, FILTER_VALIDATE_IP)) {
-            exec("ping -n 1 " . escapeshellarg($host), $output, $result);
-        } else {
-            if (checkdnsrr($host, 'A') || checkdnsrr($host, 'AAAA')) {
-                exec("ping -n 1 " . escapeshellarg($host), $output, $result);
-            } else {
+        // CEK DNS
+        if (!filter_var($host, FILTER_VALIDATE_IP)) {
+            if (!checkdnsrr($host, 'A') && !checkdnsrr($host, 'AAAA')) {
                 $time = round(microtime(true) - $start, 2);
                 $code = 'DNS_ERROR';
-                $this->saveResult($service, $oldStatus, 'DOWN', $code, $time, 'DNS_ERROR', "Hostname {$host} tidak dapat di-resolve", 'Periksa DNS');
+                $this->saveResult($service, $oldStatus, 'DOWN', $code, $time, 'DNS_ERROR', "Hostname {$host} tidak dapat di-resolve", 'Periksa konfigurasi DNS server');
                 return;
             }
         }
 
-        $time = round(microtime(true) - $start, 2);
-
-        if ($result === 0) {
-            $code = 'PING_OK';
-            $this->saveResult($service, $oldStatus, 'UP', $code, $time, 'PING_OK', 'Host merespon ping', '-');
+        // EKSEKUSI PING
+        $start = microtime(true);
+        
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        
+        if ($isWindows) {
+            $command = "ping -n 2 -w 5000 " . escapeshellarg($host) . " 2>&1";
         } else {
-            $code = 'PING_FAILED';
-            $this->saveResult($service, $oldStatus, 'DOWN', $code, $time, 'PING_FAILED', 'Host tidak merespon ping', 'Cek koneksi jaringan');
+            $command = "ping -c 2 -W 5 " . escapeshellarg($host) . " 2>&1";
         }
+        
+        exec($command, $output, $resultCode);
+        $outputString = implode("\n", $output);
+        
+        $time = round(microtime(true) - $start, 2);
+        
+        Log::info("Ping result for {$host}:", [
+            'resultCode' => $resultCode,
+            'time' => $time . 's',
+            'output' => $outputString
+        ]);
+
+        // ANALISIS HASIL PING
+
+        // 1. Destination Host Unreachable
+        if (strpos($outputString, 'Destination host unreachable') !== false ||
+            strpos($outputString, 'Host unreachable') !== false ||
+            strpos($outputString, 'unreachable') !== false) {
+            $code = 'UNREACHABLE';
+            $this->saveResult(
+                $service, 
+                $oldStatus, 
+                'DOWN', 
+                $code, 
+                $time, 
+                'HOST_UNREACHABLE', 
+                'Host tidak dapat dijangkau', 
+                'Periksa koneksi jaringan, firewall, dan routing'
+            );
+            Log::warning("Host UNREACHABLE: {$host}");
+            return;
+        }
+
+        // 2. Network is Unreachable
+        if (strpos($outputString, 'Network is unreachable') !== false ||
+            strpos($outputString, 'network unreachable') !== false) {
+            $code = 'NETWORK_UNREACHABLE';
+            $this->saveResult(
+                $service, 
+                $oldStatus, 
+                'DOWN', 
+                $code, 
+                $time, 
+                'NETWORK_UNREACHABLE', 
+                'Jaringan tidak dapat menjangkau host', 
+                'Periksa routing dan konfigurasi firewall'
+            );
+            Log::warning("NETWORK UNREACHABLE: {$host}");
+            return;
+        }
+
+        // 3. Request Timed Out
+        if (strpos($outputString, 'Request timed out') !== false ||
+            strpos($outputString, 'timeout') !== false ||
+            strpos($outputString, 'Timed out') !== false) {
+            
+            preg_match('/(\d+)\s*received/i', $outputString, $receivedMatches);
+            $received = isset($receivedMatches[1]) ? intval($receivedMatches[1]) : 0;
+            
+            if ($received > 0) {
+                $code = 'PING_PARTIAL';
+                $this->saveResult(
+                    $service, 
+                    $oldStatus, 
+                    'WARNING',
+                    $code, 
+                    $time, 
+                    'PING_PARTIAL', 
+                    "Ping timeout ({$received}/2 berhasil) - Host merespon lambat", 
+                    'Packet loss terdeteksi, periksa kualitas jaringan'
+                );
+                Log::warning("PING PARTIAL: {$host} - {$received}/2 berhasil");
+                return;
+            }
+            
+            $code = 'TIMEOUT';
+            $this->saveResult(
+                $service, 
+                $oldStatus, 
+                'DOWN', 
+                $code, 
+                $time, 
+                'PING_TIMEOUT', 
+                'Request timeout - Host tidak merespon', 
+                'Periksa firewall dan pastikan host menyala'
+            );
+            Log::warning("PING TIMEOUT: {$host}");
+            return;
+        }
+
+        // 4. TTL Expired
+        if (strpos($outputString, 'TTL expired') !== false ||
+            strpos($outputString, 'TTL Exceeded') !== false) {
+            $code = 'TTL_EXPIRED';
+            $this->saveResult(
+                $service, 
+                $oldStatus, 
+                'DOWN', 
+                $code, 
+                $time, 
+                'TTL_EXPIRED', 
+                'TTL expired - Hop terlalu jauh', 
+                'Periksa routing jaringan, mungkin ada loop atau hop terlalu banyak'
+            );
+            Log::warning("TTL EXPIRED: {$host}");
+            return;
+        }
+
+        // 5. General Failure (Windows)
+        if (strpos($outputString, 'General failure') !== false) {
+            $code = 'GENERAL_FAILURE';
+            $this->saveResult(
+                $service, 
+                $oldStatus, 
+                'DOWN', 
+                $code, 
+                $time, 
+                'GENERAL_FAILURE', 
+                'General failure - Masalah jaringan lokal', 
+                'Periksa adapter jaringan dan konfigurasi firewall'
+            );
+            Log::warning("GENERAL FAILURE: {$host}");
+            return;
+        }
+
+        // 6. Destination Net Unreachable
+        if (strpos($outputString, 'Destination net unreachable') !== false) {
+            $code = 'NET_UNREACHABLE';
+            $this->saveResult(
+                $service, 
+                $oldStatus, 
+                'DOWN', 
+                $code, 
+                $time, 
+                'NET_UNREACHABLE', 
+                'Destination net unreachable', 
+                'Periksa routing dan konfigurasi firewall'
+            );
+            Log::warning("DESTINATION NET UNREACHABLE: {$host}");
+            return;
+        }
+
+        // 7. Destination Port Unreachable
+        if (strpos($outputString, 'Destination port unreachable') !== false) {
+            $code = 'PORT_UNREACHABLE';
+            $this->saveResult(
+                $service, 
+                $oldStatus, 
+                'DOWN', 
+                $code, 
+                $time, 
+                'PORT_UNREACHABLE', 
+                'Destination port unreachable', 
+                'Periksa firewall dan service di port tersebut'
+            );
+            Log::warning("DESTINATION PORT UNREACHABLE: {$host}");
+            return;
+        }
+
+        // 8. Packet Loss
+        preg_match('/(\d+)%\s*loss/i', $outputString, $lossMatches);
+        if (isset($lossMatches[1])) {
+            $loss = intval($lossMatches[1]);
+            if ($loss >= 50) {
+                $code = 'HIGH_PACKET_LOSS';
+                $this->saveResult(
+                    $service, 
+                    $oldStatus, 
+                    'WARNING', 
+                    $code, 
+                    $time, 
+                    'HIGH_PACKET_LOSS', 
+                    "Packet loss {$loss}% - Koneksi tidak stabil", 
+                    'Kualitas jaringan buruk, periksa kabel/switch/router'
+                );
+                Log::warning("HIGH PACKET LOSS: {$host} - {$loss}%");
+                return;
+            }
+            
+            if ($loss > 0 && $loss < 50) {
+                $code = 'PACKET_LOSS';
+                $this->saveResult(
+                    $service, 
+                    $oldStatus, 
+                    'WARNING', 
+                    $code, 
+                    $time, 
+                    'PACKET_LOSS', 
+                    "Packet loss {$loss}% - Koneksi kurang stabil", 
+                    'Periksa kualitas jaringan, mungkin ada interferensi'
+                );
+                Log::warning("PACKET LOSS: {$host} - {$loss}%");
+                return;
+            }
+        }
+
+        // 9. Unknown Host / DNS Error
+        if (strpos($outputString, 'could not find host') !== false ||
+            strpos($outputString, 'Unknown host') !== false) {
+            $code = 'DNS_ERROR';
+            $this->saveResult(
+                $service, 
+                $oldStatus, 
+                'DOWN', 
+                $code, 
+                $time, 
+                'DNS_ERROR', 
+                "Hostname {$host} tidak dapat di-resolve", 
+                'Periksa konfigurasi DNS server'
+            );
+            Log::warning("DNS ERROR: {$host}");
+            return;
+        }
+
+        // 10. SUCCESS
+        if ($resultCode === 0) {
+            preg_match_all('/(?:time[=:]\s*)(\d+\.?\d*)\s*ms/i', $outputString, $matches);
+            
+            $avgTime = 0;
+            $minTime = 0;
+            $maxTime = 0;
+            
+            if (!empty($matches[1])) {
+                $times = array_map('floatval', $matches[1]);
+                $avgTime = round(array_sum($times) / count($times) / 1000, 3);
+                $minTime = round(min($times) / 1000, 3);
+                $maxTime = round(max($times) / 1000, 3);
+            }
+            
+            $code = 'PING_OK';
+            
+            if ($avgTime > 3) {
+                $this->saveResult(
+                    $service, 
+                    $oldStatus, 
+                    'WARNING',
+                    $code, 
+                    $avgTime > 0 ? $avgTime : $time, 
+                    'PING_OK_SLOW', 
+                    "Host merespon tapi lambat (avg: {$avgTime}s, min: {$minTime}s, max: {$maxTime}s)", 
+                    'Response lambat, optimasi jaringan atau server'
+                );
+                Log::info("PING OK (SLOW): {$host} - avg: {$avgTime}s");
+            } else {
+                $this->saveResult(
+                    $service, 
+                    $oldStatus, 
+                    'UP', 
+                    $code, 
+                    $avgTime > 0 ? $avgTime : $time, 
+                    'PING_OK', 
+                    "Host merespon ping (avg: {$avgTime}s, min: {$minTime}s, max: {$maxTime}s)", 
+                    'Service dalam kondisi baik, tidak perlu tindakan'
+                );
+                Log::info("PING OK: {$host} - avg: {$avgTime}s");
+            }
+            return;
+        }
+
+        // 11. DEFAULT
+        $code = 'PING_FAILED';
+        $this->saveResult(
+            $service, 
+            $oldStatus, 
+            'DOWN', 
+            $code, 
+            $time, 
+            'PING_FAILED', 
+            'Host tidak merespon ping (unknown reason)', 
+            'Periksa koneksi jaringan dan konfigurasi firewall'
+        );
+        Log::warning("PING FAILED (unknown): {$host}");
     }
 
     private function analyzeResponseByCode($code, $body, $time)
     {
         if (empty($body) || trim($body) === '') {
-            Log::warning("⚠️ Response kosong: code={$code}, service body empty");
+            Log::warning("Response kosong: code={$code}, service body empty");
             
             if ($code >= 200 && $code < 300) {
                 return [
                     'status' => 'WARNING',
                     'reason' => 'EMPTY_RESPONSE',
                     'detail' => 'Halaman merespon tapi konten kosong - Pengguna bisa akses tapi tidak ada konten',
-                    'action' => 'Periksa apakah halaman memang kosong atau ada error'
+                    'action' => 'Periksa apakah halaman memang kosong atau ada error di aplikasi'
                 ];
             }
             
             return [
                 'status' => 'DOWN',
                 'reason' => 'EMPTY_RESPONSE_ERROR',
-                'detail' => "Server error ({$code}) dengan response kosong - Pengguna TIDAK bisa akses",
+                'detail' => "Server error ({$code}) dengan response kosong - Pengguna tidak bisa akses",
                 'action' => 'Cek log server, periksa error di aplikasi'
             ];
         }
@@ -219,12 +495,12 @@ class ServiceMonitorService
         $bodyLower = strtolower($body);
         foreach ($errorKeywords as $keyword) {
             if (str_contains($bodyLower, $keyword)) {
-                Log::warning("⚠️ Konten mengandung error: '{$keyword}'");
+                Log::warning("Konten mengandung error: '{$keyword}'");
                 return [
                     'status' => 'DOWN',
                     'reason' => 'ERROR_IN_CONTENT',
-                    'detail' => "Konten error: '{$keyword}' - Pengguna TIDAK bisa akses",
-                    'action' => 'Periksa log server'
+                    'detail' => "Konten error: '{$keyword}' - Pengguna tidak bisa akses",
+                    'action' => 'Periksa log server dan perbaiki error aplikasi'
                 ];
             }
         }
@@ -240,7 +516,7 @@ class ServiceMonitorService
                     'status' => 'WARNING',
                     'reason' => 'SLOW_RESPONSE',
                     'detail' => "Response lambat ({$time}s) - Pengguna masih bisa akses tapi lambat",
-                    'action' => 'Optimasi performa server'
+                    'action' => 'Optimasi performa server, response time terlalu lama'
                 ];
             }
 
@@ -248,7 +524,7 @@ class ServiceMonitorService
                 'status' => 'UP',
                 'reason' => 'HTTP_' . $code,
                 'detail' => 'Service berjalan normal - Pengguna bisa akses',
-                'action' => '-'
+                'action' => 'Service dalam kondisi baik, tidak perlu tindakan'
             ];
         }
 
@@ -265,21 +541,21 @@ class ServiceMonitorService
                 'status' => 'UP',
                 'reason' => 'HTTP_' . $code,
                 'detail' => $redirectCodes[$code] ?? 'Redirect - Pengguna tetap bisa akses',
-                'action' => in_array($code, [301, 308]) ? 'Update URL endpoint' : 'Periksa redirect jika mengganggu'
+                'action' => in_array($code, [301, 308]) ? 'Update URL endpoint (redirect permanen)' : 'Periksa redirect jika mengganggu akses'
             ];
         }
 
         if ($code >= 400 && $code < 500) {
             $clientErrors = [
-                400 => ['status' => 'WARNING', 'reason' => 'HTTP_400', 'detail' => 'Bad Request - Pengguna bisa akses dengan perbaikan', 'action' => 'Periksa format request'],
-                405 => ['status' => 'WARNING', 'reason' => 'HTTP_405', 'detail' => 'Method HTTP tidak diizinkan', 'action' => 'Ganti method HTTP'],
-                429 => ['status' => 'WARNING', 'reason' => 'HTTP_429', 'detail' => 'Too Many Requests - Rate limit', 'action' => 'Kurangi frekuensi request'],
-                401 => ['status' => 'UP', 'reason' => 'HTTP_401', 'detail' => 'Unauthorized - Pengguna perlu login - Masih bisa akses', 'action' => 'Pastikan kredensial benar'],
-                403 => ['status' => 'UP', 'reason' => 'HTTP_403', 'detail' => 'Forbidden - Pengguna perlu izin - Masih bisa akses', 'action' => 'Cek izin akses'],
-                404 => ['status' => 'DOWN', 'reason' => 'HTTP_404', 'detail' => 'Halaman tidak ditemukan - Pengguna TIDAK bisa akses', 'action' => 'Periksa URL endpoint'],
-                408 => ['status' => 'DOWN', 'reason' => 'HTTP_408', 'detail' => 'Request Timeout - Pengguna TIDAK bisa akses', 'action' => 'Cek performa server'],
-                410 => ['status' => 'DOWN', 'reason' => 'HTTP_410', 'detail' => 'Gone - Resource sudah tidak tersedia', 'action' => 'Update URL atau hapus monitoring'],
-                415 => ['status' => 'DOWN', 'reason' => 'HTTP_415', 'detail' => 'Unsupported Media Type', 'action' => 'Periksa header Content-Type'],
+                400 => ['status' => 'WARNING', 'reason' => 'HTTP_400', 'detail' => 'Bad Request - Pengguna bisa akses dengan perbaikan', 'action' => 'Periksa format request yang dikirim'],
+                405 => ['status' => 'WARNING', 'reason' => 'HTTP_405', 'detail' => 'Method HTTP tidak diizinkan', 'action' => 'Ganti method HTTP yang digunakan'],
+                429 => ['status' => 'WARNING', 'reason' => 'HTTP_429', 'detail' => 'Too Many Requests - Rate limit', 'action' => 'Kurangi frekuensi request, tunggu beberapa saat'],
+                401 => ['status' => 'UP', 'reason' => 'HTTP_401', 'detail' => 'Unauthorized - Pengguna perlu login - Masih bisa akses', 'action' => 'Pastikan kredensial login benar'],
+                403 => ['status' => 'UP', 'reason' => 'HTTP_403', 'detail' => 'Forbidden - Pengguna perlu izin - Masih bisa akses', 'action' => 'Periksa izin akses pengguna'],
+                404 => ['status' => 'DOWN', 'reason' => 'HTTP_404', 'detail' => 'Halaman tidak ditemukan - Pengguna tidak bisa akses', 'action' => 'Periksa URL endpoint, mungkin sudah berubah'],
+                408 => ['status' => 'DOWN', 'reason' => 'HTTP_408', 'detail' => 'Request Timeout - Pengguna tidak bisa akses', 'action' => 'Cek performa server, mungkin overload'],
+                410 => ['status' => 'DOWN', 'reason' => 'HTTP_410', 'detail' => 'Gone - Resource sudah tidak tersedia', 'action' => 'Update URL atau hapus monitoring jika sudah tidak digunakan'],
+                415 => ['status' => 'DOWN', 'reason' => 'HTTP_415', 'detail' => 'Unsupported Media Type', 'action' => 'Periksa header Content-Type yang dikirim'],
             ];
 
             if (isset($clientErrors[$code])) {
@@ -289,8 +565,8 @@ class ServiceMonitorService
             return [
                 'status' => 'DOWN',
                 'reason' => 'HTTP_' . $code,
-                'detail' => "Client Error {$code} - Pengguna TIDAK bisa akses",
-                'action' => 'Periksa request yang dikirim'
+                'detail' => "Client Error {$code} - Pengguna tidak bisa akses",
+                'action' => 'Periksa request yang dikirim ke server'
             ];
         }
 
@@ -306,7 +582,7 @@ class ServiceMonitorService
             return [
                 'status' => 'DOWN',
                 'reason' => 'HTTP_' . $code,
-                'detail' => ($serverErrors[$code] ?? "Server Error {$code}") . ' - Pengguna TIDAK bisa akses',
+                'detail' => ($serverErrors[$code] ?? "Server Error {$code}") . ' - Pengguna tidak bisa akses',
                 'action' => $this->getServerErrorAction($code)
             ];
         }
@@ -314,19 +590,19 @@ class ServiceMonitorService
         return [
             'status' => 'DOWN',
             'reason' => 'HTTP_UNKNOWN',
-            'detail' => "HTTP {$code} - Kode tidak dikenal - Pengguna TIDAK bisa akses",
-            'action' => 'Periksa dokumentasi API'
+            'detail' => "HTTP {$code} - Kode tidak dikenal - Pengguna tidak bisa akses",
+            'action' => 'Periksa dokumentasi API untuk kode status ini'
         ];
     }
 
     private function getServerErrorAction($code)
     {
         $actions = [
-            500 => 'Cek log server, periksa kode aplikasi',
-            501 => 'Periksa konfigurasi server',
-            502 => 'Periksa proxy / load balancer',
-            503 => 'Cek maintenance / scale up resource',
-            504 => 'Optimasi response time server'
+            500 => 'Cek log server, periksa kode aplikasi yang error',
+            501 => 'Periksa konfigurasi server, fitur mungkin belum diimplementasikan',
+            502 => 'Periksa proxy / load balancer, mungkin ada masalah koneksi',
+            503 => 'Cek maintenance server, atau scale up resource jika overload',
+            504 => 'Optimasi response time server, mungkin gateway timeout'
         ];
 
         return $actions[$code] ?? 'Periksa log server dan konfigurasi';
@@ -337,77 +613,62 @@ class ServiceMonitorService
         $msg = strtolower($message);
 
         if (str_contains($msg, 'connection timeout') || str_contains($msg, 'timed out')) {
-            return ['status' => 'DOWN', 'reason' => 'CONNECTION_TIMEOUT', 'detail' => 'Koneksi timeout - Pengguna TIDAK bisa akses', 'action' => 'Cek firewall, pastikan server menyala'];
+            return ['status' => 'DOWN', 'reason' => 'CONNECTION_TIMEOUT', 'detail' => 'Koneksi timeout - Pengguna tidak bisa akses', 'action' => 'Cek firewall, pastikan server menyala'];
         }
 
         if (str_contains($msg, 'connection refused')) {
-            return ['status' => 'DOWN', 'reason' => 'CONNECTION_REFUSED', 'detail' => 'Koneksi ditolak - Pengguna TIDAK bisa akses', 'action' => 'Server mati / firewall blocking'];
+            return ['status' => 'DOWN', 'reason' => 'CONNECTION_REFUSED', 'detail' => 'Koneksi ditolak - Pengguna tidak bisa akses', 'action' => 'Server mati atau firewall blocking koneksi'];
         }
 
         if (str_contains($msg, 'could not resolve') || str_contains($msg, 'dns')) {
-            return ['status' => 'DOWN', 'reason' => 'DNS_ERROR', 'detail' => 'DNS tidak ditemukan - Pengguna TIDAK bisa akses', 'action' => 'Periksa DNS / domain'];
+            return ['status' => 'DOWN', 'reason' => 'DNS_ERROR', 'detail' => 'DNS tidak ditemukan - Pengguna tidak bisa akses', 'action' => 'Periksa konfigurasi DNS / domain'];
         }
 
         if (str_contains($msg, 'no route to host') || str_contains($msg, 'network is unreachable')) {
-            return ['status' => 'DOWN', 'reason' => 'HOST_UNREACHABLE', 'detail' => 'Host tidak dapat dijangkau - Pengguna TIDAK bisa akses', 'action' => 'Cek koneksi jaringan / firewall'];
+            return ['status' => 'DOWN', 'reason' => 'HOST_UNREACHABLE', 'detail' => 'Host tidak dapat dijangkau - Pengguna tidak bisa akses', 'action' => 'Periksa koneksi jaringan dan routing'];
         }
 
         if (str_contains($msg, 'curl error')) {
-            return ['status' => 'DOWN', 'reason' => 'CURL_ERROR', 'detail' => 'Error koneksi - Pengguna TIDAK bisa akses', 'action' => 'Periksa konfigurasi server'];
+            return ['status' => 'DOWN', 'reason' => 'CURL_ERROR', 'detail' => 'Error koneksi - Pengguna tidak bisa akses', 'action' => 'Periksa konfigurasi server dan koneksi internet'];
         }
 
         if (str_contains($msg, 'ssl') || str_contains($msg, 'certificate')) {
-            return ['status' => 'WARNING', 'reason' => 'SSL_ERROR', 'detail' => 'SSL Error - Pengguna mungkin masih bisa akses', 'action' => 'Periksa sertifikat SSL'];
+            return ['status' => 'WARNING', 'reason' => 'SSL_ERROR', 'detail' => 'SSL Error - Pengguna mungkin masih bisa akses', 'action' => 'Periksa sertifikat SSL, mungkin sudah expired'];
         }
 
         return [
             'status' => 'DOWN',
             'reason' => 'UNKNOWN_ERROR',
-            'detail' => 'Error tidak dikenal - Pengguna TIDAK bisa akses: ' . $message,
-            'action' => 'Periksa service secara manual'
+            'detail' => 'Error tidak dikenal - Pengguna tidak bisa akses: ' . $message,
+            'action' => 'Periksa service secara manual dan cek log error'
         ];
     }
 
     /**
      * ============================================================
-     * 🔥🔥🔥 SAVE RESULT - PERBAIKAN LENGKAP 🔥🔥🔥
+     * SAVE RESULT
      * ============================================================
-     * 
-     * PERBAIKAN:
-     * 1. UPDATE data service SETIAP KALI (termasuk response code)
-     * 2. LOG hanya dibuat saat STATUS BERUBAH (UP↔DOWN)
-     * 3. UPDATE log terakhir dengan data terbaru jika status SAMA
-     * 4. First Check: kirim WA hanya jika DOWN/WARNING
-     * 5. Interval: bandingkan STATUS (UP/DOWN/WARNING), BUKAN response code
-     * 6. 200→403 = SAMA (UP) → UPDATE service, TIDAK buat log baru, TIDAK kirim WA
-     * 7. 403→200 = SAMA (UP) → UPDATE service, TIDAK buat log baru, TIDAK kirim WA
-     * 8. 200→503 = BERUBAH (UP→DOWN) → UPDATE service, BUAT log baru, KIRIM WA
      */
     private function saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action)
     {
         if ($code === null || $code === '') {
-            Log::warning("⚠️ Code is null/empty for service {$service->name}, setting to 'N/A'");
+            Log::warning("Code is null/empty for service {$service->name}, setting to 'N/A'");
             $code = 'N/A';
         }
 
-        // ============================================================
-        // 🔥 1. UPDATE DATA SERVICE (SELALU DIUPDATE)
-        // ============================================================
+        // UPDATE DATA SERVICE
         $service->update([
             'last_status' => $status,
-            'last_code' => $code,              // ✅ 200→403 akan update di sini
-            'last_response_time' => $time,     // ✅ Response time selalu update
-            'last_message' => $detail,         // ✅ Message selalu update
+            'last_code' => $code,
+            'last_response_time' => $time,
+            'last_message' => $detail,
             'last_check_at' => now(),
         ]);
 
-        // ============================================================
-        // 🔥 2. CEK APAKAH STATUS BERUBAH
-        // ============================================================
+        // CEK APAKAH STATUS BERUBAH
         $statusChanged = ($oldStatus != $status);
 
         if ($statusChanged) {
-            // ✅ Status BERUBAH: BUAT LOG BARU
             ServiceLog::create([
                 'service_id' => $service->id,
                 'status' => $status,
@@ -417,9 +678,8 @@ class ServiceMonitorService
                 'action' => $action,
                 'checked_at' => now(),
             ]);
-            Log::info("📝 LOG BARU: {$service->name} {$oldStatus} → {$status}, Code: {$code}");
+            Log::info("LOG BARU: {$service->name} {$oldStatus} → {$status}, Code: {$code}");
         } else {
-            // ❌ Status SAMA: UPDATE LOG TERAKHIR dengan data terbaru
             $lastLog = ServiceLog::where('service_id', $service->id)
                 ->latest()
                 ->first();
@@ -433,9 +693,8 @@ class ServiceMonitorService
                     'action' => $action,
                     'checked_at' => now(),
                 ]);
-                Log::info("📝 LOG DIUPDATE: {$service->name} status tetap {$status}, code: {$oldCode} → {$code}");
+                Log::info("LOG DIUPDATE: {$service->name} status tetap {$status}, code: {$oldCode} → {$code}");
             } else {
-                // 🔥 Jika tidak ada log sama sekali (kemungkinan error), buat log baru
                 ServiceLog::create([
                     'service_id' => $service->id,
                     'status' => $status,
@@ -445,17 +704,15 @@ class ServiceMonitorService
                     'action' => $action,
                     'checked_at' => now(),
                 ]);
-                Log::info("📝 LOG BARU (force): {$service->name} {$status}, Code: {$code}");
+                Log::info("LOG BARU (force): {$service->name} {$status}, Code: {$code}");
             }
         }
 
-        // ============================================================
-        // 🔥 3. LOGIKA FIRST CHECK
-        // ============================================================
+        // FIRST CHECK
         $isFirstCheck = empty($service->last_wa_sent_at);
         
         if ($isFirstCheck) {
-            Log::info("🆕 FIRST CHECK: {$service->name}");
+            Log::info("FIRST CHECK: {$service->name}");
             
             if ($status === 'DOWN' || $status === 'WARNING') {
                 $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
@@ -465,9 +722,9 @@ class ServiceMonitorService
                     'last_interval_status' => $status,
                     'last_interval_checked_at' => now(),
                 ]);
-                Log::info("📱 First check WA: {$service->name} → {$status}");
+                Log::info("First check WA: {$service->name} → {$status}");
             } else {
-                Log::info("⏭️ First check UP: {$service->name} - Tidak perlu notifikasi");
+                Log::info("First check UP: {$service->name} - Tidak perlu notifikasi");
                 $service->update([
                     'last_wa_sent_at' => now(),
                     'last_notified_status' => 'UP',
@@ -479,12 +736,9 @@ class ServiceMonitorService
             return;
         }
 
-        // ============================================================
-        // 🔥 4. LOGIKA WHATSAPP INTERVAL
-        // ============================================================
+        // WHATSAPP INTERVAL
         $interval = $service->wa_interval_minutes ?? 0;
         
-        // 🔥 Interval = 0 (sekali): kirim WA setiap DOWN/WARNING
         if ($interval == 0) {
             if ($status === 'DOWN' || $status === 'WARNING') {
                 $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
@@ -492,19 +746,15 @@ class ServiceMonitorService
                     'last_wa_sent_at' => now(),
                     'last_notified_status' => $status,
                 ]);
-                Log::info("📱 WA terkirim (interval 0): {$service->name} → {$status}");
+                Log::info("WA terkirim (interval 0): {$service->name} → {$status}");
             }
             return;
         }
 
-        // ============================================================
-        // 🔥 5. CEK INTERVAL > 0
-        // ============================================================
         $lastIntervalCheck = $service->last_interval_checked_at;
         
         if (empty($lastIntervalCheck)) {
-            // Interval pertama kali
-            Log::info("📌 Interval pertama: {$service->name}, status awal: {$status}");
+            Log::info("Interval pertama: {$service->name}, status awal: {$status}");
             $service->update([
                 'last_interval_status' => $status,
                 'last_interval_checked_at' => now(),
@@ -516,32 +766,25 @@ class ServiceMonitorService
                     'last_wa_sent_at' => now(),
                     'last_notified_status' => $status,
                 ]);
-                Log::info("📱 WA terkirim (awal interval): {$service->name} → {$status}");
+                Log::info("WA terkirim (awal interval): {$service->name} → {$status}");
             }
             return;
         }
 
-        // ============================================================
-        // 🔥 6. CEK APAKAH INTERVAL SUDAH TERCAPAI
-        // ============================================================
         $lastCheck = Carbon::parse($lastIntervalCheck);
         $minutesSinceLastCheck = $lastCheck->diffInRealMinutes(now());
         
         if ($minutesSinceLastCheck < $interval) {
-            Log::info("⏭️ Interval belum tercapai ({$minutesSinceLastCheck}/{$interval} menit), status: {$status}");
+            Log::info("Interval belum tercapai ({$minutesSinceLastCheck}/{$interval} menit), status: {$status}");
             return;
         }
 
-        // ============================================================
-        // 🔥 7. INTERVAL TERCAPAI! BANDINGKAN STATUS
-        // ============================================================
         $intervalStartStatus = $service->last_interval_status ?? $oldStatus;
         
-        Log::info("📊 Interval reached! Start: {$intervalStartStatus}, Current: {$status}");
+        Log::info("Interval reached! Start: {$intervalStartStatus}, Current: {$status}");
         
         if ($status !== $intervalStartStatus) {
-            // ✅ Status BERUBAH → KIRIM WA
-            Log::info("📱 WA terkirim: {$intervalStartStatus} → {$status} (interval {$interval} menit)");
+            Log::info("WA terkirim: {$intervalStartStatus} → {$status} (interval {$interval} menit)");
             $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
             $service->update([
                 'last_wa_sent_at' => now(),
@@ -550,8 +793,7 @@ class ServiceMonitorService
                 'last_interval_checked_at' => now(),
             ]);
         } else {
-            // ❌ Status SAMA → TIDAK KIRIM WA
-            Log::info("⏭️ Skip WA: status tetap {$status} (sama dengan awal interval)");
+            Log::info("Skip WA: status tetap {$status} (sama dengan awal interval)");
             $service->update([
                 'last_interval_checked_at' => now(),
             ]);
@@ -560,28 +802,69 @@ class ServiceMonitorService
 
     /**
      * ============================================================
-     * 🔥 KIRIM WHATSAPP
+     * KIRIM WHATSAPP - FORMAT RAPIH & JELAS
      * ============================================================
      */
     private function sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action)
     {
         $contacts = Contact::where('is_active', true)->get();
         if ($contacts->isEmpty()) {
-            Log::warning('⚠️ Tidak ada kontak aktif');
+            Log::warning('Tidak ada kontak aktif');
             return;
         }
 
+        // LINE PEMISAH
+        $separator = "────────────────────";
+        $bold = "*";
+        $newline = "\n";
+
+        // STATUS DENGAN JUDUL YANG JELAS
         if ($status == 'DOWN') {
-            $message = "🔴 SERVICE DOWN\n\n📌 {$service->name}\n🔗 {$service->target}\n\nStatus : DOWN ❌\nCode   : {$code}\nWaktu  : {$time}s\n\n💡 {$detail}\n🔧 {$action}\n\n🕐 " . now()->format('d-m-Y H:i:s');
+            $judul = "🔴 SERVICE DOWN";
+            $statusIcon = "🔴";
+            $statusText = "DOWN";
         } elseif ($status == 'WARNING') {
-            $message = "🟠 SERVICE WARNING\n\n📌 {$service->name}\n🔗 {$service->target}\n\nStatus : WARNING ⚠️\nCode   : {$code}\nWaktu  : {$time}s\n\n💡 {$detail}\n🔧 {$action}\n\n🕐 " . now()->format('d-m-Y H:i:s');
+            $judul = "🟡 SERVICE WARNING";
+            $statusIcon = "🟡";
+            $statusText = "WARNING";
         } else {
-            $message = "🟢 SERVICE NORMAL\n\n📌 {$service->name}\n🔗 {$service->target}\n\nStatus : UP ✅\nCode   : {$code}\nWaktu  : {$time}s\n\n🕐 " . now()->format('d-m-Y H:i:s');
+            $judul = "🟢 SERVICE NORMAL";
+            $statusIcon = "🟢";
+            $statusText = "UP";
         }
+
+        // FORMAT PESAN
+        $message = $separator . $newline;
+        $message .= $bold . $judul . $bold . $newline;
+        $message .= $separator . $newline . $newline;
+        
+        $message .= $bold . "Nama" . $bold . "   : " . $service->name . $newline;
+        $message .= $bold . "Target" . $bold . " : " . $service->target . $newline;
+        $message .= $separator . $newline;
+        
+        $message .= $bold . "Status" . $bold . " : " . $statusIcon . " " . $statusText . $newline;
+        $message .= $bold . "Kode" . $bold . "   : " . $code . $newline;
+        $message .= $bold . "Waktu" . $bold . "  : " . $time . " detik" . $newline;
+        
+        if (!empty($detail) && $detail != '-') {
+            $message .= $separator . $newline;
+            $message .= $bold . "📝 Detail" . $bold . $newline;
+            $message .= $detail . $newline;
+        }
+        
+        if (!empty($action) && $action != '-' && $action != 'Service dalam kondisi baik, tidak perlu tindakan') {
+            $message .= $separator . $newline;
+            $message .= $bold . "🔧 Tindakan" . $bold . $newline;
+            $message .= $action . $newline;
+        }
+        
+        $message .= $separator . $newline;
+        $message .= "🕐 " . now()->format('d-m-Y H:i:s') . " WIB" . $newline;
+        $message .= $separator;
 
         foreach ($contacts as $contact) {
             $result = FonnteService::send($contact->phone, $message);
-            Log::info($result ? "📱 WA ke: {$contact->phone} - {$status}" : "❌ Gagal WA ke: {$contact->phone}");
+            Log::info($result ? "WA ke: {$contact->phone} - {$status}" : "Gagal WA ke: {$contact->phone}");
         }
     }
 
@@ -596,11 +879,11 @@ class ServiceMonitorService
     private function handleNetworkStatus($isNetworkConnected)
     {
         if (!$isNetworkConnected && !$this->networkAlertSent) {
-            Log::info('📡 Network: DISCONNECTED');
+            Log::info('Network: DISCONNECTED');
             $this->networkAlertSent = true;
         }
         if ($isNetworkConnected && $this->networkAlertSent) {
-            Log::info('📡 Network: RESTORED');
+            Log::info('Network: RESTORED');
             $this->networkAlertSent = false;
         }
     }

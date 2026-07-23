@@ -29,7 +29,6 @@
         --radius: 16px;
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         
-        /* Status badge colors - light mode */
         --badge-danger-bg: #fee2e2;
         --badge-danger-text: #991b1b;
         --badge-warning-bg: #fef3c7;
@@ -37,7 +36,6 @@
         --badge-normal-bg: #d1fae5;
         --badge-normal-text: #065f46;
         
-        /* Icon colors */
         --icon-normal-bg: linear-gradient(135deg, #d1fae5, #a7f3d0);
         --icon-normal-color: #059669;
         --icon-warning-bg: linear-gradient(135deg, #fef3c7, #fde68a);
@@ -45,7 +43,6 @@
         --icon-danger-bg: linear-gradient(135deg, #fee2e2, #fca5a5);
         --icon-danger-color: #dc2626;
         
-        /* Bar colors */
         --bar-track: #e5e7eb;
         --bar-fill-normal: linear-gradient(90deg, #34d399, #059669);
         --bar-fill-warning: linear-gradient(90deg, #fbbf24, #d97706);
@@ -54,7 +51,6 @@
         --date-picker-filter: none;
     }
 
-    /* Dark mode override dari layout utama */
     [data-theme="dark"] {
         --bg-main: #0f172a;
         --bg-card: #1e293b;
@@ -73,7 +69,6 @@
         --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.3);
         --shadow-timer: 0 8px 32px rgba(0, 0, 0, 0.5);
         
-        /* Status badge colors - dark mode */
         --badge-danger-bg: #7f1d1d;
         --badge-danger-text: #fca5a5;
         --badge-warning-bg: #78350f;
@@ -81,7 +76,6 @@
         --badge-normal-bg: #064e3b;
         --badge-normal-text: #6ee7b7;
         
-        /* Icon colors - dark mode */
         --icon-normal-bg: linear-gradient(135deg, #064e3b, #065f46);
         --icon-normal-color: #6ee7b7;
         --icon-warning-bg: linear-gradient(135deg, #78350f, #92400e);
@@ -89,7 +83,6 @@
         --icon-danger-bg: linear-gradient(135deg, #7f1d1d, #991b1b);
         --icon-danger-color: #fca5a5;
         
-        /* Bar colors - dark mode */
         --bar-track: #334155;
         --bar-fill-normal: linear-gradient(90deg, #065f46, #059669);
         --bar-fill-warning: linear-gradient(90deg, #92400e, #d97706);
@@ -472,10 +465,10 @@
     }
 
     .smoke-status-right .smoke-value small {
-        font-size: 1.4rem;
+        font-size: 1.2rem;
         font-weight: 400;
         color: var(--text-muted);
-        margin-left: 2px;
+        margin-left: 4px;
     }
 
     .smoke-status-right .smoke-value.normal { color: #059669; }
@@ -767,6 +760,13 @@
         color: var(--success);
     }
 
+    .value-cell .unit-label {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--text-muted);
+        margin-left: 2px;
+    }
+
     .time-cell {
         font-size: 13px;
         color: var(--text-secondary);
@@ -980,7 +980,6 @@
         100% { background: transparent; }
     }
 
-    /* ========== ROW NUMBER ========== */
     .row-number {
         text-align: center;
         font-weight: 600;
@@ -990,7 +989,6 @@
         display: inline-block;
     }
 
-    /* ========== RESPONSIVE ========== */
     @media (max-width: 1024px) {
         .smoke-status-right {
             max-width: 100%;
@@ -1061,7 +1059,7 @@
             font-size: 2.4rem;
         }
         .smoke-status-right .smoke-value small {
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
         .smoke-status-right .smoke-bar-container {
             min-width: 80px;
@@ -1083,6 +1081,9 @@
         }
         .value-cell {
             font-size: 13px;
+        }
+        .value-cell .unit-label {
+            font-size: 10px;
         }
         .time-cell {
             font-size: 11px;
@@ -1196,6 +1197,9 @@
         }
         .value-cell {
             font-size: 12px;
+        }
+        .value-cell .unit-label {
+            font-size: 9px;
         }
         .time-cell {
             font-size: 10px;
@@ -1314,19 +1318,20 @@
         </div>
         <div class="smoke-status-right">
             <div class="smoke-value-wrapper">
+                <!-- 🔥 UBAH: Nilai Asap tanpa "ADC" -->
                 <div class="smoke-value {{ $statusClass }}" id="smokeValue">
-                    {{ number_format($smokeValue, 0) }}<small>ADC</small>
+                    {{ number_format($smokeValue, 0) }}
                 </div>
-                <div class="smoke-label">Nilai ADC</div>
+                <div class="smoke-label">Nilai Asap</div>
             </div>
             <div class="smoke-bar-container">
                 <div class="bar-track">
                     <div class="bar-fill {{ $statusClass }}" id="smokeBar" style="width: {{ $percentage }}%;"></div>
                 </div>
                 <div class="bar-labels">
-                    <span class="min-label">0 ADC</span>
-                    <span class="current-value">{{ number_format($smokeValue, 0) }} ADC</span>
-                    <span class="max-label">⚠️ {{ $maxAdc }} ADC</span>
+                    <span class="min-label">0</span>
+                    <span class="current-value">{{ number_format($smokeValue, 0) }}</span>
+                    <span class="max-label">⚠️ {{ $maxAdc }}</span>
                 </div>
             </div>
         </div>
@@ -1362,7 +1367,8 @@
                     <tr>
                         <th style="width: 40px;">No</th>
                         <th style="width: 180px;">🕐 Waktu</th>
-                        <th style="width: 120px;">📊 Nilai ADC</th>
+                        <!-- 🔥 UBAH: Nilai Asap (tanpa ADC) -->
+                        <th style="width: 120px;">📊 Nilai Asap</th>
                         <th style="width: 140px;">📌 Status</th>
                         <th>📝 Keterangan</th>
                     </tr>
@@ -1387,9 +1393,9 @@
                                 </span>
                             </td>
                             <td>
+                                <!-- 🔥 UBAH: Nilai Asap tanpa "ADC" -->
                                 <span class="value-cell {{ $valueClass }}">
                                     {{ $log->smoke_value ?? 0 }}
-                                    <span style="font-size: 11px; font-weight: 400; color: var(--text-muted);">ADC</span>
                                 </span>
                             </td>
                             <td>
@@ -1522,7 +1528,6 @@
     let lastLogId = null;
     let isFirstLoad = true;
     
-    // 🔥 TRACK STATUS DAN ADC SAAT INI
     let currentStatus = '{{ strtoupper($smokeStatus) }}';
     let currentAdc = {{ $smokeValue }};
 
@@ -1614,7 +1619,6 @@
                 const oldStatus = currentStatus;
                 const oldAdc = currentAdc;
                 
-                // 🔥 1. CEK STATUS BERUBAH (LOG BARU)
                 if (isStatusChanged || status !== oldStatus) {
                     console.log('📝 STATUS BERUBAH!', oldStatus, '→', status);
                     addNewLog(esp, latestLog);
@@ -1622,7 +1626,6 @@
                     currentStatus = status;
                     currentAdc = adc;
                 }
-                // 🔥 2. ADC BERUBAH TAPI STATUS SAMA
                 else if ((isAdcUpdated || adc !== oldAdc) && status === oldStatus) {
                     console.log('🔄 ADC UPDATED:', oldAdc, '→', adc);
                     updateLastLogAdc(esp);
@@ -1657,18 +1660,15 @@
         const createdAt = logData ? logData.created_at : new Date().toISOString();
         const logId = logData ? logData.id : Date.now();
         
-        // CEK DUPLICATE
         const existingRows = tbody.querySelectorAll('tr[data-log-id="' + logId + '"]');
         if (existingRows.length > 0) {
             console.log('⚠️ Log sudah ada, skip duplicate');
             return;
         }
         
-        // TAMBAH TOTAL LOGS
         totalLogsCount++;
         updateTotalLogs(totalLogsCount);
         
-        // HITUNG NOMOR URUT
         const firstRow = tbody.querySelector('tr');
         let rowNumber = 1;
         if (firstRow) {
@@ -1680,7 +1680,6 @@
         
         const currentTime = formatDate(createdAt);
         
-        // BUAT ROW BARU
         const row = document.createElement('tr');
         row.dataset.logId = logId;
         row.dataset.logStatus = status;
@@ -1691,7 +1690,8 @@
                 <span class="row-number">${rowNumber}</span>
             </td>
             <td><span class="time-cell" data-updated-at="${createdAt}">${currentTime}</span></td>
-            <td><span class="value-cell ${statusClass}">${numberFormat(adc)} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">ADC</span></span></td>
+            <!-- 🔥 UBAH: Nilai Asap tanpa "ADC" -->
+            <td><span class="value-cell ${statusClass}">${numberFormat(adc)}</span></td>
             <td><span class="status-badge ${statusClass}">${statusIcon} ${status}</span></td>
             <td><div class="message-cell" title="${logMessage}">${logMessage}</div></td>
         `;
@@ -1699,7 +1699,6 @@
         tbody.insertBefore(row, tbody.firstChild);
         updateRowNumbers();
         
-        // HAPUS ROW KELEBIHAN
         const perPage = parseInt(document.getElementById('perPage')?.value || 10);
         while (tbody.children.length > perPage && tbody.children.length > 1) {
             const lastRow = tbody.lastChild;
@@ -1733,7 +1732,7 @@
         
         const valueCell = targetRow.querySelector('.value-cell');
         if (valueCell) {
-            valueCell.innerHTML = `${numberFormat(adc)} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">ADC</span>`;
+            valueCell.textContent = numberFormat(adc);
             valueCell.className = 'value-cell ' + statusClass;
         }
         
@@ -1759,7 +1758,7 @@
 
         const smokeValueElement = document.getElementById('smokeValue');
         if (smokeValueElement) {
-            smokeValueElement.innerHTML = numberFormat(adc) + '<small>ADC</small>';
+            smokeValueElement.textContent = numberFormat(adc);
             smokeValueElement.className = 'smoke-value ' + statusClass;
         }
 
@@ -1788,7 +1787,7 @@
         const currentValueLabels = document.querySelectorAll('.bar-labels .current-value');
         if (currentValueLabels.length > 0) {
             currentValueLabels.forEach(el => {
-                el.textContent = numberFormat(adc) + ' ADC';
+                el.textContent = numberFormat(adc);
             });
         }
     }
@@ -1829,14 +1828,12 @@
 
     // ========== INITIAL ==========
     document.addEventListener('DOMContentLoaded', function() {
-        // AMBIL LOG ID PERTAMA
         const firstRow = document.querySelector('#logTableBody tr[data-log-id]');
         if (firstRow) {
             lastLogId = firstRow.dataset.logId;
             currentStatus = firstRow.dataset.logStatus || 'NORMAL';
         }
         
-        // AMBIL ADC PERTAMA
         const firstValue = document.querySelector('#logTableBody tr:first-child .value-cell');
         if (firstValue) {
             const adcText = firstValue.textContent.trim();
@@ -1849,7 +1846,6 @@
         fetchEspStatus();
         setTimeout(updateRowNumbers, 100);
         
-        // 🔥 INTERVAL 3 DETIK
         setInterval(fetchEspStatus, 3000);
         setInterval(updateCountdown, 1000);
     });

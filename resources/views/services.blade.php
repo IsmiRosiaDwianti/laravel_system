@@ -783,67 +783,64 @@
     }
 
     /* ================= STATUS BADGE ================= */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        border: 1px solid;
-        transition: all 0.3s ease;
-    }
-    .status-badge .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        display: inline-block;
-    }
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border: 1px solid;
+    transition: all 0.3s ease;
+}
+.status-badge .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
 
-    .status-badge.up {
-        background: #d1fae5;
-        color: #065f46;
-        border-color: #6ee7b7;
-    }
-    .status-badge.up .status-dot {
-        background: #059669;
-        animation: pulse 2s infinite;
-    }
+.status-badge.up {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #6ee7b7;
+}
+.status-badge.up .status-dot {
+    background: #059669;
+    /* ✅ EFFECT DIBUANG */
+}
 
-    .status-badge.down {
-        background: #fee2e2;
-        color: #991b1b;
-        border-color: #fca5a5;
-    }
-    .status-badge.down .status-dot {
-        background: #dc2626;
-        animation: pulse 1s infinite;
-    }
+.status-badge.down {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+.status-badge.down .status-dot {
+    background: #dc2626;
+    /* ✅ EFFECT DIBUANG */
+}
 
-    .status-badge.warning {
-        background: #fef3c7;
-        color: #92400e;
-        border-color: #fcd34d;
-    }
-    .status-badge.warning .status-dot {
-        background: #d97706;
-        animation: pulse 1.5s infinite;
-    }
+.status-badge.warning {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fcd34d;
+}
+.status-badge.warning .status-dot {
+    background: #d97706;
+    /* ✅ EFFECT DIBUANG */
+}
 
-    .status-badge.unknown {
-        background: var(--bg-hover-service);
-        color: var(--text-muted-service);
-        border-color: var(--border-service);
-    }
-    .status-badge.unknown .status-dot { background: var(--text-muted-service); }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(0.8); }
-    }
+.status-badge.unknown {
+    background: var(--bg-hover-service);
+    color: var(--text-muted-service);
+    border-color: var(--border-service);
+}
+.status-badge.unknown .status-dot {
+    background: var(--text-muted-service);
+}
 
     .service-no {
         font-weight: 600;
@@ -2462,48 +2459,41 @@
         let isPolling = false;
 
         function fetchLatestStatus() {
-            if (isPolling) return;
-            isPolling = true;
-            
-            fetch('/api/services/status?_=' + Date.now(), {
-                headers: {
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache'
+    if (isPolling) return;
+    isPolling = true;
+    
+    fetch('/api/services/status?_=' + Date.now(), {
+        headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            data.services.forEach(service => {
+                const badge = document.getElementById('status-' + service.id);
+                if (badge) {
+                    const status = service.last_status || 'UNKNOWN';
+                    const statusLower = status.toLowerCase();
+                    badge.className = `status-badge ${statusLower}`;
+                    badge.innerHTML = `<span class="status-dot"></span> ${status}`;
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    data.services.forEach(service => {
-                        const badge = document.getElementById('status-' + service.id);
-                        if (badge) {
-                            const status = service.last_status || 'UNKNOWN';
-                            const statusLower = status.toLowerCase();
-                            badge.className = `status-badge ${statusLower}`;
-                            badge.innerHTML = `<span class="status-dot"></span> ${status}`;
-                            if (statusLower === 'down') {
-                                badge.style.animation = 'pulse 1s infinite';
-                            } else if (statusLower === 'warning') {
-                                badge.style.animation = 'pulse 1.5s infinite';
-                            } else if (statusLower === 'up') {
-                                badge.style.animation = 'pulse 2s infinite';
-                            }
-                        }
-                        
-                        const timeEl = document.getElementById('time-' + service.id);
-                        if (timeEl && service.last_check_at) {
-                            timeEl.textContent = service.last_check_at;
-                        }
-                    });
+                
+                const timeEl = document.getElementById('time-' + service.id);
+                if (timeEl && service.last_check_at) {
+                    timeEl.textContent = service.last_check_at;
                 }
-            })
-            .catch(error => {
-                console.log('Status poll error:', error);
-            })
-            .finally(() => {
-                isPolling = false;
             });
         }
+    })
+    .catch(error => {
+        console.log('Status poll error:', error);
+    })
+    .finally(() => {
+        isPolling = false;
+    });
+}
 
         function startPolling() {
             if (pollingInterval) {
@@ -2967,28 +2957,21 @@
     }
 
     
-    function renderDetail(service) {
+   function renderDetail(service) {
     const body = document.getElementById('detailModalBody');
     document.getElementById('detailModalTitle').textContent = `📊 Detail Service: ${service.name}`;
 
-    // ✅ PERBAIKAN: Gunakan properti yang BENAR dari service
     const statusClass = service.last_status?.toLowerCase() || 'unknown';
     const statusBadge = service.last_status || 'UNKNOWN';
     
-    // 🔥 INI MASALAHNYA! Harusnya last_code BUKAN last_response_code
-    const responseCode = service.last_code ?? '-';  // ✅ PERBAIKAN
-    
-    // 🔥 INI JUGA! Harusnya last_response_time
-    const responseTime = service.last_response_time ?? 0;  // ✅ PERBAIKAN
+    const responseCode = service.last_code ?? '-';
+    const responseTime = service.last_response_time ?? 0;
     
     const timeClass = responseTime < 1 ? 'fast' : (responseTime < 3 ? 'medium' : 'slow');
     const codeClass = responseCode < 400 ? 'success' : (responseCode < 500 ? 'warning' : 'error');
     
-    // 🔥 INI JUGA! Harusnya last_action
-    const action = service.last_action || '-';  // ✅ PERBAIKAN
-    
-    // 🔥 INI JUGA! Harusnya last_message
-    const message = service.last_message || '-';  // ✅ PERBAIKAN
+    const action = service.last_action || '-';
+    const message = service.last_message || '-';
     
     const isNoAction = action === '-';
     const isEmptyAction = action.includes('kosong') || action.includes('EMPTY');
@@ -3007,7 +2990,8 @@
             <div class="detail-item"><div class="detail-label">Response Code</div><div class="detail-value"><span class="response-code ${codeClass}">${responseCode}</span></div></div>
             <div class="detail-item"><div class="detail-label">Response Time</div><div class="detail-value"><span class="response-time ${timeClass}">${Number(responseTime).toFixed(2)} <span style="font-size: 12px; color: var(--text-muted-service);">s</span></span></div></div>
             <div class="detail-item full-width"><div class="detail-label">Pesan</div><div class="detail-message ${messageClass}">${message}</div></div>
-            <div class="detail-action"><div class="detail-label">🔧 Tindakan yang Disarankan</div><div class="detail-value"><span class="action-badge ${actionClass}">${actionBadgeText}</span></div></div>
+            <!-- 🔥 BARIS INI DIHAPUS / DIKOMENTARI -->
+            <!-- <div class="detail-action"><div class="detail-label">🔧 Tindakan yang Disarankan</div><div class="detail-value"><span class="action-badge ${actionClass}">${actionBadgeText}</span></div></div> -->
             <div class="detail-item full-width" style="background: var(--bg-detail-alt-service); border-color: var(--border-service);"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: var(--text-secondary-service);"><span><strong>ID:</strong> ${service.id}</span><span><strong>Terakhir Check:</strong> ${service.last_check_at || '-'}</span><span><strong>Dibuat:</strong> ${service.created_at || '-'}</span><span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span></div></div>
         </div>
     `;

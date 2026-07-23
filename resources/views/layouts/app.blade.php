@@ -947,6 +947,15 @@
             <i class="fas fa-history"></i>
             <span>Monitoring Logs</span>
         </a>
+
+        <!-- ====================== 🎬 VIDEO PANDUAN ====================== -->
+        <a href="https://drive.google.com/drive/u/0/folders/1RnZ7DcbTKnUWaPufSMxW4G7TI1sJ4bJJ" 
+           target="_blank" 
+           class="{{ request()->is('video-guide') ? 'active' : '' }}">
+            <i class="fas fa-video" style="color: #fbbc05;"></i>
+            <span>Video Panduan</span>
+            <i class="fas fa-external-link-alt" style="font-size: 10px; margin-left: auto; opacity: 0.5;"></i>
+        </a>
     </div>
 
     <!-- ====================== DARK/LIGHT MODE TOGGLE ====================== -->
@@ -1235,10 +1244,10 @@
             checkNetworkStatus();
         }, 1000);
 
-        setInterval(checkNetworkStatus, 3000);
+        setInterval(checkNetworkStatus, 30000);
 
         console.log('✅ Monitoring System DISKOMINFOTIK Loaded');
-        console.log('📡 Network status check interval: 3 seconds');
+        console.log('📡 Network status check interval: 30 seconds');
         console.log('🌓 Dark/Light mode available');
     });
 </script>
