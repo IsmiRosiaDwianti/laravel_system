@@ -15,8 +15,7 @@ return new class extends Migration
 
             $table->id();
 
-            // ✅ UBAH: smoke_device_id → device_id
-            $table->foreignId('device_id')
+            $table->foreignId('smoke_device_id')
                   ->constrained('smoke_devices')
                   ->cascadeOnDelete();
 

@@ -1931,15 +1931,18 @@
                     <span class="wa-icon">📱</span> WA Interval:
                 </span>
                 <select id="waInterval" onchange="changeWaInterval(this.value)">
-                    <option value="0" {{ ($waInterval ?? 0) == 0 ? 'selected' : '' }}>Sekali</option>
-                    <option value="1" {{ ($waInterval ?? 0) == 1 ? 'selected' : '' }}>1 menit</option>
-                    <option value="3" {{ ($waInterval ?? 0) == 3 ? 'selected' : '' }}>3 menit</option>
-                    <option value="5" {{ ($waInterval ?? 0) == 5 ? 'selected' : '' }}>5 menit</option>
-                    <option value="10" {{ ($waInterval ?? 0) == 10 ? 'selected' : '' }}>10 menit</option>
-                    <option value="15" {{ ($waInterval ?? 0) == 15 ? 'selected' : '' }}>15 menit</option>
-                    <option value="30" {{ ($waInterval ?? 0) == 30 ? 'selected' : '' }}>30 menit</option>
-                    <option value="60" {{ ($waInterval ?? 0) == 60 ? 'selected' : '' }}>1 jam</option>
-                </select>
+    <option value="0" {{ ($waInterval ?? 5) == 0 ? 'selected' : '' }}>🚨 Kirim Langsung</option>
+    <option value="5" {{ ($waInterval ?? 5) == 5 ? 'selected' : '' }}>⏱️ 5 Menit </option>
+    <option value="10" {{ ($waInterval ?? 5) == 10 ? 'selected' : '' }}>⏱️ 10 Menit</option>
+    <option value="15" {{ ($waInterval ?? 5) == 15 ? 'selected' : '' }}>⏱️ 15 Menit</option>
+    <option value="20" {{ ($waInterval ?? 5) == 20 ? 'selected' : '' }}>⏱️ 20 Menit</option>
+    <option value="30" {{ ($waInterval ?? 5) == 30 ? 'selected' : '' }}>⏱️ 30 Menit</option>
+    <option value="60" {{ ($waInterval ?? 5) == 60 ? 'selected' : '' }}>⏰ 1 Jam</option>
+    <option value="120" {{ ($waInterval ?? 5) == 120 ? 'selected' : '' }}>⏰ 2 Jam</option>
+    <option value="240" {{ ($waInterval ?? 5) == 240 ? 'selected' : '' }}>⏰ 4 Jam</option>
+    <option value="480" {{ ($waInterval ?? 5) == 480 ? 'selected' : '' }}>⏰ 8 Jam</option>
+    <option value="1440" {{ ($waInterval ?? 5) == 1440 ? 'selected' : '' }}>⏰ 24 Jam</option>
+</select>
             </div>
 
             <button class="btn-primary" onclick="openCreateModal()">

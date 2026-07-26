@@ -58,12 +58,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/services', [ServiceController::class, 'index'])->name('services');
     Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
     Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
-    Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
-    Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
-    Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+    Route::get('/services/{id}/edit', [ServiceController::class, 'edit'])->name('services.edit');  // FIX: pakai {id}
+    Route::put('/services/{id}', [ServiceController::class, 'update'])->name('services.update');   // FIX: pakai {id}
+    Route::delete('/services/{id}', [ServiceController::class, 'destroy'])->name('services.destroy'); // FIX: pakai {id}
 
+    // Search
     Route::get('/services/search', [ServiceController::class, 'search'])->name('services.search');
-    Route::post('/services/check-all', [ServiceController::class, 'checkAll'])->name('services.check-all');
+    
+    // 🔥 HAPUS route ini jika tidak ada method checkAll di ServiceController
+    // Route::post('/services/check-all', [ServiceController::class, 'checkAll'])->name('services.check-all');
 
     // Detail & Laporan
     Route::get('/services/{id}/detail', [ServiceController::class, 'detail'])->name('services.detail');
@@ -82,6 +85,7 @@ Route::middleware('auth')->group(function () {
     // LOGS - Riwayat Monitoring
     // ==========================================================
     Route::get('/logs', [LogController::class, 'index'])->name('logs');
+    Route::get('/logs/{id}', [LogController::class, 'show'])->name('logs.show');  // TAMBAHKAN
 
     // ==========================================================
     // CONTACTS - Kontak WhatsApp
@@ -89,16 +93,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/contacts', [ContactController::class, 'index'])->name('contacts');
     Route::get('/contacts/create', [ContactController::class, 'create'])->name('contacts.create');
     Route::post('/contacts', [ContactController::class, 'store'])->name('contacts.store');
-    Route::get('/contacts/{contact}/edit', [ContactController::class, 'edit'])->name('contacts.edit');
-    Route::put('/contacts/{contact}', [ContactController::class, 'update'])->name('contacts.update');
-    Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->name('contacts.destroy');
+    Route::get('/contacts/{id}/edit', [ContactController::class, 'edit'])->name('contacts.edit');  // FIX: pakai {id}
+    Route::put('/contacts/{id}', [ContactController::class, 'update'])->name('contacts.update');   // FIX: pakai {id}
+    Route::delete('/contacts/{id}', [ContactController::class, 'destroy'])->name('contacts.destroy'); // FIX: pakai {id}
     Route::get('/contacts/search', [ContactController::class, 'search'])->name('contacts.search');
 
     // ==========================================================
-    // SMOKE DETECTOR - Monitoring ESP32
+    // SMOKE DETECTOR - Monitoring ESP32 (Web)
     // ==========================================================
     Route::get('/smoke-detector', [SmokeController::class, 'index'])->name('smoke');
     Route::get('/smoke-detector/export', [SmokeController::class, 'export'])->name('smoke.export');
+
+    // ==========================================================
+    // SMOKE DETECTOR - API Receive (Untuk ESP32, Tanpa Auth)
+    // ==========================================================
+    // ⚠️ Route ini TIDAK menggunakan middleware auth karena ESP32 tidak punya session
+    Route::post('/smoke/receive', [SmokeController::class, 'receiveData'])->name('smoke.receive');
+    Route::get('/smoke/status', [SmokeController::class, 'getStatus'])->name('smoke.status');
 
 });
 
@@ -112,4 +123,3 @@ Route::get('/test-wa', function () {
     );
     return 'WhatsApp berhasil dikirim';
 });
-

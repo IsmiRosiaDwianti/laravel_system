@@ -1,34 +1,24 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SmokeController;
-use App\Http\Controllers\ServiceController;
-use App\Http\Controllers\ContactController;
-use App\Http\Controllers\LogController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\LoginController;
+use App\Http\Controllers\Api\SmokeApiController;
+use App\Http\Controllers\Api\ServiceApiController;
+use App\Http\Controllers\Api\ContactApiController;
+use App\Http\Controllers\Api\LogApiController;
+use App\Http\Controllers\Api\DashboardApiController;
+use App\Http\Controllers\Api\LoginApiController;
+use App\Http\Controllers\Api\RegisterApiController;
 use App\Http\Controllers\NetworkController;
-use App\Http\Controllers\RegisterController;
 use Illuminate\Support\Facades\Http;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes - Monitoring System DISKOMINFOTIK
 |--------------------------------------------------------------------------
-|
-| Berikut adalah semua endpoint API untuk sistem monitoring.
-| Dibagi menjadi 3 kategori:
-| 1. PUBLIC API (Tanpa Auth) - Untuk ESP32 dan pengecekan jaringan
-| 2. AUTH ROUTES - Login, Register, Logout
-| 3. PROTECTED API (dengan Sanctum Token) - Data sensitif
-|
 */
 
 // ================================================================
 // 1️⃣ PUBLIC API (TANPA AUTHENTIKASI)
-// ================================================================
-// Endpoint ini bisa diakses oleh siapa saja, termasuk ESP32 dan
-// pengecekan jaringan dari frontend (JavaScript)
 // ================================================================
 
 Route::withoutMiddleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class])
@@ -37,46 +27,25 @@ Route::withoutMiddleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequest
         // ============================================================
         // 🔥 SMOKE DETECTOR API (Untuk ESP32)
         // ============================================================
-        // Digunakan oleh perangkat ESP32 untuk mengirim data detektor asap
-        // dan mengecek status perangkat secara real-time
-        // ============================================================
-        
-        // 📤 ESP32 mengirim data detektor asap ke sini
-        Route::post('/smoke', [SmokeController::class, 'receiveData'])
-            ->middleware('throttle:60,1'); // Maksimal 60 request per menit
+        Route::post('/smoke', [SmokeApiController::class, 'receiveData'])
+            ->middleware('throttle:60,1');
 
-        // 📊 Cek status detektor asap secara keseluruhan
-        Route::get('/smoke/status', [SmokeController::class, 'getStatus']);
-        
-        // 📋 Ambil semua log detektor asap
-        Route::get('/smoke/logs', [SmokeController::class, 'getLogs']);
-        
-        // ✅ Cek apakah ESP dalam keadaan online/offline
-        Route::get('/smoke/check-esp-status', [SmokeController::class, 'checkEspStatus']);
-        
-        // 🔍 Cek satu perangkat ESP tertentu berdasarkan ID
-        Route::get('/smoke/device/{id}', [SmokeController::class, 'checkSingleDevice']);
+        Route::get('/smoke/status', [SmokeApiController::class, 'getStatus']);
+        Route::get('/smoke/logs', [SmokeApiController::class, 'getLogs']);
+        Route::get('/smoke/check-esp-status', [SmokeApiController::class, 'checkEspStatus']);
 
         // ============================================================
-        // 🌐 NETWORK STATUS (Untuk Pengecekan Internet)
-        // ============================================================
-        // Digunakan oleh frontend (JavaScript) untuk mengecek apakah
-        // server terhubung ke internet atau tidak. Dicek setiap 30 detik.
+        // 🌐 NETWORK STATUS
         // ============================================================
         Route::get('/network/status', [NetworkController::class, 'status']);
 
         // ============================================================
-        // 🖥️ SERVICES STATUS (Untuk Pengecekan Service)
+        // 🖥️ SERVICES STATUS
         // ============================================================
-        // Digunakan oleh frontend (JavaScript) untuk mengecek status
-        // semua service yang dimonitoring. Dipanggil dari dashboard.
-        // ============================================================
-        Route::get('/services/status', [ServiceController::class, 'apiStatus']);
+        Route::get('/services/status', [ServiceApiController::class, 'status']);
 
         // ============================================================
-        // 🧪 TEST API (Untuk Debugging)
-        // ============================================================
-        // Endpoint sederhana untuk mengecek apakah API berjalan normal
+        // 🧪 TEST API
         // ============================================================
         Route::get('/test-api', function () {
             return response()->json([
@@ -90,53 +59,35 @@ Route::withoutMiddleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequest
 // ================================================================
 // 2️⃣ AUTHENTICATION ROUTES
 // ================================================================
-// Endpoint untuk login, register, dan logout pengguna
-// ================================================================
 
 // ============================================================
 // 🔐 SESSION-BASED AUTH (Untuk Web)
 // ============================================================
-// Menggunakan session Laravel untuk autentikasi via browser
-// ============================================================
 Route::middleware(['web'])->group(function () {
-    
-    // Login - Menggunakan session cookie
-    Route::post('/login', [LoginController::class, 'apiLogin'])->name('api.login');
-    
-    // Register - Mendaftar akun baru
-    Route::post('/register', [RegisterController::class, 'apiRegister'])->name('api.register');
-    
-    // Logout - Menghapus session
-    Route::post('/logout', [LoginController::class, 'apiLogout'])->name('api.logout');
-    
-    // Cek status autentikasi
-    Route::get('/auth/check', [LoginController::class, 'apiCheckAuth'])->name('api.auth.check');
+    Route::post('/login', [LoginApiController::class, 'login']);
+    Route::post('/register', [RegisterApiController::class, 'register']);
+    Route::post('/logout', [LoginApiController::class, 'logout']);
+    Route::get('/auth/check', [LoginApiController::class, 'checkAuth']);
 });
 
 // ============================================================
 // 🔑 TOKEN-BASED AUTH (Untuk Mobile/Postman)
 // ============================================================
-// Menggunakan Sanctum token untuk autentikasi via API
-// Cocok untuk mobile app, Postman, atau integrasi dengan sistem lain
-// ============================================================
-Route::post('/sanctum/login', [LoginController::class, 'apiLoginSanctum'])->name('api.sanctum.login');
-Route::post('/sanctum/register', [LoginController::class, 'apiRegisterSanctum'])->name('api.sanctum.register');
-Route::post('/sanctum/logout', [LoginController::class, 'apiLogoutSanctum'])->middleware('auth:sanctum')->name('api.sanctum.logout');
-Route::get('/sanctum/auth/check', [LoginController::class, 'apiCheckAuthSanctum'])->middleware('auth:sanctum')->name('api.sanctum.auth.check');
+Route::post('/sanctum/login', [LoginApiController::class, 'loginSanctum']);
+// 🔥 HAPUS ROUTE INI KARENA METHOD SUDAH DIHAPUS!
+// Route::post('/sanctum/register', [RegisterApiController::class, 'registerSanctum']);
+
+Route::post('/sanctum/logout', [LoginApiController::class, 'logoutSanctum'])->middleware('auth:sanctum');
+Route::get('/sanctum/auth/check', [LoginApiController::class, 'checkAuthSanctum'])->middleware('auth:sanctum');
 
 // ================================================================
 // 3️⃣ PROTECTED API (MEMERLUKAN TOKEN)
-// ================================================================
-// Semua endpoint di bawah ini membutuhkan token Sanctum yang valid.
-// Token dikirim melalui header: Authorization: Bearer {token}
 // ================================================================
 
 Route::middleware('auth:sanctum')->group(function () {
     
     // ============================================================
     // 👤 USER PROFILE
-    // ============================================================
-    // Mendapatkan data pengguna yang sedang login
     // ============================================================
     Route::get('/user', function () {
         return response()->json(auth()->user());
@@ -145,67 +96,48 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================================
     // 📊 DASHBOARD API
     // ============================================================
-    // Endpoint untuk menampilkan data di halaman dashboard
-    // ============================================================
-    Route::get('/dashboard/stats', [DashboardController::class, 'apiStats']);           // Statistik dashboard
-    Route::get('/dashboard/uptime', [DashboardController::class, 'apiUptime']);         // Data uptime
-    Route::get('/dashboard/uptime-chart', [DashboardController::class, 'apiUptimeChart']); // Chart uptime
-    Route::get('/dashboard/smoke-chart', [DashboardController::class, 'apiSmokeChart']);   // Chart smoke detector
-    Route::get('/dashboard/esp-status', [DashboardController::class, 'apiEspStatus']);     // Status ESP
+    Route::get('/dashboard/stats', [DashboardApiController::class, 'stats']);
+    Route::get('/dashboard/uptime', [DashboardApiController::class, 'uptime']);
+    Route::get('/dashboard/uptime-chart', [DashboardApiController::class, 'uptimeChart']);
+    Route::get('/dashboard/smoke-chart', [DashboardApiController::class, 'smokeChart']);
+    Route::get('/dashboard/esp-status', [DashboardApiController::class, 'espStatus']);
 
     // ============================================================
-    // 🖥️ SERVICES API (CRUD Service Monitoring)
+    // 🖥️ SERVICES API (CRUD)
     // ============================================================
-    // Mengelola service yang dimonitoring (PING / HTTP)
-    // ============================================================
+    Route::get('/services', [ServiceApiController::class, 'index']);
+    Route::get('/services/{id}', [ServiceApiController::class, 'show']);
+    Route::post('/services', [ServiceApiController::class, 'store']);
+    Route::put('/services/{id}', [ServiceApiController::class, 'update']);
+    Route::delete('/services/{id}', [ServiceApiController::class, 'destroy']);
     
-    // 📋 CRUD Services
-    Route::get('/services', [ServiceController::class, 'apiIndex']);                    // Daftar semua service
-    Route::get('/services/{id}', [ServiceController::class, 'apiShow']);                // Detail satu service
-    Route::post('/services', [ServiceController::class, 'apiStore']);                   // Tambah service baru
-    Route::put('/services/{id}', [ServiceController::class, 'apiUpdate']);              // Update service
-    Route::delete('/services/{id}', [ServiceController::class, 'apiDestroy']);          // Hapus service
-    
-    // 🔍 Search
-    Route::get('/services/search', [ServiceController::class, 'apiSearch']);            // Cari service
-    
-    // ⚡ Service Actions
-    Route::post('/services/check-all', [ServiceController::class, 'apiCheckAll']);      // Cek semua service sekaligus
-    Route::post('/services/{id}/check', [ServiceController::class, 'apiCheck']);        // Cek satu service
-    Route::get('/services/{id}/logs', [ServiceController::class, 'apiLogs']);           // Log service tertentu
-    Route::get('/services/{id}/detail', [ServiceController::class, 'apiDetail']);       // Detail lengkap
-    Route::get('/services/{id}/download-report', [ServiceController::class, 'apiDownloadReport']); // Download laporan
+    Route::get('/services/search', [ServiceApiController::class, 'search']);
+    Route::post('/services/{id}/check', [ServiceApiController::class, 'check']);
+    Route::get('/services/{id}/logs', [ServiceApiController::class, 'logs']);
+    Route::get('/services/{id}/detail', [ServiceApiController::class, 'detail']);
+    Route::get('/services/{id}/download-report', [ServiceApiController::class, 'downloadReport']);
 
     // ============================================================
-    // 📞 CONTACTS API (Manajemen Kontak WhatsApp)
+    // 📞 CONTACTS API
     // ============================================================
-    // Mengelola kontak untuk notifikasi WhatsApp
-    // ============================================================
-    Route::get('/contacts', [ContactController::class, 'apiIndex']);                    // Daftar semua kontak
-    Route::get('/contacts/{id}', [ContactController::class, 'apiShow']);                // Detail kontak
-    Route::post('/contacts', [ContactController::class, 'apiStore']);                   // Tambah kontak baru
-    Route::put('/contacts/{id}', [ContactController::class, 'apiUpdate']);              // Update kontak
-    Route::delete('/contacts/{id}', [ContactController::class, 'apiDestroy']);          // Hapus kontak
-    Route::get('/contacts/search', [ContactController::class, 'apiSearch']);            // Cari kontak
+    Route::get('/contacts', [ContactApiController::class, 'index']);
+    Route::get('/contacts/{id}', [ContactApiController::class, 'show']);
+    Route::post('/contacts', [ContactApiController::class, 'store']);
+    Route::put('/contacts/{id}', [ContactApiController::class, 'update']);
+    Route::delete('/contacts/{id}', [ContactApiController::class, 'destroy']);
+    Route::get('/contacts/search', [ContactApiController::class, 'search']);
 
     // ============================================================
-    // 📋 LOGS API (Riwayat Monitoring)
+    // 📋 LOGS API
     // ============================================================
-    // Mengambil data log dari semua aktivitas monitoring
-    // ============================================================
-    Route::get('/logs', [LogController::class, 'apiIndex']);                            // Semua log
-    Route::get('/logs/service', [LogController::class, 'apiServiceLogs']);              // Log service
-    Route::get('/logs/smoke', [LogController::class, 'apiSmokeLogs']);                  // Log smoke detector
-    Route::get('/logs/service/{id}', [LogController::class, 'apiServiceLogsById']);     // Log service by ID
-    Route::get('/logs/stats', [LogController::class, 'apiStats']);                      // Statistik log
+    Route::get('/logs', [LogApiController::class, 'index']);
+    Route::get('/logs/service', [LogApiController::class, 'serviceLogs']);
+    Route::get('/logs/smoke', [LogApiController::class, 'smokeLogs']);
+    Route::get('/logs/service/{id}', [LogApiController::class, 'serviceLogsById']);
+    Route::get('/logs/stats', [LogApiController::class, 'stats']);
 
     // ============================================================
     // 🔥 SMOKE DETECTOR API (Protected)
     // ============================================================
-    // Endpoint tambahan untuk data detektor asap yang butuh auth
-    // ============================================================
-    Route::get('/smoke/history', [SmokeController::class, 'getHistory']);               // Riwayat lengkap
-    Route::get('/smoke/latest', [SmokeController::class, 'getLatest']);                 // Data terbaru
-    Route::get('/smoke/stats', [SmokeController::class, 'getStats']);                   // Statistik detektor
-    Route::post('/smoke/export', [SmokeController::class, 'export']);                   // Export data
+    Route::post('/smoke/export', [SmokeApiController::class, 'export']);
 });

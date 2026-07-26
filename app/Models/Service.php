@@ -27,6 +27,7 @@ class Service extends Model
         // 🔥 FIELD UNTUK TRACKING INTERVAL
         'last_interval_checked_at',
         'last_interval_status',
+        'last_interval_value',
         'interval_wa_sent_in_this_cycle',
     ];
 
@@ -43,6 +44,7 @@ class Service extends Model
         'wa_interval_minutes' => 'integer',
         'last_interval_checked_at' => 'datetime',
         'last_interval_status' => 'string',
+        'last_interval_value' => 'integer',
         'interval_wa_sent_in_this_cycle' => 'boolean',
     ];
 
@@ -86,6 +88,7 @@ class Service extends Model
         $this->update([
             'last_interval_checked_at' => now(),
             'last_interval_status' => $currentStatus,
+            'last_interval_value' => $this->wa_interval_minutes,
             'interval_wa_sent_in_this_cycle' => false,
         ]);
     }

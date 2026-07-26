@@ -120,11 +120,6 @@ class ServiceMonitorService
         $this->saveResult($service, $oldStatus, $analysis['status'], $code, $time, $analysis['reason'], $analysis['detail'], $analysis['action']);
     }
 
-    /**
-     * ============================================================
-     * CHECK PING - TIMEOUT 5 DETIK
-     * ============================================================
-     */
     private function checkPing(Service $service)
     {
         $oldStatus = $service->last_status;
@@ -146,7 +141,6 @@ class ServiceMonitorService
         $port = isset($parts[1]) ? (int)$parts[1] : null;
         $start = microtime(true);
 
-        // PORT CHECK
         if ($port) {
             if ($port < 1 || $port > 65535) {
                 $time = round(microtime(true) - $start, 2);
@@ -169,7 +163,6 @@ class ServiceMonitorService
             return;
         }
 
-        // CEK DNS
         if (!filter_var($host, FILTER_VALIDATE_IP)) {
             if (!checkdnsrr($host, 'A') && !checkdnsrr($host, 'AAAA')) {
                 $time = round(microtime(true) - $start, 2);
@@ -179,7 +172,6 @@ class ServiceMonitorService
             }
         }
 
-        // EKSEKUSI PING
         $start = microtime(true);
         
         $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
@@ -201,9 +193,6 @@ class ServiceMonitorService
             'output' => $outputString
         ]);
 
-        // ANALISIS HASIL PING
-
-        // 1. Destination Host Unreachable
         if (strpos($outputString, 'Destination host unreachable') !== false ||
             strpos($outputString, 'Host unreachable') !== false ||
             strpos($outputString, 'unreachable') !== false) {
@@ -222,7 +211,6 @@ class ServiceMonitorService
             return;
         }
 
-        // 2. Network is Unreachable
         if (strpos($outputString, 'Network is unreachable') !== false ||
             strpos($outputString, 'network unreachable') !== false) {
             $code = 'NETWORK_UNREACHABLE';
@@ -240,7 +228,6 @@ class ServiceMonitorService
             return;
         }
 
-        // 3. Request Timed Out
         if (strpos($outputString, 'Request timed out') !== false ||
             strpos($outputString, 'timeout') !== false ||
             strpos($outputString, 'Timed out') !== false) {
@@ -279,7 +266,6 @@ class ServiceMonitorService
             return;
         }
 
-        // 4. TTL Expired
         if (strpos($outputString, 'TTL expired') !== false ||
             strpos($outputString, 'TTL Exceeded') !== false) {
             $code = 'TTL_EXPIRED';
@@ -297,7 +283,6 @@ class ServiceMonitorService
             return;
         }
 
-        // 5. General Failure (Windows)
         if (strpos($outputString, 'General failure') !== false) {
             $code = 'GENERAL_FAILURE';
             $this->saveResult(
@@ -314,7 +299,6 @@ class ServiceMonitorService
             return;
         }
 
-        // 6. Destination Net Unreachable
         if (strpos($outputString, 'Destination net unreachable') !== false) {
             $code = 'NET_UNREACHABLE';
             $this->saveResult(
@@ -331,7 +315,6 @@ class ServiceMonitorService
             return;
         }
 
-        // 7. Destination Port Unreachable
         if (strpos($outputString, 'Destination port unreachable') !== false) {
             $code = 'PORT_UNREACHABLE';
             $this->saveResult(
@@ -348,7 +331,6 @@ class ServiceMonitorService
             return;
         }
 
-        // 8. Packet Loss
         preg_match('/(\d+)%\s*loss/i', $outputString, $lossMatches);
         if (isset($lossMatches[1])) {
             $loss = intval($lossMatches[1]);
@@ -385,7 +367,6 @@ class ServiceMonitorService
             }
         }
 
-        // 9. Unknown Host / DNS Error
         if (strpos($outputString, 'could not find host') !== false ||
             strpos($outputString, 'Unknown host') !== false) {
             $code = 'DNS_ERROR';
@@ -403,7 +384,6 @@ class ServiceMonitorService
             return;
         }
 
-        // 10. SUCCESS
         if ($resultCode === 0) {
             preg_match_all('/(?:time[=:]\s*)(\d+\.?\d*)\s*ms/i', $outputString, $matches);
             
@@ -448,7 +428,6 @@ class ServiceMonitorService
             return;
         }
 
-        // 11. DEFAULT
         $code = 'PING_FAILED';
         $this->saveResult(
             $service, 
@@ -646,7 +625,7 @@ class ServiceMonitorService
 
     /**
      * ============================================================
-     * SAVE RESULT
+     * SAVE RESULT - UPDATED WITH is_status_change & previous_status
      * ============================================================
      */
     private function saveResult($service, $oldStatus, $status, $code, $time, $reason, $detail, $action)
@@ -656,7 +635,6 @@ class ServiceMonitorService
             $code = 'N/A';
         }
 
-        // UPDATE DATA SERVICE
         $service->update([
             'last_status' => $status,
             'last_code' => $code,
@@ -665,144 +643,219 @@ class ServiceMonitorService
             'last_check_at' => now(),
         ]);
 
-        // CEK APAKAH STATUS BERUBAH
         $statusChanged = ($oldStatus != $status);
+        $isFirstCheck = empty($oldStatus) || $oldStatus === 'UNKNOWN' || empty($service->last_wa_sent_at);
+
+        // ✅ SELALU SIMPAN LOG (BUKAN HANYA SAAT STATUS BERUBAH)
+        // Biar ada history lengkap, bukan cuma perubahan status
+        ServiceLog::create([
+            'service_id' => $service->id,
+            'status' => $status,
+            'response_code' => $code,
+            'response_time' => $time,
+            'message' => $detail,
+            'action' => $action,
+            'checked_at' => now(),
+            'is_status_change' => $statusChanged,   // ✅ TAMBAHKAN INI
+            'previous_status' => $oldStatus,        // ✅ TAMBAHKAN INI
+        ]);
 
         if ($statusChanged) {
-            ServiceLog::create([
-                'service_id' => $service->id,
-                'status' => $status,
-                'response_code' => $code,
-                'response_time' => $time,
-                'message' => $detail,
-                'action' => $action,
-                'checked_at' => now(),
-            ]);
-            Log::info("LOG BARU: {$service->name} {$oldStatus} → {$status}, Code: {$code}");
+            Log::info("🔄 STATUS BERUBAH: {$service->name} {$oldStatus} → {$status}, Code: {$code}");
         } else {
-            $lastLog = ServiceLog::where('service_id', $service->id)
-                ->latest()
-                ->first();
-            
-            if ($lastLog) {
-                $oldCode = $lastLog->response_code;
-                $lastLog->update([
-                    'response_code' => $code,
-                    'response_time' => $time,
-                    'message' => $detail,
-                    'action' => $action,
-                    'checked_at' => now(),
-                ]);
-                Log::info("LOG DIUPDATE: {$service->name} status tetap {$status}, code: {$oldCode} → {$code}");
-            } else {
-                ServiceLog::create([
-                    'service_id' => $service->id,
-                    'status' => $status,
-                    'response_code' => $code,
-                    'response_time' => $time,
-                    'message' => $detail,
-                    'action' => $action,
-                    'checked_at' => now(),
-                ]);
-                Log::info("LOG BARU (force): {$service->name} {$status}, Code: {$code}");
-            }
+            Log::info("📝 LOG TERSIMPAN: {$service->name} status tetap {$status}, Code: {$code}");
         }
 
-        // FIRST CHECK
-        $isFirstCheck = empty($service->last_wa_sent_at);
-        
-        if ($isFirstCheck) {
-            Log::info("FIRST CHECK: {$service->name}");
-            
-            if ($status === 'DOWN' || $status === 'WARNING') {
-                $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
-                $service->update([
-                    'last_wa_sent_at' => now(),
-                    'last_notified_status' => $status,
-                    'last_interval_status' => $status,
-                    'last_interval_checked_at' => now(),
-                ]);
-                Log::info("First check WA: {$service->name} → {$status}");
-            } else {
-                Log::info("First check UP: {$service->name} - Tidak perlu notifikasi");
-                $service->update([
-                    'last_wa_sent_at' => now(),
-                    'last_notified_status' => 'UP',
-                    'last_interval_status' => 'UP',
-                    'last_interval_checked_at' => now(),
-                ]);
-            }
-            
-            return;
-        }
+        $this->handleIntervalLogic($service, $oldStatus, $status, $code, $time, $reason, $detail, $action, $isFirstCheck);
+    }
 
-        // WHATSAPP INTERVAL
+    /**
+     * ============================================================
+     * 🔄 HANDLE INTERVAL LOGIC
+     * ============================================================
+     * LOGIKA:
+     * 1. FIRST CHECK: Jika status DOWN/WARNING → LANGSUNG KIRIM WA
+     * 2. Timer TIDAK RESET saat status berubah di tengah interval
+     * 3. Status awal TETAP dari awal interval
+     * 4. Interval berubah → Timer RESET ke 0, status awal TETAP
+     * 5. DOWN→DOWN atau UP→UP = TIDAK KIRIM
+     * 6. DOWN→UP atau UP→DOWN = KIRIM
+     * ============================================================
+     */
+    private function handleIntervalLogic($service, $oldStatus, $status, $code, $time, $reason, $detail, $action, $isFirstCheck = false)
+    {
         $interval = $service->wa_interval_minutes ?? 0;
         
-        if ($interval == 0) {
-            if ($status === 'DOWN' || $status === 'WARNING') {
-                $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
-                $service->update([
-                    'last_wa_sent_at' => now(),
-                    'last_notified_status' => $status,
-                ]);
-                Log::info("WA terkirim (interval 0): {$service->name} → {$status}");
-            }
-            return;
-        }
-
-        $lastIntervalCheck = $service->last_interval_checked_at;
+        Log::info("🔍 INTERVAL CHECK: {$service->name} | Interval: {$interval} menit | Status: {$status} | Old: {$oldStatus} | First: {$isFirstCheck}");
         
-        if (empty($lastIntervalCheck)) {
-            Log::info("Interval pertama: {$service->name}, status awal: {$status}");
+        // FIRST CHECK: Service baru DOWN/WARNING → LANGSUNG KIRIM
+        if ($isFirstCheck && ($status === 'DOWN' || $status === 'WARNING')) {
+            Log::info("🚨 FIRST CHECK: Service baru dengan status {$status} - LANGSUNG KIRIM WA");
+            $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
+            $service->update(['last_wa_sent_at' => now()]);
+            
             $service->update([
                 'last_interval_status' => $status,
                 'last_interval_checked_at' => now(),
+                'interval_wa_sent_in_this_cycle' => 1,
             ]);
+            return;
+        }
+        
+        // FIRST CHECK: Service baru UP → TIDAK KIRIM
+        if ($isFirstCheck && $status === 'UP') {
+            Log::info("⏭️ FIRST CHECK: Service baru dengan status UP - TIDAK KIRIM WA");
+            $service->update([
+                'last_interval_status' => $status,
+                'last_interval_checked_at' => now(),
+                'interval_wa_sent_in_this_cycle' => 0,
+                'last_wa_sent_at' => now(),
+            ]);
+            return;
+        }
+
+        // INTERVAL = 0 → KIRIM LANGSUNG
+        if ($interval == 0) {
+            Log::info("⏭️ Interval 0 - Kirim WA langsung saat status berubah");
             
-            if ($status === 'DOWN' || $status === 'WARNING') {
-                $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
-                $service->update([
-                    'last_wa_sent_at' => now(),
-                    'last_notified_status' => $status,
-                ]);
-                Log::info("WA terkirim (awal interval): {$service->name} → {$status}");
+            if ($oldStatus !== $status) {
+                if ($status === 'UP') {
+                    $this->sendRestoredAlert($service, $oldStatus, $code, $time, $detail);
+                } else {
+                    $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
+                }
+                $service->update(['last_wa_sent_at' => now()]);
+                Log::info("✅ WA terkirim (interval 0): {$service->name} {$oldStatus} → {$status}");
             }
             return;
         }
 
+        // ============================================================
+        // INTERVAL > 0
+        // ============================================================
+        
+        $lastIntervalCheck = $service->last_interval_checked_at;
+        $lastIntervalStatus = $service->last_interval_status;
+        $lastIntervalValue = $service->last_interval_value ?? 0;
+        
+        // 🔥 CEK PERUBAHAN INTERVAL
+        if ($lastIntervalValue != $interval) {
+            Log::info("🔄 INTERVAL BERUBAH: {$lastIntervalValue} → {$interval} menit - RESET TIMER (status awal TETAP)");
+            
+            $service->update([
+                'last_interval_checked_at' => now(),
+                'last_interval_value' => $interval,
+                'interval_wa_sent_in_this_cycle' => 0,
+                // ❌ JANGAN update last_interval_status! Status awal TETAP dari awal interval!
+            ]);
+            return;
+        }
+        
+        // INISIALISASI PERTAMA KALI
+        if (empty($lastIntervalCheck) || empty($lastIntervalStatus)) {
+            Log::info("🔄 INTERVAL INIT: {$service->name} | Status awal: {$status}");
+            $service->update([
+                'last_interval_status' => $status,
+                'last_interval_checked_at' => now(),
+                'last_interval_value' => $interval,
+                'interval_wa_sent_in_this_cycle' => 0,
+            ]);
+            return;
+        }
+
+        // HITUNG SELISIH WAKTU (TIMER TETAP BERJALAN)
         $lastCheck = Carbon::parse($lastIntervalCheck);
         $minutesSinceLastCheck = $lastCheck->diffInRealMinutes(now());
         
+        Log::info("⏱️ TIMER: {$minutesSinceLastCheck}/{$interval} menit | Status awal: {$lastIntervalStatus} | Status skrg: {$status}");
+        
+        // BELUM MENCAPAI INTERVAL → TIDAK KIRIM
         if ($minutesSinceLastCheck < $interval) {
-            Log::info("Interval belum tercapai ({$minutesSinceLastCheck}/{$interval} menit), status: {$status}");
+            Log::info("⏳ Interval belum tercapai ({$minutesSinceLastCheck}/{$interval} menit) - TIDAK KIRIM WA");
+            
+            if ($oldStatus !== $status) {
+                Log::info("📝 Status berubah di tengah interval: {$oldStatus} → {$status} (DIABAIKAN)");
+            }
             return;
         }
 
-        $intervalStartStatus = $service->last_interval_status ?? $oldStatus;
+        // ============================================================
+        // INTERVAL TERCAPAI!
+        // ============================================================
+        Log::info("🎯 INTERVAL REACHED! {$service->name} | Awal: {$lastIntervalStatus} | Akhir: {$status}");
         
-        Log::info("Interval reached! Start: {$intervalStartStatus}, Current: {$status}");
-        
-        if ($status !== $intervalStartStatus) {
-            Log::info("WA terkirim: {$intervalStartStatus} → {$status} (interval {$interval} menit)");
-            $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
+        if ($status !== $lastIntervalStatus) {
+            // STATUS BERUBAH → KIRIM WA
+            Log::info("✅ STATUS BERUBAH: {$lastIntervalStatus} → {$status} (KIRIM WA)");
+            
+            if ($status === 'UP') {
+                $this->sendRestoredAlert($service, $lastIntervalStatus, $code, $time, $detail);
+            } else {
+                $this->sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action);
+            }
+            
             $service->update([
                 'last_wa_sent_at' => now(),
-                'last_notified_status' => $status,
                 'last_interval_status' => $status,
                 'last_interval_checked_at' => now(),
+                'last_interval_value' => $interval,
+                'interval_wa_sent_in_this_cycle' => 1,
             ]);
+            Log::info("✅ WA terkirim: {$service->name} {$lastIntervalStatus} → {$status}");
         } else {
-            Log::info("Skip WA: status tetap {$status} (sama dengan awal interval)");
+            // STATUS SAMA → TIDAK KIRIM
+            Log::info("⏭️ Status tetap {$status} (sama dengan awal interval) - TIDAK KIRIM WA");
+            
             $service->update([
                 'last_interval_checked_at' => now(),
+                'last_interval_value' => $interval,
+                'interval_wa_sent_in_this_cycle' => 0,
             ]);
+            Log::info("⏱️ Timer direset untuk interval berikutnya");
         }
     }
 
     /**
      * ============================================================
-     * KIRIM WHATSAPP - FORMAT RAPIH & JELAS
+     * 🟢 KIRIM WA SERVICE NORMAL KEMBALI (RESTORED)
+     * ============================================================
+     */
+    private function sendRestoredAlert($service, $oldStatus, $code, $time, $detail)
+    {
+        $contacts = Contact::where('is_active', true)->get();
+        if ($contacts->isEmpty()) {
+            Log::warning('Tidak ada kontak aktif untuk kirim WA restored alert');
+            return;
+        }
+
+        $newline = "\n";
+        $statusText = $oldStatus == 'DOWN' ? 'DOWN' : 'WARNING';
+
+        $message = "🟢 SERVICE NORMAL KEMBALI" . $newline . $newline;
+        $message .= "Nama   : " . $service->name . $newline;
+        $message .= "Target : " . $service->target . $newline;
+        $message .= $newline;
+        $message .= "Status : 🟢 UP (sebelumnya " . $statusText . ")" . $newline;
+        $message .= "Kode   : " . $code . $newline;
+        $message .= "Waktu  : " . $time . " detik" . $newline;
+        
+        if (!empty($detail) && $detail != '-') {
+            $message .= $newline . "Detail:" . $newline;
+            $message .= $detail . $newline;
+        }
+        
+        $message .= $newline . "✅ Service telah kembali normal dan dapat diakses." . $newline;
+        $message .= $newline . "🕐 " . now()->format('d-m-Y H:i:s') . " WIB";
+
+        foreach ($contacts as $contact) {
+            $result = FonnteService::send($contact->phone, $message);
+            Log::info($result ? "✅ WA RESTORED ke: {$contact->phone} - {$service->name}" : "❌ Gagal WA RESTORED ke: {$contact->phone}");
+        }
+    }
+
+    /**
+     * ============================================================
+     * ⚠️ KIRIM WHATSAPP (DOWN / WARNING)
      * ============================================================
      */
     private function sendWhatsappAlert($service, $status, $code, $time, $reason, $detail, $action)
@@ -813,54 +866,37 @@ class ServiceMonitorService
             return;
         }
 
-        // LINE PEMISAH
-        $separator = "────────────────────";
-        $bold = "*";
         $newline = "\n";
 
-        // STATUS DENGAN JUDUL YANG JELAS
         if ($status == 'DOWN') {
             $judul = "🔴 SERVICE DOWN";
             $statusIcon = "🔴";
             $statusText = "DOWN";
-        } elseif ($status == 'WARNING') {
+        } else {
             $judul = "🟡 SERVICE WARNING";
             $statusIcon = "🟡";
             $statusText = "WARNING";
-        } else {
-            $judul = "🟢 SERVICE NORMAL";
-            $statusIcon = "🟢";
-            $statusText = "UP";
         }
 
-        // FORMAT PESAN
-        $message = $separator . $newline;
-        $message .= $bold . $judul . $bold . $newline;
-        $message .= $separator . $newline . $newline;
-        
-        $message .= $bold . "Nama" . $bold . "   : " . $service->name . $newline;
-        $message .= $bold . "Target" . $bold . " : " . $service->target . $newline;
-        $message .= $separator . $newline;
-        
-        $message .= $bold . "Status" . $bold . " : " . $statusIcon . " " . $statusText . $newline;
-        $message .= $bold . "Kode" . $bold . "   : " . $code . $newline;
-        $message .= $bold . "Waktu" . $bold . "  : " . $time . " detik" . $newline;
+        $message = $judul . $newline . $newline;
+        $message .= "Nama   : " . $service->name . $newline;
+        $message .= "Target : " . $service->target . $newline;
+        $message .= $newline;
+        $message .= "Status : " . $statusIcon . " " . $statusText . $newline;
+        $message .= "Kode   : " . $code . $newline;
+        $message .= "Waktu  : " . $time . " detik" . $newline;
         
         if (!empty($detail) && $detail != '-') {
-            $message .= $separator . $newline;
-            $message .= $bold . "📝 Detail" . $bold . $newline;
+            $message .= $newline . "Detail:" . $newline;
             $message .= $detail . $newline;
         }
         
         if (!empty($action) && $action != '-' && $action != 'Service dalam kondisi baik, tidak perlu tindakan') {
-            $message .= $separator . $newline;
-            $message .= $bold . "🔧 Tindakan" . $bold . $newline;
+            $message .= $newline . "Tindakan:" . $newline;
             $message .= $action . $newline;
         }
         
-        $message .= $separator . $newline;
-        $message .= "🕐 " . now()->format('d-m-Y H:i:s') . " WIB" . $newline;
-        $message .= $separator;
+        $message .= $newline . "🕐 " . now()->format('d-m-Y H:i:s') . " WIB";
 
         foreach ($contacts as $contact) {
             $result = FonnteService::send($contact->phone, $message);
