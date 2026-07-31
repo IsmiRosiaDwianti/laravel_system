@@ -279,7 +279,7 @@ class ServiceMonitorService
 
     /**
      * ============================================================
-     * 🔍 CHECK HTTP (DIPERBAIKI!)
+     * 🔍 CHECK HTTP - FIXED REDIRECT HANDLING
      * ============================================================
      */
     private function checkHttp(Service $service)
@@ -293,29 +293,42 @@ class ServiceMonitorService
             $url = $this->normalizeUrl($service->target);
             $start = microtime(true);
 
-            // 🔥 PERBAIKAN 1: Tambahkan Header User-Agent (Cegah 403)
-            // 🔥 PERBAIKAN 2: Hapus ->withoutRedirecting() (Agar mengikuti redirect)
-            $response = Http::withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
-                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language' => 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-                ])
-                ->timeout(20)
+            // 🔥 FIX: Hapus withoutRedirecting() - biarkan HTTP client mengikuti redirect
+            $response = Http::timeout(20)
                 ->connectTimeout(12)
-                ->get($url);
+                ->get($url);  // ← withoutRedirecting() dihapus
 
             $time = round(microtime(true) - $start, 2);
             $code = $response->status();
-            $body = $response->body();
+            
+            // Ambil URL akhir setelah redirect (jika ada)
+            $effectiveUrl = $url;
+            try {
+                // Coba dapatkan URL efektif
+                $effectiveUrl = (string) $response->effectiveUri();
+            } catch (\Exception $e) {
+                // Jika tidak bisa mendapatkan effectiveUri, gunakan URL asli
+                $effectiveUrl = $url;
+            }
 
-            Log::info("HTTP Response {$service->name}: code={$code}, time={$time}s");
+            Log::info("HTTP Response {$service->name}: code={$code}, time={$time}s, effective_url={$effectiveUrl}");
 
-            // 🔥 PERBAIKAN 3: Analisis Kode yang Lebih Akurat (Termasuk Redirect)
-            $analysis = $this->analyzeResponseByCode($code, $body, $time, $url, $response->effectiveUri());
+            // 🔥 FIX: Deteksi redirect dan log untuk info
+            if ($code >= 300 && $code < 400) {
+                $redirectLocation = $response->header('Location');
+                Log::info("🔀 REDIRECT DETECTED: {$service->name} → {$url} → {$redirectLocation} (Code: {$code})");
+                
+                // Cek apakah URL asli berbeda dengan URL akhir
+                if ($url !== $effectiveUrl) {
+                    Log::info("📍 URL AKHIR: {$effectiveUrl} (berbeda dari asli: {$url})");
+                }
+            }
+
+            // FIXED: Pass $time to analyzeResponseByCode
+            $analysis = $this->analyzeResponseByCode($code, $response->body(), $time, $effectiveUrl);
             Log::info("Analysis {$service->name}: " . json_encode($analysis));
 
         } catch (ConnectionException $e) {
-            // 🔥 PERBAIKAN 4: Waktu tetap terhitung saat Error
             $time = round(microtime(true) - $start, 2);
             $code = 'TIMEOUT';
             $analysis = [
@@ -327,8 +340,7 @@ class ServiceMonitorService
             Log::error("Connection timeout {$service->name}: " . $e->getMessage());
             
         } catch (\Exception $e) {
-            // 🔥 PERBAIKAN 5: Waktu tetap terhitung saat Error
-            $time = round(microtime(true) - $start, 2);
+            $time = 0;
             $code = 'ERROR';
             $analysis = $this->analyzeException($e->getMessage());
             Log::error("HTTP Error {$service->name}: " . $e->getMessage());
@@ -583,33 +595,11 @@ class ServiceMonitorService
 
     /**
      * ============================================================
-     * 📊 ANALISIS RESPONSE (DIPERBAIKI!)
+     * 📊 ANALISIS RESPONSE - FIXED REDIRECT 301
      * ============================================================
      */
-    private function analyzeResponseByCode($code, $body, $time, $originalUrl = null, $finalUrl = null)
+    private function analyzeResponseByCode($code, $body, $time, $effectiveUrl = null)
     {
-        // 🔥 PERBAIKAN: Deteksi Redirect Berbahaya
-        if ($code >= 300 && $code < 400) {
-            if ($originalUrl && $finalUrl && $originalUrl !== (string)$finalUrl) {
-                // Jika URL berubah (terjadi redirect), kita cek apakah konten di tujuan kosong?
-                if (empty(trim($body))) {
-                    return [
-                        'status' => 'WARNING',
-                        'reason' => 'REDIRECT_EMPTY_BODY',
-                        'detail' => "Redirect dari {$originalUrl} ke {$finalUrl} tapi konten tujuan kosong",
-                        'action' => 'Periksa apakah redirect mengarah ke halaman error atau maintenance'
-                    ];
-                }
-            }
-            // Jika redirect sukses dan ada konten, kita anggap UP (akses masih bisa)
-            return [
-                'status' => 'UP',
-                'reason' => 'HTTP_' . $code,
-                'detail' => "Redirect ({$code}) - Pengguna diarahkan ke halaman baru, akses masih bisa",
-                'action' => in_array($code, [301, 308]) ? 'Update URL endpoint di monitoring (redirect permanen)' : 'Tidak perlu tindakan (redirect sementara)'
-            ];
-        }
-
         if (empty($body) || trim($body) === '') {
             Log::warning("Response kosong: code={$code}, service body empty");
             
@@ -650,11 +640,58 @@ class ServiceMonitorService
             }
         }
 
-        return $this->analyzeResponse($code, $time);
+        // FIXED: Pass $time and $effectiveUrl to analyzeResponse
+        return $this->analyzeResponse($code, $time, $effectiveUrl);
     }
 
-    private function analyzeResponse($code, $time)
+    /**
+     * ============================================================
+     * 📊 ANALYZE RESPONSE - FIXED REDIRECT 301
+     * ============================================================
+     */
+    private function analyzeResponse($code, $time, $effectiveUrl = null)
     {
+        // ============================================================
+        // 🔥 FIX: REDIRECT 301 & 308 - Status UP dengan informasi tambahan
+        // ============================================================
+        if ($code >= 300 && $code < 400) {
+            $redirectCodes = [
+                300 => 'Multiple Choices',
+                301 => 'Permanent Redirect',
+                302 => 'Temporary Redirect',
+                303 => 'See Other',
+                307 => 'Temporary Redirect',
+                308 => 'Permanent Redirect'
+            ];
+
+            $actionMessages = [
+                300 => '🔧 Periksa pilihan resource yang tersedia',
+                301 => '🔧 Update URL endpoint ke target redirect permanen',
+                302 => '🔧 Cek apakah redirect sementara masih diperlukan',
+                303 => '🔧 Periksa konfigurasi redirect (method POST → GET)',
+                307 => '🔧 Cek apakah redirect sementara masih diperlukan',
+                308 => '🔧 Update URL endpoint ke target redirect permanen'
+            ];
+
+            $codeName = $redirectCodes[$code] ?? 'Redirect';
+            $detailMessage = "{$codeName} - Service masih bisa diakses";
+            
+            // Tambahkan informasi URL efektif jika ada
+            if ($effectiveUrl && $effectiveUrl !== '') {
+                $detailMessage .= " | Redirect ke: {$effectiveUrl}";
+            }
+
+            return [
+                'status' => 'UP',
+                'reason' => 'HTTP_' . $code,
+                'detail' => $detailMessage . ' - Pengguna tetap bisa akses',
+                'action' => $actionMessages[$code] ?? 'Periksa konfigurasi redirect jika mengganggu akses'
+            ];
+        }
+
+        // ============================================================
+        // 200 SUCCESS
+        // ============================================================
         if ($code >= 200 && $code < 300) {
             if ($time > 8) {
                 return [
@@ -673,17 +710,20 @@ class ServiceMonitorService
             ];
         }
 
+        // ============================================================
+        // 400 CLIENT ERRORS
+        // ============================================================
         if ($code >= 400 && $code < 500) {
             $clientErrors = [
                 400 => ['status' => 'WARNING', 'reason' => 'HTTP_400', 'detail' => 'Bad Request - Pengguna bisa akses dengan perbaikan', 'action' => 'Periksa format request yang dikirim'],
-                405 => ['status' => 'WARNING', 'reason' => 'HTTP_405', 'detail' => 'Method HTTP tidak diizinkan', 'action' => 'Ganti method HTTP yang digunakan'],
-                429 => ['status' => 'WARNING', 'reason' => 'HTTP_429', 'detail' => 'Too Many Requests - Rate limit', 'action' => 'Kurangi frekuensi request, tunggu beberapa saat'],
                 401 => ['status' => 'UP', 'reason' => 'HTTP_401', 'detail' => 'Unauthorized - Pengguna perlu login - Masih bisa akses', 'action' => 'Pastikan kredensial login benar'],
                 403 => ['status' => 'UP', 'reason' => 'HTTP_403', 'detail' => 'Forbidden - Pengguna perlu izin - Masih bisa akses', 'action' => 'Periksa izin akses pengguna'],
                 404 => ['status' => 'DOWN', 'reason' => 'HTTP_404', 'detail' => 'Halaman tidak ditemukan - Pengguna tidak bisa akses', 'action' => 'Periksa URL endpoint, mungkin sudah berubah'],
+                405 => ['status' => 'WARNING', 'reason' => 'HTTP_405', 'detail' => 'Method HTTP tidak diizinkan', 'action' => 'Ganti method HTTP yang digunakan'],
                 408 => ['status' => 'DOWN', 'reason' => 'HTTP_408', 'detail' => 'Request Timeout - Pengguna tidak bisa akses', 'action' => 'Cek performa server, mungkin overload'],
                 410 => ['status' => 'DOWN', 'reason' => 'HTTP_410', 'detail' => 'Gone - Resource sudah tidak tersedia', 'action' => 'Update URL atau hapus monitoring jika sudah tidak digunakan'],
                 415 => ['status' => 'DOWN', 'reason' => 'HTTP_415', 'detail' => 'Unsupported Media Type', 'action' => 'Periksa header Content-Type yang dikirim'],
+                429 => ['status' => 'WARNING', 'reason' => 'HTTP_429', 'detail' => 'Too Many Requests - Rate limit', 'action' => 'Kurangi frekuensi request, tunggu beberapa saat'],
             ];
 
             if (isset($clientErrors[$code])) {
@@ -698,6 +738,9 @@ class ServiceMonitorService
             ];
         }
 
+        // ============================================================
+        // 500 SERVER ERRORS
+        // ============================================================
         if ($code >= 500 && $code < 600) {
             $serverErrors = [
                 500 => 'Internal Server Error',
@@ -828,7 +871,6 @@ class ServiceMonitorService
             Log::info("⏭️ NO CHANGE: {$service->name} tetap {$status} (Code: {$code})");
         }
 
-        // PANGGIL handleIntervalLogic SETIAP KALI!
         $isFirstCheck = empty($oldStatus) || $oldStatus === 'UNKNOWN' || empty($service->last_wa_sent_at);
         $this->handleIntervalLogic($service, $oldStatus, $status, $code, $time, $reason, $detail, $action, $isFirstCheck);
     }

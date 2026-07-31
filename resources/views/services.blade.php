@@ -2904,23 +2904,69 @@ function changeWaInterval(value) {
     window.location.href = url.toString();
 }
 
-// ================= AUTO REFRESH (PERBAIKAN - TANPA KEDIP, MODAL AMAN) =================
+// ================= ⚠️ PERBAIKAN AUTO REFRESH - HANYA SATU TIMER =================
 (function() {
     'use strict';
     
-    var REFRESH_INTERVAL = 30;
+    var REFRESH_INTERVAL = 30; // 30 detik
     var countdownElement = document.getElementById('countdownTimer');
-    var seconds = REFRESH_INTERVAL;
     var isUpdating = false;
-    var refreshTimer = null;
-
-    // 1. FETCH DATA (TIDAK PERNAH DIBATALKAN OLEH MODAL)
-    function fetchLatestData() {
-        if (isUpdating) {
-            console.log('⏸️ Skip refresh - sedang update');
-            return;
+    var remainingSeconds = REFRESH_INTERVAL;
+    var timerRunning = false;
+    var intervalId = null;
+    
+    // 🔥 START TIMER
+    function startTimer() {
+        if (timerRunning) return;
+        timerRunning = true;
+        
+        remainingSeconds = REFRESH_INTERVAL;
+        updateDisplay();
+        
+        // Hapus interval lama
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
         }
         
+        // 🔥 SET INTERVAL SETIAP 1 DETIK
+        intervalId = setInterval(function() {
+            remainingSeconds--;
+            
+            if (remainingSeconds <= 0) {
+                remainingSeconds = REFRESH_INTERVAL;
+                if (!isUpdating) {
+                    fetchLatestData();
+                }
+            }
+            
+            updateDisplay();
+        }, 1000);
+    }
+    
+    // 🔥 UPDATE DISPLAY
+    function updateDisplay() {
+        if (!countdownElement) return;
+        
+        var mins = Math.floor(remainingSeconds / 60);
+        var secs = remainingSeconds % 60;
+        var timeString = mins + ':' + secs.toString().padStart(2, '0');
+        
+        if (countdownElement.textContent !== timeString) {
+            countdownElement.textContent = timeString;
+        }
+        
+        countdownElement.className = 'countdown';
+        if (remainingSeconds <= 5) {
+            countdownElement.classList.add('danger');
+        } else if (remainingSeconds <= 10) {
+            countdownElement.classList.add('warning');
+        }
+    }
+    
+    // 🔥 FETCH DATA DARI SERVER
+    function fetchLatestData() {
+        if (isUpdating) return;
         isUpdating = true;
         
         var currentPage = new URLSearchParams(window.location.search).get('page') || 1;
@@ -2936,36 +2982,51 @@ function changeWaInterval(value) {
             '&sort_by=' + sortBy +
             '&sort_order=' + sortOrder;
         
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() {
+            controller.abort();
+            isUpdating = false;
+        }, 8000);
+        
         fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
-            }
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest', 
+                'Accept': 'application/json', 
+                'Cache-Control': 'no-cache' 
+            },
+            signal: controller.signal
         })
-        .then(function(response) { return response.json(); })
+        .then(function(response) {
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        })
         .then(function(data) {
             if (data.success && data.data) {
-                // 🔥 PERBAIKAN: Update Data Tanpa Menimpa DOM (Smooth)
-                updateDataSmooth(data.data);
+                updateDataBatch(data.data);
                 updateStats(data.data.statistics);
                 updatePaginationInfo(data.data.pagination);
+                console.log('✅ Auto refresh at', new Date().toLocaleTimeString());
             }
         })
         .catch(function(error) {
-            console.log('⚠️ Refresh error:', error.message);
+            if (error.name !== 'AbortError') {
+                console.log('⚠️ Refresh error:', error.message);
+            }
         })
-        .finally(function() {
-            isUpdating = false;
+        .finally(function() { 
+            isUpdating = false; 
         });
     }
-
-    // 2. UPDATE DATA SMOOTH (HANYA MENGUBAH TEKS, TIDAK MENGHAPUS MODAL)
-    function updateDataSmooth(data) {
+    
+    // 🔥 UPDATE DATA
+    function updateDataBatch(data) {
         if (!data || !data.services) return;
+        var services = data.services;
         
-        data.services.forEach(function(service) {
-            // Update Status Badge
+        for (var i = 0; i < services.length; i++) {
+            var service = services[i];
+            
             var badge = document.getElementById('status-' + service.id);
             if (badge) {
                 var status = service.last_status || 'UNKNOWN';
@@ -2974,26 +3035,20 @@ function changeWaInterval(value) {
                 badge.innerHTML = '<span class="status-dot"></span> ' + status;
             }
             
-            // Update Waktu
             var timeEl = document.getElementById('time-' + service.id);
             if (timeEl && service.last_check_at) {
                 var time = service.last_check_at;
                 if (time.includes(' ')) time = time.split(' ')[1];
-                if (timeEl.textContent !== time) {
-                    timeEl.textContent = time;
-                }
+                if (timeEl.textContent !== time) timeEl.textContent = time;
             }
             
-            // Update Uptime
             var rowEl = document.querySelector('#tableBody tr[data-service-id="' + service.id + '"]');
             if (rowEl) {
                 var uptimeValue = rowEl.querySelector('.uptime-value');
                 var uptimeBar = rowEl.querySelector('.uptime-fill');
-                
                 if (uptimeValue && service.uptime !== undefined) {
                     var uptime = Number(service.uptime).toFixed(2);
                     var uptimeColor = uptime >= 70 ? 'green' : (uptime >= 50 ? 'yellow' : 'red');
-                    
                     if (uptimeValue.textContent !== uptime + '%') {
                         uptimeValue.textContent = uptime + '%';
                         uptimeValue.className = 'uptime-value ' + uptimeColor;
@@ -3004,67 +3059,57 @@ function changeWaInterval(value) {
                     }
                 }
             }
-        });
+        }
     }
-
+    
     function updateStats(stats) {
         if (!stats) return;
-        var totalEl = document.querySelector('.stat-number.purple');
-        var upEl = document.querySelector('.stat-number.green');
-        var warningEl = document.querySelector('.stat-number.yellow');
-        var downEl = document.querySelector('.stat-number.red');
-        
-        if (totalEl && stats.total !== undefined) totalEl.textContent = stats.total;
-        if (upEl && stats.up !== undefined) upEl.textContent = stats.up;
-        if (warningEl && stats.warning !== undefined) warningEl.textContent = stats.warning;
-        if (downEl && stats.down !== undefined) downEl.textContent = stats.down;
+        var map = {
+            '.stat-number.purple': stats.total,
+            '.stat-number.green': stats.up,
+            '.stat-number.yellow': stats.warning,
+            '.stat-number.red': stats.down
+        };
+        for (var selector in map) {
+            var el = document.querySelector(selector);
+            if (el && map[selector] !== undefined && el.textContent != map[selector]) {
+                el.textContent = map[selector];
+            }
+        }
     }
-
+    
     function updatePaginationInfo(pagination) {
         if (!pagination) return;
         var infoEl = document.getElementById('tableInfo');
         if (infoEl) {
             var newHtml = 'Menampilkan <strong>' + (pagination.from || 0) + '</strong> - <strong>' + (pagination.to || 0) + '</strong> dari <strong>' + (pagination.total || 0) + '</strong> service';
-            if (infoEl.innerHTML !== newHtml) {
-                infoEl.innerHTML = newHtml;
-            }
+            if (infoEl.innerHTML !== newHtml) infoEl.innerHTML = newHtml;
         }
     }
-
-    // 3. COUNTDOWN (JALAN TERUS MENERUS, TIDAK MACET)
-    function updateCountdown() {
-        seconds--;
-        if (seconds < 0) {
-            seconds = REFRESH_INTERVAL;
-            fetchLatestData(); // 🔥 Panggil update, tidak peduli modal terbuka/tidak
+    
+    // 🔥 EVENT: Tab aktif kembali
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && remainingSeconds <= 0) {
+            remainingSeconds = REFRESH_INTERVAL;
+            updateDisplay();
+            if (!isUpdating) fetchLatestData();
         }
-        
-        if (countdownElement) {
-            var mins = Math.floor(seconds / 60);
-            var secs = seconds % 60;
-            var timeString = mins + ':' + secs.toString().padStart(2, '0');
-            countdownElement.textContent = timeString;
-            countdownElement.className = 'countdown';
-            
-            if (seconds < 10) countdownElement.classList.add('danger');
-            else if (seconds < 30) countdownElement.classList.add('warning');
-        }
-    }
-
-    // 4. START TIMER
-    function startTimer() {
-        if (refreshTimer) {
-            clearInterval(refreshTimer);
-            refreshTimer = null;
-        }
-        seconds = REFRESH_INTERVAL;
-        updateCountdown();
-        refreshTimer = setInterval(updateCountdown, 1000);
-    }
-
+    });
+    
+    // 🔥 START
     document.addEventListener('DOMContentLoaded', function() {
-        startTimer();
-        setTimeout(fetchLatestData, 5000);
+        setTimeout(function() {
+            startTimer();
+            setTimeout(fetchLatestData, 1000);
+        }, 500);
+    });
+    
+    // 🔥 CLEANUP
+    window.addEventListener('beforeunload', function() {
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
     });
 })();
 
@@ -3254,7 +3299,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('info', 'Info', '{{ session('info') }}');
     @endif
 
-    // 🔥 PERBAIKAN: PAKAI FORMAT LOKAL
     var today = new Date();
     var weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
@@ -3539,40 +3583,21 @@ function openDownloadModal(id, name) {
             document.getElementById('downloadServiceTarget').textContent = '🎯 ' + data.data.target;
             document.getElementById('downloadServiceType').textContent = '📌 ' + (data.data.type?.toUpperCase() || 'HTTP');
             
-            // 🔥 PERBAIKAN: HITUNG SELISIH TANGGAL (BUKAN JAM)
             var createdAt = new Date(data.data.created_at);
             var today = new Date();
 
-            // 🔥 FUNGSI HITUNG SELISIH TANGGAL YANG BENAR
             function getDateDiffInDays(date1, date2) {
-                // Reset ke 00:00:00 untuk menghitung hari
                 var d1 = new Date(date1);
                 d1.setHours(0, 0, 0, 0);
                 var d2 = new Date(date2);
                 d2.setHours(0, 0, 0, 0);
-                
-                // Hitung selisih dalam milidetik
                 var diffTime = d2.getTime() - d1.getTime();
-                // Konversi ke hari
                 return Math.floor(diffTime / (1000 * 60 * 60 * 24));
             }
 
-            // 🔥 HITUNG UMUR SERVICE DALAM HARI (BERDASARKAN TANGGAL)
             var ageInDays = getDateDiffInDays(createdAt, today);
-            
-            // 🔥 HARI YANG TERSEDIA = ageInDays + 1 (termasuk hari ini)
             var availableDays = ageInDays + 1;
-            
-            // 🔥 MAX DAYS = min(availableDays, 90)
             var maxDays = Math.min(availableDays, 90);
-            
-            // 🔥 LOG UNTUK DEBUG
-            console.log('=== DOWNLOAD MODAL DEBUG ===');
-            console.log('Service dibuat:', data.data.created_at);
-            console.log('Hari ini:', formatDateLocal(today));
-            console.log('Age in days (selisih TANGGAL):', ageInDays);
-            console.log('Available days (termasuk hari ini):', availableDays);
-            console.log('Max days (dibatasi 90):', maxDays);
             
             var ageTextDisplay = '';
             if (ageInDays < 1) {
@@ -3593,7 +3618,6 @@ function openDownloadModal(id, name) {
             var dateFromInput = document.getElementById('dateFrom');
             var dateToInput = document.getElementById('dateTo');
             
-            // 🔥 PAKAI FORMAT LOKAL
             var minDate = formatDateLocal(createdAt);
             var maxDate = formatDateLocal(today);
             
@@ -3606,7 +3630,6 @@ function openDownloadModal(id, name) {
             var periodStart = new Date(today);
             periodStart.setDate(periodStart.getDate() - defaultDays);
             
-            // Reset periodStart ke 00:00:00
             periodStart.setHours(0, 0, 0, 0);
             var createdAtDate = new Date(createdAt);
             createdAtDate.setHours(0, 0, 0, 0);
@@ -3623,7 +3646,6 @@ function openDownloadModal(id, name) {
             
             periodBtns.forEach(function(btn) {
                 var days = parseInt(btn.getAttribute('data-period'));
-                // 🔥 GUNAKAN availableDays
                 var isAvailable = days <= availableDays;
                 
                 if (isAvailable) {
@@ -3654,7 +3676,6 @@ function openDownloadModal(id, name) {
                 '📊 Total <strong>' + availableDays + ' hari</strong> data tersedia.<br>' +
                 '✅ Periode tersedia: <strong>' + availableText + '</strong>';
             
-            // 🔥 SIMPAN DATA LENGKAP
             downloadServiceData = {
                 createdAt: createdAt,
                 ageInDays: ageInDays,
@@ -3684,7 +3705,6 @@ function openDownloadModal(id, name) {
         periodBtns[i].classList.remove('active');
     }
     
-    // 🔥 PAKAI FORMAT LOKAL
     var today = new Date();
     var weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
@@ -3697,112 +3717,83 @@ function openDownloadModal(id, name) {
     document.body.style.overflow = 'hidden';
     document.dispatchEvent(new Event('modalOpened'));
 }
-// ============================================================ */
-// 🔥 TAMBAHAN: VALIDASI REAL-TIME TANGGAL
-// ============================================================ */
 
 function validateDateRange() {
     var dateFrom = document.getElementById('dateFrom');
     var dateTo = document.getElementById('dateTo');
     var btnDownload = document.getElementById('btnDownloadNow');
     
-    console.log('=== VALIDATE DATE RANGE ===');
-    console.log('dateFrom value:', dateFrom.value);
-    console.log('dateTo value:', dateTo.value);
-    console.log('downloadServiceData:', downloadServiceData);
-    
     if (!downloadServiceData || !dateFrom.value || !dateTo.value) {
         if (btnDownload) {
             btnDownload.disabled = true;
             btnDownload.title = '❌ Isi tanggal terlebih dahulu';
         }
-        console.log('❌ Data tidak lengkap');
         return;
     }
     
-    // 🔥 PERBAIKAN: Bandingkan sebagai STRING (format YYYY-MM-DD)
     var fromDateStr = dateFrom.value;
     var toDateStr = dateTo.value;
     var minDateStr = downloadServiceData.minDate;
     var maxDateStr = downloadServiceData.maxDate;
     
-    console.log('fromDateStr:', fromDateStr);
-    console.log('toDateStr:', toDateStr);
-    console.log('minDateStr:', minDateStr);
-    console.log('maxDateStr:', maxDateStr);
-    
     var hasError = false;
     var errorMessages = [];
     
-    // 🔥 VALIDASI TANGGAL AWAL (bandingkan string)
     if (fromDateStr < minDateStr) {
         dateFrom.style.borderColor = '#dc2626';
         dateFrom.style.background = '#fef2f2';
         showDateError(dateFrom, '⚠️ Minimal tanggal: ' + minDateStr + ' (tanggal service dibuat)');
         hasError = true;
         errorMessages.push('Tanggal awal tidak boleh sebelum ' + minDateStr);
-        console.log('❌ fromDate < minDate');
     } else if (fromDateStr > maxDateStr) {
         dateFrom.style.borderColor = '#dc2626';
         dateFrom.style.background = '#fef2f2';
         showDateError(dateFrom, '⚠️ Maksimal tanggal: ' + maxDateStr + ' (hari ini)');
         hasError = true;
         errorMessages.push('Tanggal awal tidak boleh melebihi ' + maxDateStr);
-        console.log('❌ fromDate > maxDate');
     } else {
         dateFrom.style.borderColor = '#10b981';
         dateFrom.style.background = '';
         removeDateError(dateFrom);
-        console.log('✅ fromDate valid');
     }
     
-    // 🔥 VALIDASI TANGGAL AKHIR (bandingkan string)
     if (toDateStr < minDateStr) {
         dateTo.style.borderColor = '#dc2626';
         dateTo.style.background = '#fef2f2';
         showDateError(dateTo, '⚠️ Minimal tanggal: ' + minDateStr + ' (tanggal service dibuat)');
         hasError = true;
         errorMessages.push('Tanggal akhir tidak boleh sebelum ' + minDateStr);
-        console.log('❌ toDate < minDate');
     } else if (toDateStr > maxDateStr) {
         dateTo.style.borderColor = '#dc2626';
         dateTo.style.background = '#fef2f2';
         showDateError(dateTo, '⚠️ Maksimal tanggal: ' + maxDateStr + ' (hari ini)');
         hasError = true;
         errorMessages.push('Tanggal akhir tidak boleh melebihi ' + maxDateStr);
-        console.log('❌ toDate > maxDate');
     } else if (toDateStr < fromDateStr) {
         dateTo.style.borderColor = '#dc2626';
         dateTo.style.background = '#fef2f2';
         showDateError(dateTo, '⚠️ Tidak boleh kurang dari tanggal awal');
         hasError = true;
         errorMessages.push('Tanggal akhir harus >= tanggal awal');
-        console.log('❌ toDate < fromDate');
     } else {
         dateTo.style.borderColor = '#10b981';
         dateTo.style.background = '';
         removeDateError(dateTo);
-        console.log('✅ toDate valid');
     }
     
-    // 🔥 UPDATE TOMBOL DOWNLOAD
     if (btnDownload) {
         btnDownload.disabled = hasError;
         if (hasError) {
             btnDownload.title = '❌ ' + errorMessages.join('; ');
-            console.log('❌ Tombol DISABLED karena:', errorMessages);
         } else {
             btnDownload.disabled = false;
             btnDownload.title = '📥 Download PDF';
             btnDownload.style.opacity = '1';
             btnDownload.style.cursor = 'pointer';
-            console.log('✅✅✅ Tombol ENABLED!');
         }
     }
     
-    // 🔥 TAMPILKAN RINGKASAN PERIODE
     if (!hasError && toDateStr >= fromDateStr) {
-        // Hitung selisih hari dari string
         var fromParts = fromDateStr.split('-');
         var toParts = toDateStr.split('-');
         var fromDateObj = new Date(fromParts[0], fromParts[1] - 1, fromParts[2]);
@@ -3817,10 +3808,6 @@ function validateDateRange() {
                 ' | Service berusia ' + downloadServiceData.ageInDays + ' hari';
         }
     }
-    
-    console.log('=== VALIDASI SELESAI ===');
-    console.log('Hasil error:', hasError);
-    console.log('Tombol disabled:', btnDownload ? btnDownload.disabled : 'btn null');
 }
 
 function showDateError(input, message) {
@@ -3843,8 +3830,6 @@ function removeDateError(input) {
         errorDiv.style.display = 'none';
     }
 }
-
-// ============================================================ */
 
 function selectPeriod(element, days) {
     if (element.classList.contains('disabled') || element.style.pointerEvents === 'none') {
@@ -3873,7 +3858,6 @@ function selectPeriod(element, days) {
             formatDateLocal(pastDate) + ')');
     }
     
-    // 🔥 PERBAIKAN: PAKAI FORMAT LOKAL
     document.getElementById('dateFrom').value = formatDateLocal(pastDate);
     document.getElementById('dateTo').value = formatDateLocal(today);
     
@@ -3889,34 +3873,17 @@ function downloadReport() {
         return;
     }
     
-    // 🔥 PERBAIKAN: Bandingkan sebagai STRING (YYYY-MM-DD) - lebih aman
     var todayStr = formatDateLocal(new Date());
     
-    console.log('📥 Download Report:');
-    console.log('dateFrom:', dateFrom);
-    console.log('dateTo:', dateTo);
-    console.log('todayStr:', todayStr);
-    
-    // 🔥 CEK TANGGAL AWAL vs AKHIR
     if (dateFrom > dateTo) {
         showToast('warning', 'Peringatan!', '📅 Tanggal awal tidak boleh lebih besar dari tanggal akhir');
         return;
     }
     
-    // 🔥 PERBAIKAN: HAPUS VALIDASI INI ATAU COMMENT
-    // if (dateTo > todayStr) {
-    //     showToast('warning', 'Peringatan!', '📅 Tanggal akhir tidak boleh melebihi hari ini');
-    //     return;
-    // }
-    
-    // 🔥 ATAU UBAH JADI PERINGATAN SAJA (TIDAK MENGHENTIKAN)
     if (dateTo > todayStr) {
-        console.log('⚠️ Peringatan: Tanggal akhir melebihi hari ini, tapi tetap diproses');
         showToast('info', 'Info', '📅 Data akan diproses sesuai yang tersedia.');
-        // LANJUTKAN PROSES! JANGAN RETURN!
     }
     
-    // 🔥 CEK APAKAH ADA DATA DI DATABASE (Controller yang handle)
     if (downloadServiceData) {
         var minDate = downloadServiceData.minDate;
         var maxDate = downloadServiceData.maxDate;
@@ -3975,24 +3942,6 @@ function closeDownloadModal() {
     downloadServiceData = null;
     document.dispatchEvent(new Event('modalClosed'));
 }
-
-// ================= EVENT LISTENER UNTUK VALIDASI REAL-TIME =================
-document.addEventListener('DOMContentLoaded', function() {
-    var dateFrom = document.getElementById('dateFrom');
-    var dateTo = document.getElementById('dateTo');
-    
-    if (dateFrom) {
-        dateFrom.addEventListener('change', validateDateRange);
-        dateFrom.addEventListener('input', validateDateRange);
-        dateFrom.addEventListener('blur', validateDateRange);
-    }
-    
-    if (dateTo) {
-        dateTo.addEventListener('change', validateDateRange);
-        dateTo.addEventListener('input', validateDateRange);
-        dateTo.addEventListener('blur', validateDateRange);
-    }
-});
 
 // ================= CREATE / EDIT MODAL =================
 function openCreateModal() {
