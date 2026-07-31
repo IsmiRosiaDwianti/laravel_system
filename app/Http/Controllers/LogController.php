@@ -18,6 +18,34 @@ class LogController extends Controller
         // ==================== QUERY LOGS ====================
         $query = ServiceLog::with('service');
         
+        // 🔥 FILTER: HANYA SERVICE YANG AKTIF (TIDAK DIARSIPKAN)
+        $query->whereHas('service', function($q) {
+            $q->where('is_archived', false);
+        });
+        
+        // ============================================================
+        // 🔥 FILTER TAMPILAN LOG - 2 PILIHAN SAJA!
+        // ============================================================
+        // 1. all_logs=1   = 📋 Semua Perubahan (Status ATAU Code berubah)
+        // 2. (default)    = 🔄 Hanya Perubahan Status
+        // ============================================================
+        
+        if ($request->has('all_logs') && $request->all_logs) {
+            // 📋 SEMUA PERUBAHAN (Status + Code)
+            // Tampilkan log yang: status berubah ATAU response code berubah
+            $query->where(function($q) {
+                $q->where('is_status_change', true)
+                  ->orWhereRaw('response_code != (SELECT last_code FROM services WHERE services.id = service_logs.service_id)');
+            });
+        } else {
+            // 🔄 HANYA PERUBAHAN STATUS
+            $query->where('is_status_change', true);
+        }
+        
+        // ============================================================
+        // 🔥 FILTER LAINNYA
+        // ============================================================
+        
         // Filter berdasarkan service
         if ($request->has('service_id') && $request->service_id) {
             $query->where('service_id', $request->service_id);
@@ -44,13 +72,16 @@ class LogController extends Controller
                 $q->where('message', 'LIKE', "%{$search}%")
                   ->orWhere('status', 'LIKE', "%{$search}%")
                   ->orWhere('response_code', 'LIKE', "%{$search}%")
+                  ->orWhere('previous_status', 'LIKE', "%{$search}%")
                   ->orWhereHas('service', function($subq) use ($search) {
                       $subq->where('name', 'LIKE', "%{$search}%");
                   });
             });
         }
         
-        // ==================== STATISTIK (SEBELUM PAGINATE) ====================
+        // ============================================================
+        // 🔥 STATISTIK (SEBELUM PAGINATE)
+        // ============================================================
         $statsQuery = clone $query;
         $stats = [
             'total' => $statsQuery->count(),
@@ -60,7 +91,21 @@ class LogController extends Controller
             'unknown' => (clone $statsQuery)->where('status', 'UNKNOWN')->count(),
         ];
         
-        // ==================== PAGINATION ====================
+        // 🔥 STATISTIK PERUBAHAN STATUS (GLOBAL)
+        $totalChanges = ServiceLog::whereHas('service', function($q) {
+            $q->where('is_archived', false);
+        })->where('is_status_change', true)->count();
+        
+        // 🔥 STATISTIK PERUBAHAN CODE (GLOBAL)
+        $totalCodeChanges = ServiceLog::whereHas('service', function($q) {
+            $q->where('is_archived', false);
+        })
+        ->whereRaw('response_code != (SELECT last_code FROM services WHERE services.id = service_logs.service_id)')
+        ->count();
+        
+        // ============================================================
+        // 🔥 PAGINATION
+        // ============================================================
         $perPage = $request->input('perPage', $request->input('per_page', 10));
         $perPage = (int) $perPage;
         
@@ -77,10 +122,17 @@ class LogController extends Controller
                      ->withQueryString();
         
         // ==================== AMBIL SERVICE UNTUK FILTER ====================
-        $services = Service::orderBy('name')->get();
+        $services = Service::active()->orderBy('name')->get();
         
         // ==================== KIRIM KE VIEW ====================
-        return view('logs', compact('logs', 'stats', 'services', 'perPage'));
+        return view('logs', compact(
+            'logs', 
+            'stats', 
+            'services', 
+            'perPage',
+            'totalChanges',
+            'totalCodeChanges'
+        ));
     }
     
     /**
@@ -104,31 +156,10 @@ class LogController extends Controller
     
     /**
      * Get count of logs where status changed.
-     * 🔥 DIPERBAIKI: Tidak pakai 'is_status_change' kolom
      */
     private function getStatusChangedCount()
     {
-        // 🔥 PERBAIKAN: Cari log yang statusnya berbeda dari log sebelumnya
-        $logs = ServiceLog::with('service')
-            ->orderBy('service_id')
-            ->orderBy('created_at', 'asc')
-            ->get();
-        
-        $changes = 0;
-        $lastStatusByService = [];
-        
-        foreach ($logs as $log) {
-            $serviceId = $log->service_id;
-            
-            if (isset($lastStatusByService[$serviceId])) {
-                if ($lastStatusByService[$serviceId] !== $log->status) {
-                    $changes++;
-                }
-            }
-            $lastStatusByService[$serviceId] = $log->status;
-        }
-        
-        return $changes;
+        return ServiceLog::where('is_status_change', true)->count();
     }
     
     /**
@@ -137,6 +168,13 @@ class LogController extends Controller
     public function show($id)
     {
         $log = ServiceLog::with('service')->findOrFail($id);
+        
+        // 🔥 CEK APAKAH SERVICE DIARSIPKAN
+        if ($log->service && $log->service->is_archived) {
+            return redirect()
+                ->route('logs')
+                ->with('error', 'Log ini berasal dari service yang diarsipkan. Pulihkan service terlebih dahulu.');
+        }
         
         $previousLog = ServiceLog::where('service_id', $log->service_id)
                                ->where('id', '<', $id)
@@ -149,9 +187,9 @@ class LogController extends Controller
                            ->first();
         
         $statusHistory = ServiceLog::where('service_id', $log->service_id)
-                                 ->select('status', 'created_at', 'id')
+                                 ->select('status', 'response_code', 'created_at', 'id')
                                  ->orderBy('created_at', 'desc')
-                                 ->limit(10)
+                                 ->limit(20)
                                  ->get();
         
         return view('logs-detail', compact(
@@ -167,6 +205,18 @@ class LogController extends Controller
      */
     public function getStatusHistory($serviceId)
     {
+        $service = Service::find($serviceId);
+        
+        // 🔥 CEK APAKAH SERVICE DIARSIPKAN
+        if ($service && $service->is_archived) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Service sedang diarsipkan',
+                'data' => [],
+                'total_changes' => 0,
+            ], 403);
+        }
+        
         $logs = ServiceLog::where('service_id', $serviceId)
                          ->orderBy('created_at', 'asc')
                          ->get();
@@ -181,6 +231,7 @@ class LogController extends Controller
                     'to' => $log->status,
                     'changed_at' => $log->created_at->format('Y-m-d H:i:s'),
                     'log_id' => $log->id,
+                    'response_code' => $log->response_code,
                 ];
             }
             $previousStatus = $log->status;
@@ -199,9 +250,15 @@ class LogController extends Controller
     public function getLatestStatuses()
     {
         $latestLogs = ServiceLog::with('service')
+                               ->whereHas('service', function($q) {
+                                   $q->where('is_archived', false);
+                               })
                                ->whereIn('id', function($query) {
                                    $query->select(DB::raw('MAX(id)'))
                                        ->from('service_logs')
+                                       ->whereHas('service', function($q) {
+                                           $q->where('is_archived', false);
+                                       })
                                        ->groupBy('service_id');
                                })
                                ->get();
@@ -217,7 +274,20 @@ class LogController extends Controller
      */
     public function export(Request $request)
     {
-        $query = ServiceLog::with('service');
+        $query = ServiceLog::with('service')
+                           ->whereHas('service', function($q) {
+                               $q->where('is_archived', false);
+                           });
+        
+        // 🔥 TERAPKAN FILTER YANG SAMA
+        if ($request->has('all_logs') && $request->all_logs) {
+            $query->where(function($q) {
+                $q->where('is_status_change', true)
+                  ->orWhereRaw('response_code != (SELECT last_code FROM services WHERE services.id = service_logs.service_id)');
+            });
+        } else {
+            $query->where('is_status_change', true);
+        }
         
         if ($request->has('service_id') && $request->service_id) {
             $query->where('service_id', $request->service_id);
@@ -247,16 +317,20 @@ class LogController extends Controller
         $callback = function() use ($logs) {
             $file = fopen('php://output', 'w');
             
+            // 🔥 HEADER CSV
             fputcsv($file, [
                 'ID',
                 'Service Name',
                 'Service ID',
                 'Status',
+                'Previous Status',
                 'Response Time (s)',
                 'Response Code',
+                'Status Change',
                 'Message',
+                'Action',
                 'Created At',
-                'Checked At'
+                'Checked At',
             ]);
             
             foreach ($logs as $log) {
@@ -265,9 +339,12 @@ class LogController extends Controller
                     $log->service->name ?? 'Unknown Service',
                     $log->service_id,
                     $log->status ?? 'UNKNOWN',
+                    $log->previous_status ?? '-',
                     number_format($log->response_time ?? 0, 2),
                     $log->response_code ?? '-',
+                    $log->is_status_change ? 'YES' : 'NO',
                     $log->message ?? '-',
+                    $log->action ?? '-',
                     $log->created_at->format('Y-m-d H:i:s'),
                     $log->checked_at ? $log->checked_at->format('Y-m-d H:i:s') : '-',
                 ]);
@@ -289,6 +366,20 @@ class LogController extends Controller
             'ids.*' => 'exists:service_logs,id',
         ]);
         
+        // 🔥 CEK APAKAH LOG DARI SERVICE AKTIF
+        $logs = ServiceLog::whereIn('id', $request->ids)
+                          ->whereHas('service', function($q) {
+                              $q->where('is_archived', false);
+                          })
+                          ->get();
+        
+        if ($logs->count() !== count($request->ids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Beberapa log berasal dari service yang diarsipkan atau tidak ditemukan',
+            ], 422);
+        }
+        
         $deleted = ServiceLog::whereIn('id', $request->ids)->delete();
         
         return response()->json([
@@ -308,13 +399,42 @@ class LogController extends Controller
         ]);
         
         $cutoffDate = now()->subDays($request->days);
-        $deleted = ServiceLog::where('created_at', '<', $cutoffDate)->delete();
+        
+        // 🔥 HAPUS LOG LAMA DARI SERVICE AKTIF
+        $deleted = ServiceLog::whereHas('service', function($q) {
+            $q->where('is_archived', false);
+        })
+        ->where('created_at', '<', $cutoffDate)
+        // 🔥 JANGAN HAPUS LOG PERUBAHAN STATUS (penting untuk histori)
+        ->where('is_status_change', false)
+        ->delete();
         
         return response()->json([
             'success' => true,
-            'message' => "Successfully deleted {$deleted} logs older than {$request->days} days",
+            'message' => "Successfully deleted {$deleted} logs older than {$request->days} days (status change logs kept)",
             'deleted_count' => $deleted,
             'cutoff_date' => $cutoffDate->format('Y-m-d H:i:s'),
+        ]);
+    }
+    
+    /**
+     * 🔥 BARU: Get logs by response code (untuk dashboard/filter)
+     */
+    public function getByResponseCode($code)
+    {
+        $logs = ServiceLog::with('service')
+                          ->whereHas('service', function($q) {
+                              $q->where('is_archived', false);
+                          })
+                          ->where('response_code', $code)
+                          ->latest('created_at')
+                          ->limit(20)
+                          ->get();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $logs,
+            'count' => $logs->count(),
         ]);
     }
 }

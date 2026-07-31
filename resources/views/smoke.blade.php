@@ -49,6 +49,8 @@
         --bar-fill-danger: linear-gradient(90deg, #f87171, #dc2626);
         
         --date-picker-filter: none;
+        --sort-color: #6366f1;
+        --sort-bg: rgba(99, 102, 241, 0.08);
     }
 
     [data-theme="dark"] {
@@ -89,6 +91,8 @@
         --bar-fill-danger: linear-gradient(90deg, #991b1b, #dc2626);
         
         --date-picker-filter: invert(1);
+        --sort-color: #818cf8;
+        --sort-bg: rgba(99, 102, 241, 0.12);
     }
 
     .smoke-container {
@@ -102,6 +106,7 @@
         color: var(--text-primary);
     }
 
+    /* ========== HEADER ========== */
     .smoke-header {
         background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, var(--primary-lighter) 100%);
         padding: 28px 36px;
@@ -581,6 +586,7 @@
         transition: all 0.3s ease;
     }
 
+    /* ========== TABLE ========== */
     .table-container {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -664,6 +670,77 @@
         top: 0;
         z-index: 10;
         transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    /* ========== SORTABLE HEADER ========== */
+    .table-container thead th.sortable {
+        cursor: pointer;
+        user-select: none;
+        transition: var(--transition);
+        position: relative;
+        padding-right: 30px;
+    }
+
+    .table-container thead th.sortable:hover {
+        color: var(--sort-color);
+        background: var(--sort-bg);
+    }
+
+    .table-container thead th.sortable .sort-icon {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 14px;
+        opacity: 0.3;
+        transition: var(--transition);
+        display: inline-block;
+        font-weight: 400;
+    }
+
+    .table-container thead th.sortable:hover .sort-icon {
+        opacity: 0.8;
+    }
+
+    .table-container thead th.sortable .sort-icon.active {
+        opacity: 1;
+        color: var(--sort-color);
+    }
+
+    .table-container thead th.sortable .sort-icon.asc::after {
+        content: ' ↑';
+        color: var(--sort-color);
+        font-weight: 700;
+    }
+
+    .table-container thead th.sortable .sort-icon.desc::after {
+        content: ' ↓';
+        color: var(--sort-color);
+        font-weight: 700;
+    }
+
+    .table-container thead th.sortable .sort-icon.default::after {
+        content: ' ↕';
+        opacity: 0.4;
+    }
+
+    .table-container thead th.sortable .sort-icon .arrow-up {
+        display: inline-block;
+        font-size: 10px;
+        color: var(--sort-color);
+    }
+
+    .table-container thead th.sortable .sort-icon .arrow-down {
+        display: inline-block;
+        font-size: 10px;
+        color: var(--sort-color);
+    }
+
+    .table-container thead th.sortable .sort-icon .arrow-none {
+        display: inline-block;
+        font-size: 12px;
+        opacity: 0.3;
     }
 
     .table-container tbody td {
@@ -989,6 +1066,7 @@
         display: inline-block;
     }
 
+    /* ========== RESPONSIVE ========== */
     @media (max-width: 1024px) {
         .smoke-status-right {
             max-width: 100%;
@@ -1069,6 +1147,8 @@
         }
         .table-header {
             padding: 16px 20px;
+            flex-direction: column;
+            align-items: stretch;
         }
         .table-container thead th,
         .table-container tbody td {
@@ -1130,6 +1210,13 @@
         .perpage-selector select {
             padding: 4px 10px;
             font-size: 12px;
+        }
+        .table-container thead th.sortable {
+            padding-right: 20px;
+        }
+        .table-container thead th.sortable .sort-icon {
+            right: 4px;
+            font-size: 11px;
         }
     }
 
@@ -1259,6 +1346,14 @@
         .empty-state p {
             font-size: 12px;
         }
+        .table-container thead th.sortable {
+            padding-right: 16px;
+            font-size: 10px;
+        }
+        .table-container thead th.sortable .sort-icon {
+            right: 2px;
+            font-size: 9px;
+        }
     }
 </style>
 
@@ -1318,7 +1413,6 @@
         </div>
         <div class="smoke-status-right">
             <div class="smoke-value-wrapper">
-                <!-- 🔥 UBAH: Nilai Asap tanpa "ADC" -->
                 <div class="smoke-value {{ $statusClass }}" id="smokeValue">
                     {{ number_format($smokeValue, 0) }}
                 </div>
@@ -1365,12 +1459,41 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 40px;">No</th>
-                        <th style="width: 180px;">🕐 Waktu</th>
-                        <!-- 🔥 UBAH: Nilai Asap (tanpa ADC) -->
-                        <th style="width: 120px;">📊 Nilai Asap</th>
-                        <th style="width: 140px;">📌 Status</th>
-                        <th>📝 Keterangan</th>
+                        <!-- 🔥 SORTABLE: No -->
+                        <th style="width: 40px;" class="sortable" data-sort="no" onclick="sortTable('no')">
+                            No
+                            <span class="sort-icon" id="sort-no">
+                                <span class="arrow-none">↕</span>
+                            </span>
+                        </th>
+                        <!-- 🔥 SORTABLE: Waktu -->
+                        <th style="width: 180px;" class="sortable" data-sort="created_at" onclick="sortTable('created_at')">
+                            🕐 Waktu
+                            <span class="sort-icon" id="sort-created_at">
+                                <span class="arrow-none">↕</span>
+                            </span>
+                        </th>
+                        <!-- 🔥 SORTABLE: Nilai Asap -->
+                        <th style="width: 120px;" class="sortable" data-sort="smoke_value" onclick="sortTable('smoke_value')">
+                            📊 Nilai Asap
+                            <span class="sort-icon" id="sort-smoke_value">
+                                <span class="arrow-none">↕</span>
+                            </span>
+                        </th>
+                        <!-- 🔥 SORTABLE: Status -->
+                        <th style="width: 140px;" class="sortable" data-sort="status" onclick="sortTable('status')">
+                            📌 Status
+                            <span class="sort-icon" id="sort-status">
+                                <span class="arrow-none">↕</span>
+                            </span>
+                        </th>
+                        <!-- 🔥 SORTABLE: Keterangan -->
+                        <th class="sortable" data-sort="message" onclick="sortTable('message')">
+                            📝 Keterangan
+                            <span class="sort-icon" id="sort-message">
+                                <span class="arrow-none">↕</span>
+                            </span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="logTableBody">
@@ -1393,7 +1516,6 @@
                                 </span>
                             </td>
                             <td>
-                                <!-- 🔥 UBAH: Nilai Asap tanpa "ADC" -->
                                 <span class="value-cell {{ $valueClass }}">
                                     {{ $log->smoke_value ?? 0 }}
                                 </span>
@@ -1530,6 +1652,42 @@
     
     let currentStatus = '{{ strtoupper($smokeStatus) }}';
     let currentAdc = {{ $smokeValue }};
+
+    // ========== SORTING ==========
+    let currentSort = '{{ request('sort', 'created_at') }}';
+    let currentDirection = '{{ request('direction', 'desc') }}';
+
+    function sortTable(field) {
+        let direction = 'asc';
+        if (currentSort === field) {
+            direction = currentDirection === 'asc' ? 'desc' : 'asc';
+        }
+        
+        // Update URL
+        let url = new URL(window.location.href);
+        url.searchParams.set('sort', field);
+        url.searchParams.set('direction', direction);
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }
+
+    // ========== UPDATE SORT ICON ==========
+    function updateSortIcons() {
+        const sortFields = ['no', 'created_at', 'smoke_value', 'status', 'message'];
+        sortFields.forEach(field => {
+            const icon = document.getElementById('sort-' + field);
+            if (icon) {
+                if (field === currentSort) {
+                    const arrow = currentDirection === 'asc' ? '↑' : '↓';
+                    icon.innerHTML = `<span class="arrow-${currentDirection === 'asc' ? 'up' : 'down'}" style="color: #6366f1; font-weight: 700;">${arrow}</span>`;
+                    icon.classList.add('active');
+                } else {
+                    icon.innerHTML = `<span class="arrow-none">↕</span>`;
+                    icon.classList.remove('active');
+                }
+            }
+        });
+    }
 
     // ========== UPDATE TOTAL LOGS ==========
     function updateTotalLogs(count) {
@@ -1690,7 +1848,6 @@
                 <span class="row-number">${rowNumber}</span>
             </td>
             <td><span class="time-cell" data-updated-at="${createdAt}">${currentTime}</span></td>
-            <!-- 🔥 UBAH: Nilai Asap tanpa "ADC" -->
             <td><span class="value-cell ${statusClass}">${numberFormat(adc)}</span></td>
             <td><span class="status-badge ${statusClass}">${statusIcon} ${status}</span></td>
             <td><div class="message-cell" title="${logMessage}">${logMessage}</div></td>
@@ -1842,6 +1999,9 @@
                 currentAdc = parseInt(adcMatch[0]);
             }
         }
+        
+        // Update sort icons
+        updateSortIcons();
         
         fetchEspStatus();
         setTimeout(updateRowNumbers, 100);

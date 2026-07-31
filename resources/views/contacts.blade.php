@@ -25,6 +25,9 @@
         --bg-info-box: #eff6ff;
         --border-info-box: #93c5fd;
         --text-info-box: #1e40af;
+        --bg-limit-warning: #fef2f2;
+        --border-limit-warning: #fca5a5;
+        --text-limit-warning: #dc2626;
     }
 
     /* Dark mode override dari layout utama */
@@ -50,8 +53,10 @@
         --bg-info-box: #1a2332;
         --border-info-box: #3b82f6;
         --text-info-box: #93c5fd;
+        --bg-limit-warning: #2d1a1a;
+        --border-limit-warning: #7f1d1d;
+        --text-limit-warning: #f87171;
         
-        /* Dark mode untuk warna teks form */
         --text-form: #e2e8f0;
     }
 
@@ -158,15 +163,51 @@
         border: none;
     }
 
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
         background: rgba(255, 255, 255, 0.25);
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
     }
 
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
     .btn-primary svg {
         width: 18px;
         height: 18px;
+    }
+
+    /* ================= LIMIT BADGE ================= */
+    .limit-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .limit-badge .limit-number {
+        font-weight: 700;
+    }
+
+    .limit-badge.limit-full {
+        background: rgba(239, 68, 68, 0.3);
+        border-color: rgba(239, 68, 68, 0.3);
+        animation: pulse-limit 2s infinite;
+    }
+
+    @keyframes pulse-limit {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
     }
 
     /* ================= SEARCH BOX ================= */
@@ -240,8 +281,9 @@
         color: var(--text-muted-contacts);
     }
 
-    .search-wrapper .search-input-wrap input:focus + .search-spinner {
-        display: none;
+    .search-wrapper .search-input-wrap input:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 
     .search-wrapper .btn-search {
@@ -260,7 +302,7 @@
         gap: 6px;
     }
 
-    .search-wrapper .btn-search:hover {
+    .search-wrapper .btn-search:hover:not(:disabled) {
         background: #1da851;
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
@@ -487,6 +529,39 @@
         color: var(--text-contacts);
     }
 
+    /* ================= LIMIT WARNING BANNER ================= */
+    .limit-warning {
+        display: none;
+        padding: 12px 20px;
+        background: var(--bg-limit-warning);
+        border-left: 4px solid var(--border-limit-warning);
+        color: var(--text-limit-warning);
+        font-size: 14px;
+        font-weight: 500;
+        align-items: center;
+        gap: 12px;
+        margin: 0 24px 16px 24px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .limit-warning.active {
+        display: flex;
+    }
+
+    .limit-warning .warning-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .limit-warning .warning-text {
+        flex: 1;
+    }
+
+    .limit-warning .warning-text strong {
+        font-weight: 700;
+    }
+
     .table-scroll {
         overflow-x: auto;
         padding: 0 24px 24px;
@@ -655,10 +730,16 @@
         margin-top: 16px;
     }
 
-    .btn-empty-primary:hover {
+    .btn-empty-primary:hover:not(:disabled) {
         background: #1da851;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    }
+
+    .btn-empty-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
     }
 
     /* ================= PAGINATION ================= */
@@ -941,7 +1022,7 @@
         gap: 8px;
     }
 
-    .btn-submit-modal:hover {
+    .btn-submit-modal:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
     }
@@ -957,7 +1038,7 @@
         box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
     }
 
-    .btn-submit-modal.edit-mode:hover {
+    .btn-submit-modal.edit-mode:hover:not(:disabled) {
         box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
     }
 
@@ -1109,6 +1190,7 @@
         .search-wrapper { max-width: 100%; flex-wrap: wrap; }
         .search-wrapper .btn-search,
         .search-wrapper .btn-reset { flex: 1; justify-content: center; padding: 8px 12px; font-size: 12px; }
+        .limit-warning { margin: 0 12px 12px 12px; padding: 10px 14px; font-size: 13px; flex-wrap: wrap; }
     }
 
     @media (max-width: 480px) {
@@ -1133,6 +1215,8 @@
         .search-wrapper .btn-reset { font-size: 11px; padding: 6px 10px; }
         .search-wrapper .search-input-wrap input { padding: 6px 10px 6px 32px; font-size: 12px; }
         .search-wrapper .search-input-wrap .search-icon { font-size: 13px; left: 10px; }
+        .limit-warning { font-size: 12px; padding: 8px 12px; }
+        .limit-warning .warning-icon { font-size: 16px; }
     }
 </style>
 
@@ -1148,6 +1232,11 @@
             is_active: {{ $contact->is_active ?? 1 }}
         };
     @endforeach
+    
+    // 🔥 KONSTANTA BATAS KONTAK
+    const MAX_CONTACTS = {{ $maxContacts ?? 10 }};
+    const CURRENT_CONTACTS = {{ $totalContacts ?? 0 }};
+    const CAN_ADD = CURRENT_CONTACTS < MAX_CONTACTS;
 </script>
 
 <div class="contacts-container">
@@ -1164,11 +1253,20 @@
             </div>
         </div>
         <div class="header-actions">
-            <button class="btn-primary" onclick="openCreateModal()">
+            <span class="limit-badge {{ $totalContacts >= $maxContacts ? 'limit-full' : '' }}">
+                📊 <span class="limit-number">{{ $totalContacts }}</span> / {{ $maxContacts }}
+                @if($totalContacts >= $maxContacts)
+                    🔴 Penuh
+                @endif
+            </span>
+            <button class="btn-primary" onclick="openCreateModal()" {{ $totalContacts >= $maxContacts ? 'disabled' : '' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                     <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
                 </svg>
                 Tambah Kontak
+                @if($totalContacts >= $maxContacts)
+                    (Penuh)
+                @endif
             </button>
         </div>
     </div>
@@ -1189,10 +1287,11 @@
                         id="searchContact" 
                         placeholder="Cari kontak..." 
                         autocomplete="off"
+                        {{ $totalContacts == 0 ? 'disabled' : '' }}
                     >
                     <span class="search-spinner" id="searchSpinner"></span>
                 </div>
-                <button onclick="searchContacts()" class="btn-search" id="btnSearch">🔍 Cari</button>
+                <button onclick="searchContacts()" class="btn-search" id="btnSearch" {{ $totalContacts == 0 ? 'disabled' : '' }}>🔍 Cari</button>
                 <button onclick="resetSearch()" class="btn-reset">↺ Reset</button>
             </div>
 
@@ -1218,6 +1317,16 @@
             <div class="status-spinner"></div>
             <span class="status-text" id="searchStatusText">🔍 Sedang mencari...</span>
             <button class="status-cancel" onclick="cancelSearch()" title="Batalkan pencarian">✕</button>
+        </div>
+
+        <!-- ================= LIMIT WARNING BANNER ================= -->
+        <div class="limit-warning {{ $totalContacts >= $maxContacts ? 'active' : '' }}" id="limitWarning">
+            <span class="warning-icon">⚠️</span>
+            <span class="warning-text">
+                <strong>Batas Maksimal Kontak Tercapai!</strong> 
+                Anda telah memiliki <strong>{{ $totalContacts }}</strong> dari <strong>{{ $maxContacts }}</strong> kontak yang diizinkan. 
+                Hapus beberapa kontak untuk menambahkan yang baru.
+            </span>
         </div>
 
         <div class="table-scroll">
@@ -1265,7 +1374,14 @@
                                     <span class="empty-icon">📭</span>
                                     <h3>Belum Ada Kontak</h3>
                                     <p>Mulai dengan menambahkan kontak WhatsApp pertama Anda</p>
-                                    <button onclick="openCreateModal()" class="btn-empty-primary">+ Tambah Kontak</button>
+                                    <button onclick="openCreateModal()" class="btn-empty-primary" {{ $totalContacts >= $maxContacts ? 'disabled' : '' }}>
+                                        + Tambah Kontak
+                                    </button>
+                                    @if($totalContacts >= $maxContacts)
+                                        <p style="margin-top: 12px; font-size: 13px; color: var(--text-limit-warning);">
+                                            ⚠️ Batas maksimal {{ $maxContacts }} kontak telah tercapai
+                                        </p>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -1336,14 +1452,27 @@
             <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
         <div class="modal-body">
+            @if($totalContacts >= $maxContacts)
+            <div class="info-box" style="border-color: var(--border-limit-warning); background: var(--bg-limit-warning); color: var(--text-limit-warning);">
+                <span class="info-icon">⚠️</span>
+                <div class="info-content">
+                    <strong>Batas Maksimal Tercapai!</strong>
+                    Anda sudah memiliki <strong>{{ $totalContacts }}</strong> dari <strong>{{ $maxContacts }}</strong> kontak yang diizinkan.
+                    Hapus beberapa kontak terlebih dahulu untuk menambahkan yang baru.
+                </div>
+            </div>
+            @else
             <div class="info-box">
                 <span class="info-icon">ℹ️</span>
                 <div class="info-content">
                     <strong>Format Nomor WhatsApp:</strong>
                     Gunakan format internasional tanpa tanda +, spasi, atau tanda hubung.<br>
                     Contoh: <code>6281234567890</code> (Indonesia) atau <code>60123456789</code> (Malaysia)
+                    <br><br>
+                    <strong>Kontak tersisa:</strong> {{ $maxContacts - $totalContacts }} dari {{ $maxContacts }}
                 </div>
             </div>
+            @endif
 
             <form id="contactForm" method="POST">
                 @csrf
@@ -1362,6 +1491,7 @@
                         class="form-control"
                         placeholder="Contoh: Budi Santoso"
                         required
+                        {{ $totalContacts >= $maxContacts ? 'disabled' : '' }}
                     >
                     <div class="helper-text">Nama lengkap atau nama panggilan kontak</div>
                 </div>
@@ -1378,6 +1508,7 @@
                         class="form-control"
                         placeholder="Contoh: 6281234567890"
                         required
+                        {{ $totalContacts >= $maxContacts ? 'disabled' : '' }}
                     >
                     <div class="helper-text">Masukkan nomor dengan format internasional (tanpa +, spasi, atau tanda hubung)</div>
                 </div>
@@ -1387,7 +1518,9 @@
         </div>
         <div class="modal-footer">
             <button class="btn-cancel-modal" onclick="closeModal()">✕ Batal</button>
-            <button class="btn-submit-modal" id="btnSubmitModal" onclick="submitForm()">💾 Simpan Kontak</button>
+            <button class="btn-submit-modal" id="btnSubmitModal" onclick="submitForm()" {{ $totalContacts >= $maxContacts ? 'disabled' : '' }}>
+                💾 Simpan Kontak
+            </button>
         </div>
     </div>
 </div>
@@ -1455,7 +1588,6 @@
                 }
                 
                 if (query.length >= 2) {
-                    // Tampilkan status "sedang mengetik..."
                     showSearchStatus('✍️ Mengetik...', false);
                     
                     searchTimeout = setTimeout(function() {
@@ -1534,7 +1666,7 @@
         }, 5000);
     }
 
-    // ================= SEARCH CONTACTS (AJAX) - TANPA ALERT PROSES =================
+    // ================= SEARCH CONTACTS (AJAX) =================
     function searchContacts() {
         const query = document.getElementById('searchContact').value.trim();
         currentSearchQuery = query;
@@ -1554,7 +1686,6 @@
         const btnSearch = document.getElementById('btnSearch');
         const spinner = document.getElementById('searchSpinner');
         
-        // Tampilkan status mencari
         showSearchStatus('🔍 Sedang mencari "' + query + '"...');
         btnSearch.disabled = true;
         btnSearch.textContent = '⏳';
@@ -1585,7 +1716,6 @@
             } else {
                 hideSearchStatus();
                 showToast('error', 'Gagal!', data.message || 'Gagal mencari data');
-                // Kembalikan ke tampilan awal
                 window.location.reload();
             }
         })
@@ -1596,7 +1726,6 @@
             spinner.classList.remove('active');
             hideSearchStatus();
             showToast('error', 'Error!', 'Terjadi kesalahan: ' + error.message);
-            // Kembalikan ke tampilan awal
             window.location.reload();
         });
     }
@@ -1612,7 +1741,6 @@
         const tbody = document.getElementById('tableBody');
         const info = document.getElementById('tableInfo');
         const paginationWrapper = document.getElementById('paginationWrapper');
-        const searchStatus = document.getElementById('searchStatus');
         
         if (!tbody) return;
         
@@ -1642,7 +1770,6 @@
             const initials = contact.name.substring(0, 2).toUpperCase();
             const no = index + 1;
             
-            // Highlight matching text
             let displayName = contact.name;
             let displayPhone = contact.phone;
             
@@ -1703,6 +1830,11 @@
 
     // ================= OPEN CREATE MODAL =================
     function openCreateModal() {
+        if (!CAN_ADD) {
+            showToast('error', 'Gagal!', 'Batas maksimal ' + MAX_CONTACTS + ' kontak telah tercapai. Hapus beberapa kontak terlebih dahulu.');
+            return;
+        }
+
         const modal = document.getElementById('contactModal');
         const title = document.getElementById('modalTitle');
         const icon = document.getElementById('modalIcon');
@@ -1723,6 +1855,10 @@
         document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
         document.querySelectorAll('.error-message').forEach(el => el.remove());
 
+        // Enable form fields
+        document.getElementById('modal_name').disabled = false;
+        document.getElementById('modal_phone').disabled = false;
+
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         setTimeout(() => {
@@ -1730,7 +1866,7 @@
         }, 100);
     }
 
-    // ================= OPEN EDIT MODAL - INSTANT! =================
+    // ================= OPEN EDIT MODAL =================
     function openEditModal(id) {
         const modal = document.getElementById('contactModal');
         const title = document.getElementById('modalTitle');
@@ -1738,7 +1874,6 @@
         const btnSubmit = document.getElementById('btnSubmitModal');
         const form = document.getElementById('contactForm');
 
-        // 🔥 AMBIL DATA DARI CACHE (contactsMap) - INSTANT!
         const contact = contactsMap[id];
         
         if (!contact) {
@@ -1746,19 +1881,21 @@
             return;
         }
 
-        // 🔥 SET MODAL TITLE & ICON
         title.textContent = 'Edit Kontak';
         icon.textContent = '✏️';
         btnSubmit.textContent = '💾 Update Kontak';
         btnSubmit.className = 'btn-submit-modal edit-mode';
         btnSubmit.disabled = false;
 
-        // 🔥 ISI FORM DENGAN DATA (INSTANT, TANPA TUNGGU)
         document.getElementById('modal_name').value = contact.name;
         document.getElementById('modal_phone').value = contact.phone;
         document.getElementById('contactId').value = contact.id;
         document.getElementById('formMethod').value = 'PUT';
         form.action = `/contacts/${contact.id}`;
+
+        // Enable form fields
+        document.getElementById('modal_name').disabled = false;
+        document.getElementById('modal_phone').disabled = false;
 
         document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
         document.querySelectorAll('.error-message').forEach(el => el.remove());
@@ -1803,6 +1940,12 @@
         const btnSubmit = document.getElementById('btnSubmitModal');
         const name = document.getElementById('modal_name');
         const phone = document.getElementById('modal_phone');
+
+        // Cek batas kontak sebelum submit
+        if (!CAN_ADD && document.getElementById('formMethod').value === 'POST') {
+            showToast('error', 'Gagal!', 'Batas maksimal ' + MAX_CONTACTS + ' kontak telah tercapai.');
+            return;
+        }
 
         let hasError = false;
 
@@ -1866,7 +2009,6 @@
                 submitForm();
             }
         }
-        // Ctrl+K for search focus
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
             document.getElementById('searchContact').focus();

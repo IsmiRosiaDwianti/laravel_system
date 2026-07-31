@@ -10,8 +10,13 @@ use Illuminate\Validation\Rule;
 class ContactApiController extends Controller
 {
     /**
-     * Get all contacts
-     * GET /api/contacts
+     * ============================================================
+     *  📋 GET ALL CONTACTS
+     *  ============================================================
+     *  🔗 URL: GET /api/contacts
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?per_page=10&page=1
+     * ============================================================
      */
     public function index(Request $request)
     {
@@ -41,8 +46,12 @@ class ContactApiController extends Controller
     }
 
     /**
-     * Get contact detail
-     * GET /api/contacts/{id}
+     * ============================================================
+     *  📋 GET CONTACT DETAIL
+     *  ============================================================
+     *  🔗 URL: GET /api/contacts/{id}
+     *  🔑 Butuh Auth: Sanctum Token
+     * ============================================================
      */
     public function show($id)
     {
@@ -63,12 +72,34 @@ class ContactApiController extends Controller
     }
 
     /**
-     * Create new contact
-     * POST /api/contacts
+     * ============================================================
+     *  ➕ CREATE NEW CONTACT
+     *  ============================================================
+     *  🔗 URL: POST /api/contacts
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Body: { "name": "...", "phone": "...", "is_active": true }
+     *  ⚠️ Batas Maksimal: 10 kontak
+     * ============================================================
      */
     public function store(Request $request)
     {
         try {
+            // 🔥 CEK BATAS MAKSIMAL KONTAK (10)
+            $maxContacts = 10;
+            $currentCount = Contact::count();
+            
+            if ($currentCount >= $maxContacts) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Batas maksimal kontak adalah {$maxContacts} kontak. Anda sudah memiliki {$currentCount} kontak.",
+                    'data' => [
+                        'current' => $currentCount,
+                        'max' => $maxContacts,
+                        'remaining' => 0
+                    ]
+                ], 422);
+            }
+
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'phone' => 'required|string|max:15|unique:contacts,phone',
@@ -102,8 +133,13 @@ class ContactApiController extends Controller
     }
 
     /**
-     * Update contact
-     * PUT /api/contacts/{id}
+     * ============================================================
+     *  ✏️ UPDATE CONTACT
+     *  ============================================================
+     *  🔗 URL: PUT /api/contacts/{id}
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Body: { "name": "...", "phone": "...", "is_active": true }
+     * ============================================================
      */
     public function update(Request $request, $id)
     {
@@ -143,8 +179,12 @@ class ContactApiController extends Controller
     }
 
     /**
-     * Delete contact
-     * DELETE /api/contacts/{id}
+     * ============================================================
+     *  🗑️ DELETE CONTACT
+     *  ============================================================
+     *  🔗 URL: DELETE /api/contacts/{id}
+     *  🔑 Butuh Auth: Sanctum Token
+     * ============================================================
      */
     public function destroy($id)
     {
@@ -167,8 +207,13 @@ class ContactApiController extends Controller
     }
 
     /**
-     * Search contacts
-     * GET /api/contacts/search
+     * ============================================================
+     *  🔍 SEARCH CONTACTS
+     *  ============================================================
+     *  🔗 URL: GET /api/contacts/search
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📦 Query: ?q=kata_kunci&per_page=10
+     * ============================================================
      */
     public function search(Request $request)
     {
@@ -215,6 +260,39 @@ class ContactApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mencari data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     *  📊 GET CONTACT LIMIT INFO
+     *  ============================================================
+     *  🔗 URL: GET /api/contacts/limit
+     *  🔑 Butuh Auth: Sanctum Token
+     *  📤 Response: { "current": 5, "max": 10, "remaining": 5, "can_add": true }
+     * ============================================================
+     */
+    public function getLimitInfo()
+    {
+        try {
+            $currentCount = Contact::count();
+            $maxContacts = 10;
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'current' => $currentCount,
+                    'max' => $maxContacts,
+                    'remaining' => max(0, $maxContacts - $currentCount),
+                    'can_add' => $currentCount < $maxContacts
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil info limit: ' . $e->getMessage()
             ], 500);
         }
     }

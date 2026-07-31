@@ -7,6 +7,7 @@
         --primary: #0d3b66;
         --primary-dark: #082a4a;
         --primary-light: #1a4d7a;
+        --primary-gradient: linear-gradient(135deg, #0d3b66 0%, #1a4d7a 50%, #2563eb 100%);
         --success: #059669;
         --success-light: #d1fae5;
         --warning: #d97706;
@@ -26,13 +27,15 @@
         --gray-800: #1e293b;
         --gray-900: #0f172a;
         
-        --bg-dashboard: #ffffff;
+        --bg-dashboard: #f0f2f5;
         --bg-card: #ffffff;
         --text-dashboard: #1e293b;
         --text-secondary-dash: #475569;
         --border-dash: rgba(226, 232, 240, 0.6);
-        --shadow-dash: rgba(0, 0, 0, 0.08);
-        --shadow-hover-dash: rgba(0, 0, 0, 0.12);
+        --shadow-dash: 0 2px 12px rgba(0, 0, 0, 0.06);
+        --shadow-hover-dash: 0 8px 30px rgba(0, 0, 0, 0.10);
+        --radius-card: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     [data-theme="dark"] {
@@ -41,8 +44,8 @@
         --text-dashboard: #e2e8f0;
         --text-secondary-dash: #94a3b8;
         --border-dash: #334155;
-        --shadow-dash: rgba(0, 0, 0, 0.2);
-        --shadow-hover-dash: rgba(0, 0, 0, 0.3);
+        --shadow-dash: 0 2px 12px rgba(0, 0, 0, 0.2);
+        --shadow-hover-dash: 0 8px 30px rgba(0, 0, 0, 0.3);
         --gray-50: #1e293b;
         --gray-100: #2d3a4f;
         --gray-200: #334155;
@@ -74,30 +77,29 @@
 
     /* ================= HEADER ================= */
     .dashboard-header {
-        background: linear-gradient(135deg, #0d3b66 0%, #1a4d7a 50%, #2563eb 100%);
+        background: var(--primary-gradient);
         border-radius: 20px;
-        padding: 24px 32px;
-        margin-bottom: 24px;
+        padding: 28px 36px;
+        margin-bottom: 28px;
         color: white;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
+        gap: 16px;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 10px 40px rgba(13, 59, 102, 0.3);
-        transition: box-shadow 0.3s ease;
+        box-shadow: 0 8px 32px rgba(13, 59, 102, 0.25);
     }
 
     .dashboard-header::before {
         content: '';
         position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 400px;
-        height: 400px;
-        background: rgba(255, 255, 255, 0.05);
+        top: -60%;
+        right: -5%;
+        width: 350px;
+        height: 350px;
+        background: rgba(255, 255, 255, 0.04);
         border-radius: 50%;
         pointer-events: none;
     }
@@ -105,10 +107,10 @@
     .dashboard-header::after {
         content: '';
         position: absolute;
-        bottom: -40%;
-        left: 20%;
-        width: 300px;
-        height: 300px;
+        bottom: -50%;
+        left: 15%;
+        width: 250px;
+        height: 250px;
         background: rgba(255, 255, 255, 0.03);
         border-radius: 50%;
         pointer-events: none;
@@ -117,7 +119,7 @@
     .dashboard-header .header-left {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 4px;
         position: relative;
         z-index: 1;
     }
@@ -125,41 +127,42 @@
     .dashboard-header h1 {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
         margin: 0;
-        font-size: 1.6rem;
+        font-size: 1.8rem;
         font-weight: 800;
         letter-spacing: -0.5px;
     }
 
     .dashboard-header h1 i {
-        font-size: 28px;
+        font-size: 30px;
         opacity: 0.9;
-        background: rgba(255,255,255,0.15);
-        padding: 8px;
-        border-radius: 12px;
+        background: rgba(255,255,255,0.12);
+        padding: 10px;
+        border-radius: 14px;
+        backdrop-filter: blur(4px);
     }
 
     .dashboard-header .subtitle {
-        opacity: 0.85;
+        opacity: 0.8;
         margin: 0;
-        font-size: 13px;
+        font-size: 14px;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         font-weight: 400;
     }
 
-    .dashboard-header .subtitle i { font-size: 12px; }
+    .dashboard-header .subtitle i { font-size: 13px; }
 
     .status-legend {
         display: flex;
-        gap: 16px;
+        gap: 20px;
         flex-wrap: wrap;
-        background: rgba(255,255,255,0.12);
-        padding: 8px 20px;
-        border-radius: 12px;
-        backdrop-filter: blur(10px);
+        background: rgba(255,255,255,0.10);
+        padding: 10px 24px;
+        border-radius: 14px;
+        backdrop-filter: blur(12px);
         flex-shrink: 0;
         position: relative;
         z-index: 1;
@@ -170,7 +173,7 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 500;
         opacity: 0.95;
     }
@@ -180,28 +183,27 @@
         height: 10px;
         border-radius: 50%;
         flex-shrink: 0;
-        box-shadow: 0 0 12px rgba(255,255,255,0.2);
     }
 
-    .dot-up { background: #10b981; }
-    .dot-warning { background: #f59e0b; }
-    .dot-down { background: #ef4444; }
+    .dot-up { background: #10b981; box-shadow: 0 0 16px rgba(16,185,129,0.4); }
+    .dot-warning { background: #f59e0b; box-shadow: 0 0 16px rgba(245,158,11,0.4); }
+    .dot-down { background: #ef4444; box-shadow: 0 0 16px rgba(239,68,68,0.4); }
 
     /* ================= STATS GRID ================= */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
-        gap: 16px;
-        margin-bottom: 24px;
+        gap: 18px;
+        margin-bottom: 28px;
     }
 
     .stat-card {
         background: var(--bg-card);
-        border-radius: 16px;
-        padding: 20px 22px;
-        box-shadow: 0 4px 20px var(--shadow-dash);
+        border-radius: var(--radius-card);
+        padding: 22px 24px;
+        box-shadow: var(--shadow-dash);
         border: 1px solid var(--border-dash);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: var(--transition);
         position: relative;
         overflow: hidden;
         cursor: pointer;
@@ -238,7 +240,7 @@
 
     .stat-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 12px 40px var(--shadow-hover-dash);
+        box-shadow: var(--shadow-hover-dash);
         border-color: var(--gray-300);
     }
 
@@ -264,22 +266,23 @@
 
     .stat-header h3 {
         margin: 0;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
-        color: var(--gray-600);
-        letter-spacing: 0.3px;
+        color: var(--gray-500);
+        letter-spacing: 0.5px;
         text-transform: uppercase;
         transition: color 0.3s ease;
     }
 
     .stat-header i {
-        font-size: 20px;
-        opacity: 0.8;
-        transition: all 0.3s ease;
+        font-size: 22px;
+        opacity: 0.7;
+        transition: var(--transition);
     }
 
     .stat-card:hover .stat-header i {
         transform: scale(1.1) rotate(-5deg);
+        opacity: 1;
     }
 
     .stat-card.total .stat-header i { color: var(--primary); }
@@ -289,7 +292,7 @@
     .stat-card.esp .stat-header i { color: var(--purple); }
 
     .stat-value {
-        font-size: 2.4rem;
+        font-size: 2.6rem;
         font-weight: 800;
         margin-bottom: 2px;
         line-height: 1.1;
@@ -315,12 +318,12 @@
         align-items: center;
         gap: 6px;
         margin-top: 10px;
-        padding: 4px 12px;
+        padding: 4px 14px;
         border-radius: 20px;
         font-size: 10px;
         font-weight: 600;
-        transition: all 0.3s ease;
-        background: rgba(0,0,0,0.06);
+        transition: var(--transition);
+        background: var(--gray-100);
         color: var(--gray-500);
     }
 
@@ -330,8 +333,8 @@
     }
 
     .stat-card:hover .stat-clickable {
-        background: rgba(0,0,0,0.1);
-        transform: translateX(2px);
+        background: var(--gray-200);
+        transform: translateX(3px);
     }
 
     [data-theme="dark"] .stat-card:hover .stat-clickable {
@@ -345,44 +348,27 @@
     .stat-card.warning .stat-clickable { color: var(--warning); }
     .stat-card.down .stat-clickable { color: var(--danger); }
 
-    .stat-card .ripple {
-        position: absolute;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.3);
-        transform: scale(0);
-        animation: ripple-animation 0.6s ease-out;
-        pointer-events: none;
-    }
-
-    [data-theme="dark"] .stat-card .ripple {
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    @keyframes ripple-animation {
-        to { transform: scale(4); opacity: 0; }
-    }
-
     /* ================= UPTIME CARD ================= */
     .uptime-card {
         background: var(--bg-card);
-        border-radius: 16px;
-        padding: 24px 32px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 20px var(--shadow-dash);
+        border-radius: var(--radius-card);
+        padding: 28px 36px;
+        margin-bottom: 28px;
+        box-shadow: var(--shadow-dash);
         border: 1px solid var(--border-dash);
         display: flex;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 20px;
-        transition: all 0.3s ease;
+        transition: var(--transition);
         position: relative;
         overflow: hidden;
-        color: var(--text-dashboard);
     }
 
     .uptime-card:hover {
-        box-shadow: 0 8px 30px var(--shadow-hover-dash);
+        box-shadow: var(--shadow-hover-dash);
+        transform: translateY(-2px);
     }
 
     .uptime-left {
@@ -392,22 +378,22 @@
     }
 
     .uptime-left .uptime-icon {
-        width: 56px;
-        height: 56px;
+        width: 60px;
+        height: 60px;
         border-radius: 14px;
         background: var(--gray-100);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
+        font-size: 26px;
         color: var(--primary);
         flex-shrink: 0;
         transition: background 0.3s ease;
     }
 
     .uptime-left .uptime-info h3 {
-        margin: 0 0 2px 0;
-        font-size: 14px;
+        margin: 0 0 4px 0;
+        font-size: 15px;
         font-weight: 600;
         color: var(--text-dashboard);
         transition: color 0.3s ease;
@@ -419,19 +405,20 @@
         color: var(--gray-500);
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        flex-wrap: wrap;
         transition: color 0.3s ease;
     }
 
     .uptime-left .uptime-info .uptime-status {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        padding: 2px 12px;
+        gap: 6px;
+        padding: 4px 16px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-        transition: all 0.3s ease;
+        transition: var(--transition);
     }
 
     .uptime-left .uptime-info .uptime-status.excellent {
@@ -457,14 +444,14 @@
     .uptime-right {
         display: flex;
         align-items: center;
-        gap: 24px;
+        gap: 28px;
         flex: 1;
         max-width: 600px;
         min-width: 200px;
     }
 
     .uptime-right .uptime-value {
-        font-size: 2.8rem;
+        font-size: 3rem;
         font-weight: 800;
         color: var(--primary);
         line-height: 1;
@@ -474,7 +461,7 @@
 
     .uptime-right .uptime-value.no-data {
         color: var(--gray-400);
-        font-size: 2rem;
+        font-size: 2.2rem;
     }
 
     .uptime-right .uptime-value small {
@@ -485,16 +472,16 @@
 
     .uptime-right .uptime-bar-container {
         flex: 1;
-        min-width: 80px;
+        min-width: 100px;
     }
 
     .uptime-right .bar-track {
         width: 100%;
-        height: 8px;
+        height: 10px;
         background: var(--gray-200);
         border-radius: 20px;
         overflow: hidden;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
         transition: background 0.3s ease;
     }
 
@@ -507,15 +494,15 @@
 
     .uptime-right .bar-fill.green { 
         background: linear-gradient(90deg, #10b981, #059669); 
-        box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 0 24px rgba(16, 185, 129, 0.25);
     }
     .uptime-right .bar-fill.yellow { 
         background: linear-gradient(90deg, #f59e0b, #d97706); 
-        box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        box-shadow: 0 0 24px rgba(245, 158, 11, 0.25);
     }
     .uptime-right .bar-fill.red { 
         background: linear-gradient(90deg, #ef4444, #dc2626); 
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        box-shadow: 0 0 24px rgba(239, 68, 68, 0.25);
     }
     .uptime-right .bar-fill.gray { 
         background: linear-gradient(90deg, #cbd5e1, #94a3b8);
@@ -525,9 +512,9 @@
     .uptime-right .bar-label {
         display: flex;
         justify-content: space-between;
-        font-size: 10px;
+        font-size: 11px;
         color: var(--gray-400);
-        margin-top: 4px;
+        margin-top: 6px;
         font-weight: 500;
         transition: color 0.3s ease;
     }
@@ -542,67 +529,85 @@
     .charts-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 20px;
+        gap: 24px;
         margin-bottom: 24px;
     }
 
     .chart-card {
         background: var(--bg-card);
-        border-radius: 16px;
-        padding: 22px 24px;
-        box-shadow: 0 4px 20px var(--shadow-dash);
+        border-radius: var(--radius-card);
+        padding: 24px 28px;
+        box-shadow: var(--shadow-dash);
         border: 1px solid var(--border-dash);
-        transition: all 0.3s ease;
-        color: var(--text-dashboard);
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
     }
 
     .chart-card:hover {
-        box-shadow: 0 8px 30px var(--shadow-hover-dash);
+        box-shadow: var(--shadow-hover-dash);
+        transform: translateY(-2px);
     }
 
     .chart-card .chart-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
+        margin-bottom: 18px;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 10px;
     }
 
     .chart-card h3 {
         margin: 0;
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 600;
         color: var(--text-dashboard);
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         transition: color 0.3s ease;
     }
 
     .chart-card h3 i {
         color: var(--primary);
         font-size: 18px;
+        background: var(--gray-100);
+        padding: 8px;
+        border-radius: 10px;
+        transition: background 0.3s ease;
+    }
+
+    [data-theme="dark"] .chart-card h3 i {
+        background: var(--gray-700);
     }
 
     .chart-card .chart-badge {
         font-size: 11px;
         color: var(--gray-500);
         background: var(--gray-100);
-        padding: 4px 14px;
+        padding: 5px 16px;
         border-radius: 20px;
         font-weight: 500;
         display: flex;
         align-items: center;
-        gap: 4px;
-        transition: all 0.3s ease;
+        gap: 6px;
+        transition: var(--transition);
     }
 
-    .chart-card .chart-badge i { font-size: 11px; }
+    [data-theme="dark"] .chart-card .chart-badge {
+        background: var(--gray-700);
+        color: var(--gray-400);
+    }
+
+    .chart-card .chart-badge i { font-size: 12px; }
 
     .chart-container {
         position: relative;
-        height: 230px;
+        height: 240px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .chart-empty {
@@ -616,27 +621,89 @@
     }
 
     .chart-empty i {
-        font-size: 44px;
-        margin-bottom: 12px;
+        font-size: 48px;
+        margin-bottom: 14px;
         opacity: 0.3;
         color: var(--gray-300);
     }
 
     .chart-empty h4 {
         color: var(--gray-600);
-        margin: 0 0 4px 0;
+        margin: 0 0 6px 0;
         font-weight: 500;
-        font-size: 14px;
+        font-size: 15px;
         transition: color 0.3s ease;
     }
 
     .chart-empty p {
         margin: 0;
-        font-size: 12px;
+        font-size: 13px;
         color: var(--gray-400);
     }
 
-    /* ================= MODAL SERVICE ================= */
+    /* ================= DONUT CHART - TANPA TOTAL CHECK ================= */
+    .donut-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .donut-chart-area {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        margin: 0 auto;
+    }
+
+    .donut-chart-area canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .donut-legend {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+    }
+
+    .donut-legend .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-dashboard);
+        transition: color 0.3s ease;
+    }
+
+    .donut-legend .legend-item .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .donut-legend .legend-item .legend-dot.up { background: #10b981; }
+    .donut-legend .legend-item .legend-dot.warning { background: #f59e0b; }
+    .donut-legend .legend-item .legend-dot.down { background: #ef4444; }
+
+    .donut-legend .legend-item .legend-percent {
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--text-dashboard);
+        transition: color 0.3s ease;
+    }
+
+    .donut-legend .legend-item .legend-percent.up { color: #10b981; }
+    .donut-legend .legend-item .legend-percent.warning { color: #f59e0b; }
+    .donut-legend .legend-item .legend-percent.down { color: #ef4444; }
+
+    /* ================= MODAL ================= */
     .modal-overlay {
         display: none;
         position: fixed;
@@ -668,7 +735,7 @@
     }
 
     .modal-header {
-        padding: 20px 24px;
+        padding: 20px 28px;
         border-bottom: 1px solid var(--border-dash);
         display: flex;
         justify-content: space-between;
@@ -703,12 +770,12 @@
     .modal-close {
         background: none;
         border: none;
-        font-size: 24px;
+        font-size: 28px;
         color: var(--gray-400);
         cursor: pointer;
         padding: 4px 8px;
         border-radius: 8px;
-        transition: all 0.2s ease;
+        transition: var(--transition);
         line-height: 1;
     }
 
@@ -723,7 +790,7 @@
     }
 
     .modal-body {
-        padding: 20px 24px;
+        padding: 20px 28px;
         max-height: 55vh;
         overflow-y: auto;
     }
@@ -746,9 +813,9 @@
         display: flex;
         align-items: center;
         gap: 14px;
-        padding: 12px 14px;
+        padding: 12px 16px;
         border-bottom: 1px solid var(--border-dash);
-        transition: all 0.2s ease;
+        transition: var(--transition);
         border-radius: 8px;
         color: var(--text-dashboard);
     }
@@ -802,17 +869,17 @@
         font-size: 12px;
         color: var(--gray-400);
         display: block;
-        margin-top: 1px;
+        margin-top: 2px;
         transition: color 0.3s ease;
     }
 
     .modal-body .service-item .service-status {
         font-size: 12px;
         font-weight: 600;
-        padding: 3px 12px;
+        padding: 4px 14px;
         border-radius: 20px;
         flex-shrink: 0;
-        transition: all 0.3s ease;
+        transition: var(--transition);
     }
 
     .modal-body .service-item .service-status.up {
@@ -861,14 +928,8 @@
     }
 
     @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px) scale(0.95);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+        from { opacity: 0; transform: translateY(30px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     @keyframes fadeInUp {
@@ -876,62 +937,55 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    .stat-card {
-        animation: fadeInUp 0.5s ease forwards;
-    }
-
+    .stat-card { animation: fadeInUp 0.5s ease forwards; }
     .stat-card:nth-child(1) { animation-delay: 0.05s; }
     .stat-card:nth-child(2) { animation-delay: 0.10s; }
     .stat-card:nth-child(3) { animation-delay: 0.15s; }
     .stat-card:nth-child(4) { animation-delay: 0.20s; }
     .stat-card:nth-child(5) { animation-delay: 0.25s; }
 
-    .uptime-card {
-        animation: fadeInUp 0.5s ease 0.30s forwards;
-        opacity: 0;
-    }
-
-    .chart-card {
-        animation: fadeInUp 0.5s ease forwards;
-        opacity: 0;
-    }
-
+    .uptime-card { animation: fadeInUp 0.5s ease 0.30s forwards; opacity: 0; }
+    .chart-card { animation: fadeInUp 0.5s ease forwards; opacity: 0; }
     .chart-card:nth-child(1) { animation-delay: 0.35s; }
     .chart-card:nth-child(2) { animation-delay: 0.40s; }
 
     .auto-refresh-timer {
         position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(10, 46, 92, 0.85);
+        bottom: 24px;
+        right: 24px;
+        background: rgba(10, 46, 92, 0.88);
         color: white;
-        padding: 8px 14px;
-        border-radius: 8px;
+        padding: 10px 18px;
+        border-radius: 12px;
         z-index: 99999;
         font-family: 'Courier New', monospace;
-        font-size: 12px;
+        font-size: 13px;
         display: flex;
         align-items: center;
-        gap: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-        backdrop-filter: blur(4px);
+        gap: 10px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         user-select: none;
         cursor: default;
-        transition: background 0.3s ease;
+        transition: var(--transition);
+    }
+
+    .auto-refresh-timer:hover {
+        transform: scale(1.05);
     }
 
     [data-theme="dark"] .auto-refresh-timer {
-        background: rgba(15, 23, 42, 0.9);
+        background: rgba(15, 23, 42, 0.92);
         border-color: rgba(255, 255, 255, 0.05);
     }
 
-    .auto-refresh-timer .icon { font-size: 14px; }
-    .auto-refresh-timer .label { opacity: 0.7; font-size: 10px; }
+    .auto-refresh-timer .icon { font-size: 16px; }
+    .auto-refresh-timer .label { opacity: 0.7; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
     .auto-refresh-timer .countdown {
         font-weight: 700;
-        font-size: 14px;
-        min-width: 40px;
+        font-size: 16px;
+        min-width: 42px;
         text-align: center;
         color: #6ee7b7;
     }
@@ -943,7 +997,7 @@
 
     @keyframes blink {
         0%, 100% { opacity: 1; }
-        50% { opacity: 0.3; }
+        50% { opacity: 0.2; }
     }
 
     [data-theme="dark"] canvas {
@@ -955,6 +1009,7 @@
         .charts-grid { grid-template-columns: 1fr; }
         .uptime-card { flex-direction: column; align-items: stretch; }
         .uptime-right { max-width: 100%; flex-wrap: wrap; }
+        .donut-chart-area { width: 180px; height: 180px; }
     }
 
     @media (max-width: 768px) {
@@ -965,18 +1020,19 @@
             padding: 20px 24px;
             border-radius: 16px;
         }
-        .dashboard-header h1 { font-size: 1.2rem; }
-        .status-legend { justify-content: center; padding: 6px 14px; }
-        .status-legend span { font-size: 10px; }
+        .dashboard-header h1 { font-size: 1.3rem; }
+        .dashboard-header h1 i { font-size: 22px; padding: 8px; }
+        .status-legend { justify-content: center; padding: 8px 16px; }
+        .status-legend span { font-size: 11px; }
         .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .stat-card { padding: 16px 18px; }
-        .stat-value { font-size: 1.8rem; }
+        .stat-value { font-size: 2rem; }
         .uptime-card { padding: 20px 24px; }
-        .uptime-left .uptime-icon { width: 44px; height: 44px; font-size: 20px; }
-        .uptime-right .uptime-value { font-size: 2.2rem; }
+        .uptime-left .uptime-icon { width: 48px; height: 48px; font-size: 22px; }
+        .uptime-right .uptime-value { font-size: 2.4rem; }
         .charts-grid { grid-template-columns: 1fr; gap: 16px; }
         .chart-container { height: 200px; }
-        .chart-card { padding: 16px 18px; }
+        .chart-card { padding: 18px 20px; }
         .chart-card .chart-header h3 { font-size: 14px; }
         .modal-content { width: 95%; max-height: 90vh; }
         .modal-header h2 { font-size: 16px; }
@@ -984,30 +1040,37 @@
         .modal-body .service-item .service-status { font-size: 11px; padding: 2px 10px; }
         .stat-clickable { font-size: 9px; padding: 3px 10px; }
         .auto-refresh-timer {
-            bottom: 10px;
-            right: 10px;
-            padding: 6px 12px;
-            font-size: 10px;
+            bottom: 12px;
+            right: 12px;
+            padding: 6px 14px;
+            font-size: 11px;
         }
-        .auto-refresh-timer .countdown { font-size: 12px; min-width: 30px; }
+        .auto-refresh-timer .countdown { font-size: 14px; min-width: 32px; }
+        .donut-legend { gap: 14px; }
+        .donut-legend .legend-item { font-size: 11px; }
+        .donut-chart-area { width: 160px; height: 160px; }
     }
 
     @media (max-width: 480px) {
         .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
         .stat-card { padding: 12px 14px; border-radius: 12px; }
-        .stat-value { font-size: 1.4rem; }
+        .stat-value { font-size: 1.6rem; }
         .stat-header h3 { font-size: 10px; }
         .stat-header i { font-size: 16px; }
         .uptime-card { padding: 16px 18px; }
         .uptime-left { flex-wrap: wrap; }
-        .uptime-right .uptime-value { font-size: 1.8rem; }
+        .uptime-right .uptime-value { font-size: 2rem; }
         .dashboard-header { padding: 16px 18px; }
-        .dashboard-header h1 { font-size: 1rem; }
-        .chart-card .chart-badge { font-size: 10px; padding: 3px 10px; }
+        .dashboard-header h1 { font-size: 1.1rem; }
+        .chart-card .chart-badge { font-size: 10px; padding: 3px 12px; }
         .modal-header { padding: 14px 16px; }
         .modal-body { padding: 14px 16px; }
         .modal-header h2 { font-size: 14px; }
         .stat-clickable { font-size: 8px; padding: 2px 8px; margin-top: 6px; }
+        .donut-legend .legend-item { font-size: 10px; gap: 4px; }
+        .donut-legend .legend-item .legend-percent { font-size: 11px; }
+        .donut-chart-area { width: 140px; height: 140px; }
+        .chart-container { height: 180px; }
     }
 </style>
 
@@ -1016,11 +1079,11 @@
     <div class="dashboard-header">
         <div class="header-left">
             <h1>
-                <i class="fas fa-chart-line"></i>
+                <i class="fas fa-chart-pie"></i>
                 Dashboard Monitoring
             </h1>
             <p class="subtitle">
-                <i class="fas fa-info-circle"></i>
+                <i class="fas fa-sync-alt fa-fw"></i>
                 Ringkasan status layanan dan aktivitas sistem monitoring
             </p>
         </div>
@@ -1033,12 +1096,16 @@
 
     <!-- ================= STATS GRID ================= -->
     @php
-        $total = $total ?? 0;
-        $up = $up ?? 0;
-        $warning = $warning ?? 0;
-        $down = $down ?? 0;
+        $activeServices = $services->filter(function($s) {
+            return !($s->is_archived ?? false);
+        });
+        
+        $total = $activeServices->count();
+        $up = $activeServices->where('last_status', 'UP')->count();
+        $warning = $activeServices->where('last_status', 'WARNING')->count();
+        $down = $activeServices->where('last_status', 'DOWN')->count();
+        
         $onlineCount = $onlineCount ?? 0;
-        $services = $services ?? collect();
         $lastSmokeValue = $lastSmokeValue ?? 0;
         $lastSmokeStatus = $lastSmokeStatus ?? 'NORMAL';
         $lastSeenAt = $lastSeenAt ?? null;
@@ -1050,7 +1117,7 @@
                 <h3>Total Service</h3>
                 <i class="fas fa-server"></i>
             </div>
-            <div class="stat-value">{{ $total }}</div>
+            <div class="stat-value" id="statTotal">{{ $total }}</div>
             <div class="stat-label">Service terdaftar</div>
             <div class="stat-clickable">
                 <i class="fas fa-chevron-circle-right"></i> Lihat Semua
@@ -1062,7 +1129,7 @@
                 <h3>Running</h3>
                 <i class="fas fa-check-circle"></i>
             </div>
-            <div class="stat-value">{{ $up }}</div>
+            <div class="stat-value" id="statUp">{{ $up }}</div>
             <div class="stat-label">Berjalan normal</div>
             <div class="stat-clickable">
                 <i class="fas fa-chevron-circle-right"></i> Lihat Detail
@@ -1074,7 +1141,7 @@
                 <h3>Warning</h3>
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
-            <div class="stat-value">{{ $warning }}</div>
+            <div class="stat-value" id="statWarning">{{ $warning }}</div>
             <div class="stat-label">Perlu perhatian</div>
             <div class="stat-clickable">
                 <i class="fas fa-chevron-circle-right"></i> Lihat Detail
@@ -1086,27 +1153,26 @@
                 <h3>Down</h3>
                 <i class="fas fa-times-circle"></i>
             </div>
-            <div class="stat-value">{{ $down }}</div>
+            <div class="stat-value" id="statDown">{{ $down }}</div>
             <div class="stat-label">Perlu tindakan</div>
             <div class="stat-clickable">
                 <i class="fas fa-chevron-circle-right"></i> Lihat Detail
             </div>
         </div>
 
-        <!-- ================= 🔥 ESP STATUS - UBAH PPM MENJADI NILAI ASAP ================= -->
         <div class="stat-card esp" id="espCard">
             <div class="stat-header">
                 <h3>ESP Status</h3>
                 <i class="fas fa-microchip"></i>
             </div>
-            <div class="stat-value" id="espStatusDisplay" style="font-size: 1.6rem; display: flex; align-items: center; gap: 8px;">
+            <div class="stat-value" id="espStatusDisplay" style="font-size: 1.6rem; display: flex; align-items: center; gap: 10px;">
                 @php
                     $isOnline = ($onlineCount ?? 0) > 0;
                     $espDisplayStatus = $isOnline ? 'ONLINE' : 'OFFLINE';
                 @endphp
-                <span id="espDot" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; 
-                    @if($espDisplayStatus == 'ONLINE') background: #10b981; box-shadow: 0 0 20px rgba(16,185,129,0.4);
-                    @else background: #ef4444; box-shadow: 0 0 20px rgba(239,68,68,0.4);
+                <span id="espDot" style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; 
+                    @if($espDisplayStatus == 'ONLINE') background: #10b981; box-shadow: 0 0 24px rgba(16,185,129,0.4);
+                    @else background: #ef4444; box-shadow: 0 0 24px rgba(239,68,68,0.4);
                     @endif
                 "></span>
                 <span id="espStatusText">{{ $espDisplayStatus }}</span>
@@ -1118,10 +1184,9 @@
                     ❌ Tidak ada data (offline)
                 @endif
             </div>
-            <!-- 🔥 UBAH INI: PPM → Nilai Asap (tanpa satuan) -->
-            <div class="stat-label" style="margin-top: 4px; font-size: 11px; color: var(--gray-400);">
-                📊 Nilai Asap: <strong id="espSmokeValue">{{ $lastSmokeValue }}</strong>
-                | Status: <span id="espSmokeStatus" class="status-badge {{ strtolower($lastSmokeStatus) }}" style="font-size: 10px; padding: 2px 10px; border-radius: 12px; 
+            <div class="stat-label" style="margin-top: 6px; font-size: 11px; color: var(--gray-400);">
+                📊 Nilai Asap: <strong id="espSmokeValue" style="color: var(--text-dashboard);">{{ $lastSmokeValue }}</strong>
+                | Status: <span id="espSmokeStatus" class="status-badge {{ strtolower($lastSmokeStatus) }}" style="font-size: 10px; padding: 2px 12px; border-radius: 12px; 
                     @if($lastSmokeStatus == 'DANGER') background: #fee2e2; color: #991b1b;
                     @elseif($lastSmokeStatus == 'WARNING') background: #fef3c7; color: #92400e;
                     @else background: #d1fae5; color: #065f46;
@@ -1151,7 +1216,7 @@
                 <h3>Uptime Rate</h3>
                 <p>
                     Status: 
-                    <span class="uptime-status {{ $statusClass }}">
+                    <span class="uptime-status {{ $statusClass }}" id="uptimeStatusBadge">
                         <i class="fas {{ $statusIcon }}"></i>
                         {{ $statusText }}
                     </span>
@@ -1159,15 +1224,15 @@
             </div>
         </div>
         <div class="uptime-right">
-            <div class="uptime-value {{ $hasData ? '' : 'no-data' }}">
+            <div class="uptime-value {{ $hasData ? '' : 'no-data' }}" id="uptimeValue">
                 {{ $percentDisplay }}<small>%</small>
             </div>
             <div class="uptime-bar-container">
                 <div class="bar-track">
                     @if($hasData)
-                        <div class="bar-fill {{ $uptimeClass }}" style="width: {{ $uptime }}%;"></div>
+                        <div class="bar-fill {{ $uptimeClass }}" id="uptimeBarFill" style="width: {{ $uptime }}%;"></div>
                     @else
-                        <div class="bar-fill gray" style="width: 0%;"></div>
+                        <div class="bar-fill gray" id="uptimeBarFill" style="width: 0%;"></div>
                     @endif
                 </div>
                 <div class="bar-label">
@@ -1182,38 +1247,65 @@
         </div>
     </div>
 
-    <!-- ================= CHARTS GRID (7 HARI - PER HARI) ================= -->
+    <!-- ================= CHARTS GRID ================= -->
     <div class="charts-grid">
-        <!-- Chart Service - UPTIME 7 HARI -->
+        <!-- Chart DONUT - TANPA TOTAL CHECK -->
         <div class="chart-card">
             <div class="chart-header">
-                <h3><i class="fas fa-chart-area"></i> Uptime 7 Hari Terakhir</h3>
-                <span class="chart-badge"><i class="far fa-clock"></i> 7 Hari</span>
+                <h3><i class="fas fa-chart-pie"></i> Status Service 7 Hari</h3>
+                <span class="chart-badge"><i class="far fa-calendar-alt"></i> 7 Hari</span>
             </div>
             <div class="chart-container">
                 @php
-                    $chartLabels = $chartLabels ?? [];
-                    $uptimeData = $uptimeData ?? [];
-                    $hasChartData = count($chartLabels) > 0 && count($uptimeData) > 0;
+                    $hasDonutData = isset($donutUp) || isset($donutWarning) || isset($donutDown);
+                    $donutUp = $donutUp ?? 0;
+                    $donutWarning = $donutWarning ?? 0;
+                    $donutDown = $donutDown ?? 0;
+                    $donutTotal = $donutUp + $donutWarning + $donutDown;
+                    
+                    $upPercent = $donutTotal > 0 ? round(($donutUp / $donutTotal) * 100) : 0;
+                    $warningPercent = $donutTotal > 0 ? round(($donutWarning / $donutTotal) * 100) : 0;
+                    $downPercent = $donutTotal > 0 ? round(($donutDown / $donutTotal) * 100) : 0;
                 @endphp
 
-                @if($hasChartData)
-                    <canvas id="uptimeChart"></canvas>
+                @if($hasDonutData && $donutTotal > 0)
+                    <div class="donut-wrapper">
+                        <div class="donut-chart-area">
+                            <canvas id="donutChart"></canvas>
+                        </div>
+                        <div class="donut-legend">
+                            <span class="legend-item">
+                                <span class="legend-dot up"></span>
+                                UP
+                                <span class="legend-percent up">{{ $upPercent }}%</span>
+                            </span>
+                            <span class="legend-item">
+                                <span class="legend-dot warning"></span>
+                                WARNING
+                                <span class="legend-percent warning">{{ $warningPercent }}%</span>
+                            </span>
+                            <span class="legend-item">
+                                <span class="legend-dot down"></span>
+                                DOWN
+                                <span class="legend-percent down">{{ $downPercent }}%</span>
+                            </span>
+                        </div>
+                    </div>
                 @else
                     <div class="chart-empty">
-                        <i class="fas fa-chart-line"></i>
-                        <h4>Belum Ada Data Uptime</h4>
+                        <i class="fas fa-chart-pie"></i>
+                        <h4>Belum Ada Data Status</h4>
                         <p>Data akan muncul setelah ada service yang dimonitor</p>
                     </div>
                 @endif
             </div>
         </div>
 
-        <!-- Chart Smoke Detector -->
+        <!-- Chart Smoke -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-fire-extinguisher"></i> Grafik Smoke Detector</h3>
-                <span class="chart-badge"><i class="far fa-clock"></i> 7 Hari Terakhir</span>
+                <span class="chart-badge"><i class="far fa-calendar-alt"></i> 7 Hari</span>
             </div>
             <div class="chart-container">
                 @php
@@ -1243,243 +1335,38 @@
     <span class="countdown" id="countdownTimer">0:30</span>
 </div>
 
-<!-- ================= MODAL SERVICE ================= -->
+<!-- ================= MODAL ================= -->
 <div class="modal-overlay" id="serviceModal" onclick="if(event.target === this) closeModal()">
     <div class="modal-content">
         <div class="modal-header">
             <h2 id="modalTitle">
                 <span class="status-dot" id="modalDot"></span>
                 <span id="modalTitleText">Daftar Service</span>
-                <span style="font-size: 14px; font-weight: 400; color: var(--gray-400); margin-left: 4px;" id="modalCount"></span>
+                <span style="font-size: 14px; font-weight: 400; color: var(--gray-400); margin-left: 6px;" id="modalCount"></span>
             </h2>
             <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <div class="modal-body" id="modalBody">
-            <!-- Content akan diisi oleh JavaScript -->
-        </div>
+        <div class="modal-body" id="modalBody"></div>
     </div>
 </div>
 
-<!-- Font Awesome CDN -->
+<!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-@if((isset($chartLabels) && isset($uptimeData) && count($chartLabels) > 0 && count($uptimeData) > 0) || 
+@if((isset($donutUp) || isset($donutWarning) || isset($donutDown)) || 
     (isset($smokeLabels) && isset($smokeData) && count($smokeLabels) > 0 && count($smokeData) > 0))
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // ====================== UPTIME CHART (7 Hari) ======================
-        @if(isset($chartLabels) && isset($uptimeData) && count($chartLabels) > 0 && count($uptimeData) > 0)
-        {
-            const ctx1 = document.getElementById('uptimeChart');
-            if (ctx1) {
-                const isMobile = window.innerWidth < 576;
-                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                const textColor = isDark ? '#94a3b8' : '#64748b';
-                const gridColor = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
-                
-                const gradient = ctx1.getContext('2d').createLinearGradient(0, 0, 0, 200);
-                gradient.addColorStop(0, isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.2)');
-                gradient.addColorStop(1, isDark ? 'rgba(99, 102, 241, 0.01)' : 'rgba(99, 102, 241, 0.01)');
-
-                new Chart(ctx1, {
-                    type: 'line',
-                    data: {
-                        labels: @json($chartLabels),
-                        datasets: [{
-                            label: 'Uptime %',
-                            data: @json($uptimeData),
-                            borderColor: '#4f46e5',
-                            backgroundColor: gradient,
-                            borderWidth: 2.5,
-                            tension: 0.4,
-                            fill: true,
-                            pointBackgroundColor: function(context) {
-                                const value = context.dataset.data[context.dataIndex];
-                                if (value >= 95) return '#10b981';
-                                if (value >= 70) return '#f59e0b';
-                                return '#ef4444';
-                            },
-                            pointBorderColor: isDark ? '#1e293b' : '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: isMobile ? 4 : 6,
-                            pointHoverRadius: isMobile ? 7 : 9,
-                            pointHoverBorderWidth: 2,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.92)',
-                                titleFont: { size: 12, weight: '600' },
-                                bodyFont: { size: 12 },
-                                padding: 10,
-                                cornerRadius: 8,
-                                callbacks: {
-                                    label: function(context) {
-                                        const value = context.parsed.y;
-                                        let status = '✅ UP';
-                                        if (value < 70) status = '❌ DOWN';
-                                        else if (value < 95) status = '⚠️ WARNING';
-                                        return '📊 ' + value.toFixed(1) + '% ' + status;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 100,
-                                title: {
-                                    display: true,
-                                    text: isMobile ? 'Uptime %' : 'Uptime (%)',
-                                    font: { size: isMobile ? 9 : 11, weight: '500' },
-                                    color: textColor
-                                },
-                                grid: {
-                                    color: gridColor,
-                                    drawBorder: false,
-                                    drawTicks: false,
-                                },
-                                ticks: {
-                                    font: { size: isMobile ? 8 : 10 },
-                                    color: textColor,
-                                    maxTicksLimit: isMobile ? 5 : 8,
-                                    callback: function(value) {
-                                        return value + '%';
-                                    }
-                                }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: {
-                                    font: { size: isMobile ? 8 : 10 },
-                                    color: textColor,
-                                    maxTicksLimit: 7,
-                                }
-                            }
-                        },
-                        interaction: { intersect: false, mode: 'index' },
-                        elements: { line: { borderJoinStyle: 'round' } }
-                    }
-                });
-            }
-        }
-        @endif
-
-        // ====================== SMOKE CHART ======================
-        @if(isset($smokeLabels) && isset($smokeData) && count($smokeLabels) > 0 && count($smokeData) > 0)
-        {
-            const ctx2 = document.getElementById('smokeChart');
-            if (ctx2) {
-                const isMobile = window.innerWidth < 576;
-                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                const textColor = isDark ? '#94a3b8' : '#64748b';
-                const gridColor = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
-                
-                new Chart(ctx2, {
-                    type: 'bar',
-                    data: {
-                        labels: @json($smokeLabels),
-                        datasets: [{
-                            // 🔥 UBAH LABEL
-                            label: 'Nilai Asap',
-                            data: @json($smokeData),
-                            backgroundColor: isDark ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.6)',
-                            borderColor: '#ef4444',
-                            borderWidth: 1.5,
-                            borderRadius: 6,
-                            maxBarThickness: 50,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.92)',
-                                titleFont: { size: 12, weight: '600' },
-                                bodyFont: { size: 12 },
-                                padding: 10,
-                                cornerRadius: 8,
-                                callbacks: {
-                                    label: function(context) {
-                                        // 🔥 UBAH TOOLTIP
-                                        return '🔥 ' + context.parsed.y;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    // 🔥 UBAH LABEL Y AXIS
-                                    text: isMobile ? 'Nilai' : 'Nilai Asap',
-                                    font: { size: isMobile ? 9 : 11, weight: '500' },
-                                    color: textColor
-                                },
-                                grid: {
-                                    color: gridColor,
-                                    drawBorder: false,
-                                    drawTicks: false,
-                                },
-                                ticks: {
-                                    font: { size: isMobile ? 8 : 10 },
-                                    color: textColor,
-                                    maxTicksLimit: isMobile ? 5 : 8,
-                                }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: {
-                                    font: { size: isMobile ? 8 : 10 },
-                                    color: textColor,
-                                    maxTicksLimit: 7,
-                                }
-                            }
-                        },
-                        interaction: { intersect: false, mode: 'index' }
-                    }
-                });
-            }
-        }
-        @endif
-
-        // ====================== DARK MODE WATCHER FOR CHARTS ======================
-        function updateChartsForTheme() {
-            window.dispatchEvent(new Event('resize'));
-        }
-
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.attributeName === 'data-theme') {
-                    setTimeout(updateChartsForTheme, 300);
-                }
-            });
-        });
-
-        observer.observe(document.documentElement, { attributes: true });
-
-        let resizeTimer;
-        window.addEventListener('resize', function() {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {}, 250);
-        });
-    });
-</script>
 @endif
 
 <script>
-    // ====================== DATA SERVICES ======================
-    const allServices = @json($services ?? []);
+    // ====================== DATA ======================
+    const allServices = @json($activeServices->values() ?? []);
+    let chartInstances = {};
+    let countdownSeconds = 30;
+    const REFRESH_INTERVAL = 30;
+    let isModalOpen = false;
 
-    // ====================== SERVICE MODAL ======================
+    // ====================== MODAL ======================
     function showModal(status, title, dotClass) {
         const modal = document.getElementById('serviceModal');
         const modalTitle = document.getElementById('modalTitleText');
@@ -1535,23 +1422,22 @@
         }
 
         modal.classList.add('active');
+        isModalOpen = true;
         document.body.style.overflow = 'hidden';
     }
 
     function closeModal() {
         const modal = document.getElementById('serviceModal');
         modal.classList.remove('active');
+        isModalOpen = false;
         document.body.style.overflow = '';
     }
 
-    // ====================== KEYBOARD SHORTCUTS ======================
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeModal();
-        }
+        if (e.key === 'Escape') closeModal();
     });
 
-    // ====================== RIPPLE EFFECT ======================
+    // ====================== RIPPLE ======================
     document.querySelectorAll('.stat-card').forEach(card => {
         card.addEventListener('click', function(e) {
             const ripple = document.createElement('span');
@@ -1561,38 +1447,308 @@
             ripple.style.width = ripple.style.height = size + 'px';
             ripple.style.left = (e.clientX - rect.left - size/2) + 'px';
             ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
+            ripple.style.position = 'absolute';
+            ripple.style.borderRadius = '50%';
+            ripple.style.background = 'rgba(255, 255, 255, 0.3)';
+            ripple.style.transform = 'scale(0)';
+            ripple.style.animation = 'ripple-animation 0.6s ease-out';
+            ripple.style.pointerEvents = 'none';
+            this.style.position = 'relative';
+            this.style.overflow = 'hidden';
             this.appendChild(ripple);
             setTimeout(() => ripple.remove(), 600);
         });
     });
 
-    // ====================== AUTO REFRESH TIMER ======================
-    const REFRESH_INTERVAL = 30;
-    let countdownSeconds = REFRESH_INTERVAL;
-    let countdownElement = document.getElementById('countdownTimer');
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes ripple-animation {
+            to { transform: scale(4); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
 
+    // ====================== COUNTDOWN ======================
     function updateCountdown() {
         countdownSeconds--;
-        
-        if (countdownElement) {
+        const el = document.getElementById('countdownTimer');
+        if (el) {
             const secs = countdownSeconds.toString().padStart(2, '0');
-            countdownElement.textContent = '0:' + secs;
-            
-            countdownElement.className = 'countdown';
-            if (countdownSeconds < 5) {
-                countdownElement.classList.add('danger');
-            } else if (countdownSeconds < 10) {
-                countdownElement.classList.add('warning');
-            }
+            el.textContent = '0:' + secs;
+            el.className = 'countdown';
+            if (countdownSeconds < 5) el.classList.add('danger');
+            else if (countdownSeconds < 10) el.classList.add('warning');
         }
-        
         if (countdownSeconds <= 0) {
             countdownSeconds = REFRESH_INTERVAL;
-            location.reload();
+            if (!isModalOpen) fetchDashboardData();
         }
     }
 
-    // ====================== 🔥 FETCH ESP STATUS REAL-TIME (UBAH PPM JADI NILAI ASAP) ======================
+    // ====================== FETCH ======================
+    function fetchDashboardData() {
+        fetch('/dashboard/data?_=' + Date.now(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateStats(data.data.stats);
+                updateEspStatus(data.data.esp);
+                updateCharts(data.data.charts);
+            }
+        })
+        .catch(error => console.error('Error fetching dashboard data:', error));
+    }
+
+    function updateStats(stats) {
+        animateNumber('statTotal', stats.total);
+        animateNumber('statUp', stats.up);
+        animateNumber('statWarning', stats.warning);
+        animateNumber('statDown', stats.down);
+        
+        const uptimeValue = document.getElementById('uptimeValue');
+        const barFill = document.getElementById('uptimeBarFill');
+        const statusBadge = document.getElementById('uptimeStatusBadge');
+        
+        if (uptimeValue) {
+            const hasData = stats.total > 0;
+            const uptime = hasData ? stats.uptime : 0;
+            uptimeValue.innerHTML = `${hasData ? uptime.toFixed(2) : '—'}<small>%</small>`;
+            if (!hasData) uptimeValue.classList.add('no-data');
+            else uptimeValue.classList.remove('no-data');
+        }
+        
+        if (barFill) {
+            const hasData = stats.total > 0;
+            const uptime = hasData ? stats.uptime : 0;
+            const cls = hasData ? (uptime >= 90 ? 'green' : (uptime >= 70 ? 'yellow' : 'red')) : 'gray';
+            barFill.className = `bar-fill ${cls}`;
+            barFill.style.width = hasData ? `${uptime}%` : '0%';
+        }
+        
+        if (statusBadge) {
+            const hasData = stats.total > 0;
+            const uptime = hasData ? stats.uptime : 0;
+            const cls = hasData ? (uptime >= 90 ? 'excellent' : (uptime >= 70 ? 'good' : 'poor')) : 'no-data';
+            const text = hasData ? (uptime >= 90 ? 'Excellent' : (uptime >= 70 ? 'Good' : 'Needs Attention')) : 'No Data';
+            const icon = hasData ? (uptime >= 90 ? 'fa-check-circle' : (uptime >= 70 ? 'fa-exclamation-circle' : 'fa-times-circle')) : 'fa-minus-circle';
+            statusBadge.className = `uptime-status ${cls}`;
+            statusBadge.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+        }
+    }
+
+    function animateNumber(id, target) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const current = parseInt(el.textContent) || 0;
+        if (current === target) return;
+        const duration = 300;
+        const startTime = performance.now();
+        const startValue = current;
+        function update(time) {
+            const elapsed = time - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(startValue + (target - startValue) * ease);
+            if (progress < 1) requestAnimationFrame(update);
+            else el.textContent = target;
+        }
+        requestAnimationFrame(update);
+    }
+
+    function updateEspStatus(esp) {
+        const dot = document.getElementById('espDot');
+        if (dot) {
+            dot.style.background = esp.online ? '#10b981' : '#ef4444';
+            dot.style.boxShadow = esp.online ? '0 0 24px rgba(16,185,129,0.4)' : '0 0 24px rgba(239,68,68,0.4)';
+        }
+        const statusText = document.getElementById('espStatusText');
+        if (statusText) statusText.textContent = esp.status;
+        const lastSeen = document.getElementById('espLastSeen');
+        if (lastSeen) {
+            lastSeen.textContent = esp.online ? `✅ Terakhir: ${esp.last_seen_human || 'baru saja'}` : '❌ Tidak ada data (offline)';
+        }
+        const smokeValue = document.getElementById('espSmokeValue');
+        if (smokeValue) smokeValue.textContent = esp.smoke_value;
+        const statusBadge = document.getElementById('espSmokeStatus');
+        if (statusBadge) {
+            const status = esp.smoke_status || 'NORMAL';
+            statusBadge.textContent = status;
+            statusBadge.className = 'status-badge ' + status.toLowerCase();
+            if (status === 'DANGER') {
+                statusBadge.style.background = '#fee2e2';
+                statusBadge.style.color = '#991b1b';
+            } else if (status === 'WARNING') {
+                statusBadge.style.background = '#fef3c7';
+                statusBadge.style.color = '#92400e';
+            } else {
+                statusBadge.style.background = '#d1fae5';
+                statusBadge.style.color = '#065f46';
+            }
+        }
+    }
+
+    function updateCharts(charts) {
+        if (chartInstances.donut && charts.donut) {
+            const up = charts.donut.up || 0;
+            const warning = charts.donut.warning || 0;
+            const down = charts.donut.down || 0;
+            const total = up + warning + down;
+            
+            chartInstances.donut.data.datasets[0].data = [up, warning, down];
+            chartInstances.donut.update();
+            
+            const items = document.querySelectorAll('.donut-legend .legend-item');
+            if (items.length >= 3) {
+                const upPct = total > 0 ? Math.round((up / total) * 100) : 0;
+                const warnPct = total > 0 ? Math.round((warning / total) * 100) : 0;
+                const downPct = total > 0 ? Math.round((down / total) * 100) : 0;
+                items[0].innerHTML = `<span class="legend-dot up"></span> UP <span class="legend-percent up">${upPct}%</span>`;
+                items[1].innerHTML = `<span class="legend-dot warning"></span> WARNING <span class="legend-percent warning">${warnPct}%</span>`;
+                items[2].innerHTML = `<span class="legend-dot down"></span> DOWN <span class="legend-percent down">${downPct}%</span>`;
+            }
+        }
+        
+        if (chartInstances.smoke && charts.smoke_labels && charts.smoke_data) {
+            chartInstances.smoke.data.labels = charts.smoke_labels;
+            chartInstances.smoke.data.datasets[0].data = charts.smoke_data;
+            chartInstances.smoke.update();
+        }
+    }
+
+    // ====================== INIT CHARTS ======================
+    function initCharts() {
+        @php
+            $donutUp = $donutUp ?? 0;
+            $donutWarning = $donutWarning ?? 0;
+            $donutDown = $donutDown ?? 0;
+            $donutTotal = $donutUp + $donutWarning + $donutDown;
+        @endphp
+
+        @if(isset($donutUp) || isset($donutWarning) || isset($donutDown))
+        {
+            const ctx = document.getElementById('donutChart');
+            if (ctx) {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                chartInstances.donut = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['UP', 'WARNING', 'DOWN'],
+                        datasets: [{
+                            data: [{{ $donutUp }}, {{ $donutWarning }}, {{ $donutDown }}],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                            borderColor: isDark ? '#1e293b' : '#ffffff',
+                            borderWidth: 3,
+                            hoverOffset: 10,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.92)',
+                                titleFont: { size: 12, weight: '600' },
+                                bodyFont: { size: 12 },
+                                padding: 10,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const pct = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                        return context.label + ': ' + pct + '%';
+                                    }
+                                }
+                            }
+                        },
+                        animation: { animateRotate: true, duration: 1000 }
+                    }
+                });
+            }
+        }
+        @endif
+
+        @if(isset($smokeLabels) && isset($smokeData) && count($smokeLabels) > 0 && count($smokeData) > 0)
+        {
+            const ctx2 = document.getElementById('smokeChart');
+            if (ctx2) {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const textColor = isDark ? '#94a3b8' : '#64748b';
+                const gridColor = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+                
+                chartInstances.smoke = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: @json($smokeLabels),
+                        datasets: [{
+                            label: 'Nilai Asap',
+                            data: @json($smokeData),
+                            backgroundColor: isDark ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.6)',
+                            borderColor: '#ef4444',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                            maxBarThickness: 50,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.92)',
+                                titleFont: { size: 12, weight: '600' },
+                                bodyFont: { size: 12 },
+                                padding: 10,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function(context) { return '🔥 ' + context.parsed.y; }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Nilai Asap', font: { size: 11, weight: '500' }, color: textColor },
+                                grid: { color: gridColor, drawBorder: false },
+                                ticks: { font: { size: 10 }, color: textColor, maxTicksLimit: 8 }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 10 }, color: textColor, maxTicksLimit: 7 }
+                            }
+                        },
+                        interaction: { intersect: false, mode: 'index' }
+                    }
+                });
+            }
+        }
+        @endif
+    }
+
+    // ====================== DARK MODE ======================
+    function updateChartsForTheme() {
+        if (chartInstances.donut) chartInstances.donut.update();
+        if (chartInstances.smoke) chartInstances.smoke.update();
+    }
+
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+            if (m.attributeName === 'data-theme') {
+                setTimeout(updateChartsForTheme, 300);
+            }
+        });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+
+    // ====================== ESP STATUS ======================
     function fetchEspStatus() {
         fetch('/api/smoke/status')
             .then(response => response.json())
@@ -1600,39 +1756,21 @@
                 if (data.success) {
                     const esp = data.data;
                     const isOnline = esp.device_status === 'ONLINE';
-                    
-                    // Update dot
                     const dot = document.getElementById('espDot');
                     if (dot) {
                         dot.style.background = isOnline ? '#10b981' : '#ef4444';
-                        dot.style.boxShadow = isOnline ? '0 0 20px rgba(16,185,129,0.4)' : '0 0 20px rgba(239,68,68,0.4)';
+                        dot.style.boxShadow = isOnline ? '0 0 24px rgba(16,185,129,0.4)' : '0 0 24px rgba(239,68,68,0.4)';
                     }
-                    
-                    // Update status text
                     const statusText = document.getElementById('espStatusText');
-                    if (statusText) {
-                        statusText.textContent = esp.device_status;
-                    }
-                    
-                    // Update last seen
+                    if (statusText) statusText.textContent = esp.device_status;
                     const lastSeen = document.getElementById('espLastSeen');
                     if (lastSeen) {
-                        if (isOnline && esp.last_seen_human) {
-                            lastSeen.textContent = '✅ Terakhir: ' + esp.last_seen_human;
-                        } else {
-                            lastSeen.textContent = '❌ Tidak ada data (offline)';
-                        }
+                        lastSeen.textContent = isOnline ? `✅ Terakhir: ${esp.last_seen_human || 'baru saja'}` : '❌ Tidak ada data (offline)';
                     }
-                    
-                    // 🔥 UPDATE NILAI ASAP (tanpa satuan)
                     const smokeValue = document.getElementById('espSmokeValue');
                     if (smokeValue) {
-                        // Gunakan adc atau smoke_value atau ppm dari response
-                        const value = esp.adc || esp.smoke_value || esp.ppm || 0;
-                        smokeValue.textContent = value;
+                        smokeValue.textContent = esp.adc || esp.smoke_value || esp.ppm || 0;
                     }
-                    
-                    // Update smoke status
                     const statusBadge = document.getElementById('espSmokeStatus');
                     if (statusBadge) {
                         const status = esp.status || 'NORMAL';
@@ -1656,14 +1794,21 @@
 
     // ====================== INIT ======================
     document.addEventListener('DOMContentLoaded', function() {
-        // Start countdown
+        initCharts();
         setInterval(updateCountdown, 1000);
-        
-        // Fetch ESP status pertama kali
         setTimeout(fetchEspStatus, 1000);
-        
-        // Fetch ESP status setiap 5 detik (lebih ringan dari 3 detik)
         setInterval(fetchEspStatus, 5000);
+        setTimeout(fetchDashboardData, 2000);
+        setInterval(fetchDashboardData, REFRESH_INTERVAL * 1000);
+    });
+
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            if (chartInstances.donut) chartInstances.donut.resize();
+            if (chartInstances.smoke) chartInstances.smoke.resize();
+        }, 250);
     });
 </script>
 @endsection

@@ -51,6 +51,9 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // 🔥 DASHBOARD AJAX DATA (Tanpa Reload Halaman)
+    Route::get('/dashboard/data', [DashboardController::class, 'getDashboardData'])->name('dashboard.data');
 
     // ==========================================================
     // SERVICES - CRUD Monitoring Service (PING / HTTP)
@@ -58,15 +61,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/services', [ServiceController::class, 'index'])->name('services');
     Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
     Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
-    Route::get('/services/{id}/edit', [ServiceController::class, 'edit'])->name('services.edit');  // FIX: pakai {id}
-    Route::put('/services/{id}', [ServiceController::class, 'update'])->name('services.update');   // FIX: pakai {id}
-    Route::delete('/services/{id}', [ServiceController::class, 'destroy'])->name('services.destroy'); // FIX: pakai {id}
+    Route::get('/services/{id}/edit', [ServiceController::class, 'edit'])->name('services.edit');
+    Route::put('/services/{id}', [ServiceController::class, 'update'])->name('services.update');
+    Route::delete('/services/{id}', [ServiceController::class, 'destroy'])->name('services.destroy');
+
+    // 🔥 ROUTE ARSIP
+    Route::post('/services/{id}/archive', [ServiceController::class, 'archive'])->name('services.archive');
+    Route::post('/services/{id}/unarchive', [ServiceController::class, 'unarchive'])->name('services.unarchive');
+    Route::delete('/services/{id}/force-delete', [ServiceController::class, 'forceDelete'])->name('services.force-delete');
 
     // Search
     Route::get('/services/search', [ServiceController::class, 'search'])->name('services.search');
-    
-    // 🔥 HAPUS route ini jika tidak ada method checkAll di ServiceController
-    // Route::post('/services/check-all', [ServiceController::class, 'checkAll'])->name('services.check-all');
 
     // Detail & Laporan
     Route::get('/services/{id}/detail', [ServiceController::class, 'detail'])->name('services.detail');
@@ -78,14 +83,34 @@ Route::middleware('auth')->group(function () {
     Route::get('/services/{id}/health', [ServiceController::class, 'health'])->name('services.health');
     Route::get('/services/{id}/download-report', [ServiceController::class, 'downloadReport'])->name('services.download-report');
 
-    // Interval WhatsApp
-    Route::post('/services/{id}/wa-interval', [ServiceController::class, 'updateWaInterval'])->name('services.wa-interval');
+    // ==========================================================
+    // 🔥 SERVICE AUTO REFRESH (AJAX POLLING)
+    // ==========================================================
+    // 🔥 Fitur auto refresh smooth tanpa reload halaman
+    // 🔥 SAMA SEPERTI dashboard/data di DashboardController
+    // ==========================================================
+    
+    // 📊 Get full service data untuk polling (lengkap)
+    Route::get('/services/data', [ServiceController::class, 'getServiceData'])
+        ->name('services.data');
+    
+    // 🔄 Get hanya service yang berubah (lebih ringan, recommended)
+    Route::get('/services/updates', [ServiceController::class, 'getServiceUpdates'])
+        ->name('services.updates');
+    
+    // ⚡ Get status ringan dengan cache (super cepat)
+    Route::get('/services/statuses', [ServiceController::class, 'getServiceStatuses'])
+        ->name('services.statuses');
+    
+    // 🗑️ Clear cache service
+    Route::post('/services/clear-cache', [ServiceController::class, 'clearServiceCache'])
+        ->name('services.clear-cache');
 
     // ==========================================================
     // LOGS - Riwayat Monitoring
     // ==========================================================
     Route::get('/logs', [LogController::class, 'index'])->name('logs');
-    Route::get('/logs/{id}', [LogController::class, 'show'])->name('logs.show');  // TAMBAHKAN
+    Route::get('/logs/{id}', [LogController::class, 'show'])->name('logs.show');
 
     // ==========================================================
     // CONTACTS - Kontak WhatsApp
@@ -93,9 +118,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/contacts', [ContactController::class, 'index'])->name('contacts');
     Route::get('/contacts/create', [ContactController::class, 'create'])->name('contacts.create');
     Route::post('/contacts', [ContactController::class, 'store'])->name('contacts.store');
-    Route::get('/contacts/{id}/edit', [ContactController::class, 'edit'])->name('contacts.edit');  // FIX: pakai {id}
-    Route::put('/contacts/{id}', [ContactController::class, 'update'])->name('contacts.update');   // FIX: pakai {id}
-    Route::delete('/contacts/{id}', [ContactController::class, 'destroy'])->name('contacts.destroy'); // FIX: pakai {id}
+    Route::get('/contacts/{id}/edit', [ContactController::class, 'edit'])->name('contacts.edit');
+    Route::put('/contacts/{id}', [ContactController::class, 'update'])->name('contacts.update');
+    Route::delete('/contacts/{id}', [ContactController::class, 'destroy'])->name('contacts.destroy');
     Route::get('/contacts/search', [ContactController::class, 'search'])->name('contacts.search');
 
     // ==========================================================

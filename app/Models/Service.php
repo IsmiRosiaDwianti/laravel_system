@@ -19,6 +19,7 @@ class Service extends Model
         'last_code',
         'last_response_time',
         'last_message',
+        'last_action',
         'last_check_at',
         'last_wa_sent_at',
         'last_wa_status',
@@ -29,6 +30,8 @@ class Service extends Model
         'last_interval_status',
         'last_interval_value',
         'interval_wa_sent_in_this_cycle',
+        // 🔥 FIELD UNTUK ARSIP
+        'is_archived',
     ];
 
     /**
@@ -46,6 +49,8 @@ class Service extends Model
         'last_interval_status' => 'string',
         'last_interval_value' => 'integer',
         'interval_wa_sent_in_this_cycle' => 'boolean',
+        // 🔥 FIELD UNTUK ARSIP
+        'is_archived' => 'boolean',
     ];
 
     /**
@@ -54,6 +59,26 @@ class Service extends Model
     public function logs()
     {
         return $this->hasMany(ServiceLog::class);
+    }
+
+    // ================================================================
+    // 🔥 SCOPES UNTUK ARSIP
+    // ================================================================
+
+    /**
+     * 🔥 Scope untuk service yang AKTIF (TIDAK diarsipkan)
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_archived', false);
+    }
+
+    /**
+     * 🔥 Scope untuk service yang DIARSIPKAN
+     */
+    public function scopeArchived($query)
+    {
+        return $query->where('is_archived', true);
     }
 
     // ================================================================
@@ -149,9 +174,12 @@ class Service extends Model
     }
 
     // ================================================================
-    // METHOD EXISTING (TIDAK BERUBAH)
+    // 🔥 METHOD UPTIME
     // ================================================================
 
+    /**
+     * 🔥 HITUNG UPTIME (TETAP UNTUK SEMUA SERVICE, TERMASUK YANG DIARSIPKAN)
+     */
     public function getUptime($days = 30)
     {
         $logs = $this->logs()
@@ -181,6 +209,10 @@ class Service extends Model
         $uptime = round($totalWeight / $total, 2);
         return max(0, min(100, $uptime));
     }
+
+    // ================================================================
+    // 🔥 METHOD STATUS INFO
+    // ================================================================
 
     public function getStatusInfo()
     {
@@ -216,6 +248,10 @@ class Service extends Model
         return $statusMap[$status] ?? $statusMap['UNKNOWN'];
     }
 
+    // ================================================================
+    // 🔥 METHOD CEK STATUS
+    // ================================================================
+
     public function isDown()
     {
         return $this->last_status === 'DOWN';
@@ -230,6 +266,15 @@ class Service extends Model
     {
         return $this->last_status === 'WARNING';
     }
+
+    public function isArchived()
+    {
+        return $this->is_archived ?? false;
+    }
+
+    // ================================================================
+    // 🔥 METHOD FORMAT WAKTU
+    // ================================================================
 
     public function getResponseTimeHuman()
     {
@@ -253,6 +298,15 @@ class Service extends Model
         return $this->last_check_at->setTimezone('Asia/Jakarta')->format('H:i:s');
     }
 
+    public function getLastCheckAtFull()
+    {
+        if (!$this->last_check_at) {
+            return '-';
+        }
+        
+        return $this->last_check_at->setTimezone('Asia/Jakarta')->format('d/m/Y H:i:s');
+    }
+
     public function getLastWaSentHuman()
     {
         if (!$this->last_wa_sent_at) {
@@ -272,7 +326,7 @@ class Service extends Model
     }
 
     // ================================================================
-    // 🔥 SCOPES
+    // 🔥 SCOPES EXISTING
     // ================================================================
 
     public function scopeStatus($query, $status)
@@ -314,13 +368,21 @@ class Service extends Model
             });
     }
 
+    // ================================================================
+    // 🔥 STATISTICS METHOD (HANYA SERVICE AKTIF)
+    // ================================================================
+
+    /**
+     * 🔥 GET STATISTICS - HANYA SERVICE YANG AKTIF (TIDAK DIARSIPKAN)
+     */
     public static function getStatistics()
     {
-        $total = self::count();
-        $up = self::up()->count();
-        $down = self::down()->count();
-        $warning = self::warning()->count();
+        $total = self::active()->count();
+        $up = self::active()->up()->count();
+        $down = self::active()->down()->count();
+        $warning = self::active()->warning()->count();
         $unknown = $total - ($up + $down + $warning);
+        $archived = self::archived()->count();
 
         return [
             'total' => $total,
@@ -328,7 +390,33 @@ class Service extends Model
             'down' => $down,
             'warning' => $warning,
             'unknown' => $unknown,
+            'archived' => $archived,
             'uptime_percentage' => $total > 0 ? round(($up / $total) * 100, 2) : 0,
+        ];
+    }
+
+    /**
+     * 🔥 GET ALL STATISTICS (TERMASUK ARSIP)
+     */
+    public static function getAllStatistics()
+    {
+        $total = self::count();
+        $up = self::up()->count();
+        $down = self::down()->count();
+        $warning = self::warning()->count();
+        $unknown = $total - ($up + $down + $warning);
+        $archived = self::archived()->count();
+        $active = self::active()->count();
+
+        return [
+            'total' => $total,
+            'active' => $active,
+            'archived' => $archived,
+            'up' => $up,
+            'down' => $down,
+            'warning' => $warning,
+            'unknown' => $unknown,
+            'uptime_percentage' => $active > 0 ? round(($up / $active) * 100, 2) : 0,
         ];
     }
 }

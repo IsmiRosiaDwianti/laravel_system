@@ -4,381 +4,423 @@
     <meta charset="utf-8">
     <title>Laporan Monitoring Service</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* ==================== RESET & BASE ==================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'DejaVu Sans', 'Arial', sans-serif;
             font-size: 11px;
-            padding: 20px;
-            color: #333;
+            padding: 20px 25px;
+            color: #1a202c;
+            background: #f8fafc;
+            line-height: 1.5;
         }
+
+        /* ==================== CARD ==================== */
+        .card {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* ==================== HEADER ==================== */
         .header {
             text-align: center;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #2c3e50;
-            padding-bottom: 15px;
+            background: #1a202c;
+            border-radius: 10px 10px 0 0;
+            margin: -20px -24px 16px -24px;
+            padding: 22px 24px 18px 24px;
         }
         .header .title {
             font-size: 22px;
-            font-weight: bold;
-            color: #2c3e50;
+            font-weight: 800;
+            color: #ffffff;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
         }
         .header .subtitle {
-            font-size: 12px;
-            color: #7f8c8d;
-            margin-top: 5px;
+            font-size: 11px;
+            color: #a0aec0;
+            margin-top: 6px;
         }
-        .section {
-            margin-bottom: 20px;
+        .header .subtitle strong {
+            color: #ffffff;
+            font-weight: 700;
         }
+        .header .subtitle .badge-header {
+            display: inline-block;
+            background: #234a37;
+            color: #48bb78;
+            padding: 2px 12px;
+            border-radius: 10px;
+            font-size: 8px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+        .header .subtitle .printed {
+            display: block;
+            font-size: 9px;
+            color: #718096;
+            margin-top: 4px;
+        }
+
+        /* ==================== SECTION ==================== */
+        .section { margin-bottom: 14px; }
         .section-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #2c3e50;
-            background-color: #ecf0f1;
-            padding: 5px 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a202c;
+            padding: 6px 14px;
             margin-bottom: 10px;
-            border-left: 4px solid #3498db;
+            background: #ebf8ff;
+            border-left: 5px solid #3498db;
         }
-        .info-grid {
-            display: table;
-            width: 100%;
-            margin-bottom: 10px;
+        .section-title-sm {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1a202c;
+            padding: 5px 14px;
+            margin-bottom: 8px;
+            background: #fff5f5;
+            border-left: 5px solid #fc8181;
         }
-        .info-row {
-            display: table-row;
+
+        /* ==================== DIVIDER ==================== */
+        .divider-gradient {
+            border: none;
+            height: 1px;
+            background: #e2e8f0;
+            margin: 12px 0;
+        }
+
+        /* ==================== INFO GRID - table-based (2 kolom) ==================== */
+        .info-table { width: 100%; border-collapse: collapse; }
+        .info-table td {
+            padding: 4px 8px;
+            border-bottom: 1px solid #f0f4f8;
+            font-size: 10px;
+            vertical-align: middle;
         }
         .info-label {
-            display: table-cell;
-            padding: 3px 10px 3px 0;
-            font-weight: bold;
-            width: 150px;
-            color: #555;
+            font-weight: 700;
+            color: #4a5568;
+            width: 110px;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
-        .info-value {
-            display: table-cell;
-            padding: 3px 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 10px 0;
-            font-size: 10px;
-        }
-        table th {
-            background-color: #2c3e50;
-            color: white;
-            padding: 8px 6px;
-            text-align: left;
-            font-weight: bold;
-        }
-        table td {
-            padding: 6px;
-            border-bottom: 1px solid #ddd;
-        }
-        table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        table tr:hover {
-            background-color: #f5f5f5;
+        .info-value { color: #1a202c; font-weight: 500; }
+        .info-value strong { color: #2c3e50; font-weight: 700; }
+        .status-down {
+            color: #9b2c2c; font-weight: 700; background: #fed7d7;
+            padding: 2px 10px; border-radius: 10px;
         }
         .status-up {
-            color: #27ae60;
-            font-weight: bold;
+            color: #22543d; font-weight: 700; background: #c6f6d5;
+            padding: 2px 10px; border-radius: 10px;
         }
         .status-warning {
-            color: #f39c12;
-            font-weight: bold;
-        }
-        .status-down {
-            color: #e74c3c;
-            font-weight: bold;
+            color: #744210; font-weight: 700; background: #fefcbf;
+            padding: 2px 10px; border-radius: 10px;
         }
         .status-unknown {
-            color: #95a5a6;
-            font-weight: bold;
+            color: #2d3748; font-weight: 700; background: #e2e8f0;
+            padding: 2px 10px; border-radius: 10px;
         }
+
+        /* ==================== RINGKASAN EKSEKUTIF - BAR CHART ==================== */
+        .chart-container {
+            padding: 14px 16px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .bar-track {
+            width: 100%;
+            height: 24px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #edf2f7;
+        }
+        .bar-track table { width: 100%; height: 24px; border-collapse: collapse; }
+        .bar-track td { height: 24px; padding: 0; }
+        .bar-up { background: #48bb78; }
+        .bar-down { background: #fc8181; }
+        .bar-warning { background: #f6ad55; }
+
+        .legend-table { width: 100%; margin-top: 10px; border-collapse: collapse; }
+        .legend-table td { padding: 4px 6px; font-size: 10px; font-weight: 500; vertical-align: middle; }
+        .color-box {
+            display: inline-block;
+            width: 14px; height: 14px; border-radius: 4px; margin-right: 8px;
+        }
+        .color-box.up { background: #38a169; }
+        .color-box.down { background: #e53e3e; }
+        .color-box.warning { background: #dd6b20; }
+        .legend-percent { font-weight: 700; color: #2d3748; font-size: 11px; text-align: right; }
+        .legend-rt-row td { border-top: 2px solid #e2e8f0; padding-top: 8px; font-size: 10px; color: #718096; }
+        .legend-rt-row .legend-percent { font-size: 12px; color: #2c3e50; font-weight: 800; }
+
+        /* ==================== BADGE ==================== */
         .badge {
             display: inline-block;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: bold;
+            padding: 1px 10px;
+            border-radius: 10px;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .badge-up {
-            background-color: #d4edda;
-            color: #155724;
+        .badge-up { background: #c6f6d5; color: #22543d; }
+        .badge-warning { background: #fefcbf; color: #744210; }
+        .badge-down { background: #fed7d7; color: #9b2c2c; }
+        .badge-unknown { background: #e2e8f0; color: #2d3748; }
+
+        /* ==================== CRITICAL DATES - table-based ==================== */
+        .critical-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; }
+        .critical-item td {
+            padding: 5px 14px;
+            font-size: 10px;
+            border-left: 5px solid;
         }
-        .badge-warning {
-            background-color: #fff3cd;
-            color: #856404;
+        .critical-item.danger td { background: #fff5f5; border-color: #fc8181; }
+        .critical-item.warning td { background: #fffbeb; border-color: #f6ad55; }
+        .critical-item .date { font-weight: 700; font-size: 10px; color: #2d3748; width: 30%; }
+        .critical-item .status { font-size: 10px; color: #4a5568; }
+
+        /* ==================== TABLE (log) ==================== */
+        .table-responsive {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
         }
-        .badge-down {
-            background-color: #f8d7da;
-            color: #721c24;
+        table.log-table { width: 100%; border-collapse: collapse; font-size: 8.5px; }
+        table.log-table thead th {
+            background: #1a202c;
+            color: #ffffff;
+            padding: 6px 10px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .badge-unknown {
-            background-color: #e2e3e5;
-            color: #383d41;
+        table.log-table tbody td {
+            padding: 5px 10px;
+            border-bottom: 1px solid #f0f4f8;
+            font-size: 8.5px;
+            color: #2d3748;
         }
+        table.log-table tbody tr:last-child td { border-bottom: none; }
+        table.log-table tbody tr.even-row { background: #fafcfd; }
+
+        /* ==================== TEXT ==================== */
+        .text-muted { color: #718096; font-size: 8.5px; }
+        .no-data { text-align: center; padding: 24px; color: #718096; font-style: italic; font-size: 10px; }
+
+        /* ==================== FOOTER ==================== */
         .footer {
             text-align: center;
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
-            font-size: 9px;
-            color: #7f8c8d;
+            margin-top: 20px;
+            padding-top: 12px;
+            border-top: 2px solid #e2e8f0;
+            font-size: 8.5px;
+            color: #a0aec0;
         }
-        .stat-box {
-            display: inline-block;
-            width: 19%;
-            margin-right: 1%;
-            padding: 8px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            text-align: center;
-            border: 1px solid #dee2e6;
-        }
-        .stat-box .number {
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .stat-box .label {
-            font-size: 9px;
-            color: #7f8c8d;
-            margin-top: 2px;
-        }
-        .stat-box-up .number { color: #27ae60; }
-        .stat-box-warning .number { color: #f39c12; }
-        .stat-box-down .number { color: #e74c3c; }
-        .stat-box-total .number { color: #2c3e50; }
-        .page-break {
-            page-break-before: always;
-        }
-        @media print {
-            .no-print { display: none; }
-        }
+        .footer strong { color: #718096; font-weight: 700; }
+
+        .page-break { page-break-before: always; }
     </style>
 </head>
 <body>
-    <!-- HEADER -->
-    <div class="header">
-        <div class="title">LAPORAN MONITORING SERVICE</div>
-        <div class="subtitle">
-            Dicetak pada: {{ now()->format('d/m/Y H:i:s') }} | 
-            Laporan Service: {{ $reportData['service']['name'] }}
-        </div>
-    </div>
 
-    <!-- SERVICE INFORMATION -->
-    <div class="section">
-        <div class="section-title">INFORMASI SERVICE</div>
-        <div class="info-grid">
-            <div class="info-row">
-                <div class="info-label">Nama Service</div>
-                <div class="info-value">{{ $reportData['service']['name'] }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Target</div>
-                <div class="info-value">{{ $reportData['service']['target'] }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Tipe</div>
-                <div class="info-value">{{ strtoupper($reportData['service']['type']) }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Status Terakhir</div>
-                <div class="info-value">
-                    <span class="status-{{ strtolower($reportData['service']['last_status']) }}">
-                        {{ $reportData['service']['last_status'] }}
-                    </span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- PERIOD INFORMATION -->
-    <div class="section">
-        <div class="section-title">PERIODE LAPORAN</div>
-        <div class="info-grid">
-            <div class="info-row">
-                <div class="info-label">Dari Tanggal</div>
-                <div class="info-value">{{ $reportData['period']['date_from'] }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Sampai Tanggal</div>
-                <div class="info-value">{{ $reportData['period']['date_to'] }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Total Hari</div>
-                <div class="info-value">{{ $reportData['period']['total_days'] }} hari</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- STATISTICS -->
-    <div class="section">
-        <div class="section-title">STATISTIK</div>
-        <div style="text-align: center; margin-bottom: 15px;">
-            <div class="stat-box stat-box-total">
-                <div class="number">{{ $reportData['statistics']['total_checks'] }}</div>
-                <div class="label">Total Check</div>
-            </div>
-            <div class="stat-box stat-box-up">
-                <div class="number">{{ $reportData['statistics']['up_count'] }}</div>
-                <div class="label">UP</div>
-            </div>
-            <div class="stat-box stat-box-warning">
-                <div class="number">{{ $reportData['statistics']['warning_count'] }}</div>
-                <div class="label">WARNING</div>
-            </div>
-            <div class="stat-box stat-box-down">
-                <div class="number">{{ $reportData['statistics']['down_count'] }}</div>
-                <div class="label">DOWN</div>
-            </div>
-            <div class="stat-box stat-box-total">
-                <div class="number">{{ $reportData['statistics']['uptime_percentage'] }}%</div>
-                <div class="label">Uptime</div>
+    <div class="card">
+        <!-- ==================== HEADER ==================== -->
+        <div class="header">
+            <div class="title">LAPORAN MONITORING SERVICE</div>
+            <div class="subtitle">
+                <strong>{{ $reportData['service']['name'] }}</strong> &bull;
+                {{ $reportData['period']['date_from'] }} &rarr; {{ $reportData['period']['date_to'] }}
+                &bull; <strong>{{ number_format($reportData['statistics']['total_checks']) }}</strong> data
+                <span class="badge-header">LIVE</span>
+                <span class="printed">Dicetak: {{ now()->format('d/m/Y H:i:s') }}</span>
             </div>
         </div>
 
-        <table>
-            <tr>
-                <td><strong>Rata-rata Response Time</strong></td>
-                <td>{{ $reportData['statistics']['avg_response_time'] }} s</td>
-            </tr>
-            <tr>
-                <td><strong>Response Time Tercepat</strong></td>
-                <td>{{ $reportData['statistics']['min_response_time'] }} s</td>
-            </tr>
-            <tr>
-                <td><strong>Response Time Terlambat</strong></td>
-                <td>{{ $reportData['statistics']['max_response_time'] }} s</td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- CRITICAL DATES -->
-    @if(!empty($reportData['critical_dates']))
+        <!-- ==================== INFORMASI SERVICE ==================== -->
         <div class="section">
-            <div class="section-title">TANGGAL KRITIS</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th style="text-align: center;">Total Check</th>
-                        <th style="text-align: center;">UP</th>
-                        <th style="text-align: center;">WARNING</th>
-                        <th style="text-align: center;">DOWN</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($reportData['critical_dates'] as $date => $data)
-                        <tr>
-                            <td>{{ $date }}</td>
-                            <td style="text-align: center;">{{ $data['total_checks'] }}</td>
-                            <td style="text-align: center; color: #27ae60;">{{ $data['up_count'] }}</td>
-                            <td style="text-align: center; color: #f39c12;">{{ $data['warning_count'] }}</td>
-                            <td style="text-align: center; color: #e74c3c;">{{ $data['down_count'] }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-    <!-- VULNERABLE HOURS -->
-    @if(!empty($reportData['vulnerable_hours']))
-        <div class="section">
-            <div class="section-title">JAM RAWAN</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Jam</th>
-                        <th style="text-align: center;">Total Masalah</th>
-                        <th style="text-align: center;">DOWN</th>
-                        <th style="text-align: center;">WARNING</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($reportData['vulnerable_hours'] as $hour => $data)
-                        <tr>
-                            <td>{{ $hour }}:00 - {{ $hour }}:59</td>
-                            <td style="text-align: center;">{{ $data['total_issues'] }}</td>
-                            <td style="text-align: center; color: #e74c3c;">{{ $data['down_count'] }}</td>
-                            <td style="text-align: center; color: #f39c12;">{{ $data['warning_count'] }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-    <!-- RECENT DOWNS -->
-    @if($reportData['recent_downs']->isNotEmpty())
-        <div class="section">
-            <div class="section-title">5 KEJADIAN DOWN TERAKHIR</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Waktu</th>
-                        <th>Pesan</th>
-                        <th style="text-align: center;">Response Code</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($reportData['recent_downs'] as $down)
-                        <tr>
-                            <td>{{ $down['time'] }}</td>
-                            <td>{{ $down['message'] }}</td>
-                            <td style="text-align: center;">{{ $down['response_code'] }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-    <!-- DETAIL LOGS -->
-    <div class="section page-break">
-        <div class="section-title">DETAIL LOG</div>
-        <table>
-            <thead>
+            <div class="section-title">INFORMASI SERVICE</div>
+            <table class="info-table">
                 <tr>
-                    <th style="width: 15%;">Tanggal/Waktu</th>
-                    <th style="width: 10%; text-align: center;">Status</th>
-                    <th style="width: 12%; text-align: center;">Response Code</th>
-                    <th style="width: 12%; text-align: center;">Response Time (s)</th>
-                    <th style="width: 51%;">Message</th>
+                    <td class="info-label">Nama Service</td>
+                    <td class="info-value"><strong>{{ $reportData['service']['name'] }}</strong></td>
+                    <td class="info-label">Service Dibuat</td>
+                    <td class="info-value">{{ $reportData['service']['created_at'] ?? 'N/A' }}</td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach($reportData['logs'] as $log)
+                <tr>
+                    <td class="info-label">Target</td>
+                    <td class="info-value">{{ $reportData['service']['target'] }}</td>
+                    <td class="info-label">Periode Laporan</td>
+                    <td class="info-value">
+                        {{ $reportData['period']['date_from'] }} &rarr; {{ $reportData['period']['date_to'] }}
+                        <span class="text-muted">({{ $reportData['period']['total_days'] }} hari)</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">Tipe</td>
+                    <td class="info-value"><strong>{{ strtoupper($reportData['service']['type']) }}</strong></td>
+                    <td class="info-label">Status Terakhir</td>
+                    <td class="info-value">
+                        <span class="status-{{ strtolower($reportData['service']['last_status']) }}">{{ $reportData['service']['last_status'] }}</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <hr class="divider-gradient">
+
+        <!-- ==================== RINGKASAN EKSEKUTIF ==================== -->
+        <div class="section">
+            <div class="section-title">RINGKASAN EKSEKUTIF</div>
+
+            @php
+                $upPct = $reportData['statistics']['uptime_percentage'] ?? 0;
+                $downPct = $reportData['statistics']['down_percentage'] ?? 0;
+                $warnPct = $reportData['statistics']['warning_percentage'] ?? 0;
+
+                // Normalisasi: pastikan total = 100%
+                $totalPct = $upPct + $downPct + $warnPct;
+                if ($totalPct > 0 && $totalPct != 100) {
+                    $diff = 100 - $totalPct;
+                    $upPct = round($upPct + $diff, 2);
+                }
+            @endphp
+
+            <div class="chart-container">
+                <div class="bar-track">
+                    <table>
+                        <tr>
+                            @if($upPct > 0)
+                                <td class="bar-up" style="width: {{ $upPct }}%;"></td>
+                            @endif
+                            @if($downPct > 0)
+                                <td class="bar-down" style="width: {{ $downPct }}%;"></td>
+                            @endif
+                            @if($warnPct > 0)
+                                <td class="bar-warning" style="width: {{ $warnPct }}%;"></td>
+                            @endif
+                            @if($upPct <= 0 && $downPct <= 0 && $warnPct <= 0)
+                                <td style="width: 100%; background: #e2e8f0; text-align: center; color: #718096; font-size: 9px;">Tidak ada data</td>
+                            @endif
+                        </tr>
+                    </table>
+                </div>
+
+                <table class="legend-table">
                     <tr>
-                        <td>{{ $log['date'] }}</td>
-                        <td style="text-align: center;">
-                            <span class="badge badge-{{ strtolower($log['status']) }}">
-                                {{ $log['status'] }}
-                            </span>
+                        <td><span class="color-box up"></span>UP</td>
+                        <td class="legend-percent">{{ $upPct }}%</td>
+                    </tr>
+                    <tr>
+                        <td><span class="color-box down"></span>DOWN</td>
+                        <td class="legend-percent">{{ $downPct }}%</td>
+                    </tr>
+                    <tr>
+                        <td><span class="color-box warning"></span>WARNING</td>
+                        <td class="legend-percent">{{ $warnPct }}%</td>
+                    </tr>
+                    <tr class="legend-rt-row">
+                        <td><strong>Avg Response Time</strong></td>
+                        <td class="legend-percent">{{ $reportData['statistics']['avg_response_time'] ?? 0 }}s</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <hr class="divider-gradient">
+
+        <!-- ==================== TANGGAL KRITIS ==================== -->
+        @if(!empty($reportData['critical_dates']))
+        <div class="section">
+            <div class="section-title-sm">TANGGAL KRITIS</div>
+            <table class="critical-table">
+                @foreach($reportData['critical_dates'] as $date => $data)
+                    @php
+                        $level = ($data['down_count'] ?? 0) > 0 ? 'danger' : 'warning';
+                        $statusText = ($data['down_count'] ?? 0) > 0 ? 'DOWN' : 'WARNING';
+                    @endphp
+                    <tr class="critical-item {{ $level }}">
+                        <td class="date">{{ $date }}</td>
+                        <td class="status">
+                            <strong>{{ $statusText }}</strong> &bull; Uptime <strong>{{ $data['uptime'] ?? 0 }}%</strong>
+                            @if(($data['down_count'] ?? 0) > 0)
+                                <span class="badge badge-down">{{ $data['down_count'] }}x down</span>
+                            @endif
+                            @if(($data['warning_count'] ?? 0) > 0)
+                                <span class="badge badge-warning">{{ $data['warning_count'] }}x warning</span>
+                            @endif
                         </td>
-                        <td style="text-align: center;">{{ $log['response_code'] }}</td>
-                        <td style="text-align: center;">{{ $log['response_time'] }}</td>
-                        <td>{{ $log['message'] }}</td>
                     </tr>
                 @endforeach
-            </tbody>
-        </table>
+            </table>
+        </div>
+
+        <hr class="divider-gradient">
+        @endif
+
+        <!-- ==================== DETAIL LOG ==================== -->
+        <div class="section page-break">
+            <div class="section-title">DETAIL LOG</div>
+            @php
+                $logCount = $reportData['logs']->count();
+                $totalLogs = $reportData['statistics']['total_checks'] ?? 0;
+            @endphp
+            @if($logCount > 0)
+                <p class="text-muted" style="margin-bottom:6px; padding-left:4px;">
+                    Menampilkan <strong>{{ $logCount }}</strong> data log terbaru
+                    dari <strong>{{ number_format($totalLogs) }}</strong> total data
+                </p>
+                <div class="table-responsive">
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th style="width:18%;">Waktu</th>
+                                <th style="width:11%;text-align:center;">Status</th>
+                                <th style="width:11%;text-align:center;">Code</th>
+                                <th style="width:12%;text-align:center;">RT (s)</th>
+                                <th style="width:48%;">Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($reportData['logs'] as $index => $log)
+                                <tr class="{{ $index % 2 == 1 ? 'even-row' : '' }}">
+                                    <td>{{ $log['date'] }}</td>
+                                    <td style="text-align:center;">
+                                        <span class="badge badge-{{ strtolower($log['status']) }}">{{ $log['status'] }}</span>
+                                    </td>
+                                    <td style="text-align:center; font-weight:700;">{{ $log['response_code'] }}</td>
+                                    <td style="text-align:center; font-weight:600;">{{ $log['response_time'] }}</td>
+                                    <td style="font-size:8px;">{{ Str::limit($log['message'] ?? '-', 55) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="no-data">Tidak ada data log untuk periode ini</div>
+            @endif
+        </div>
+
+        <!-- ==================== FOOTER ==================== -->
+        <div class="footer">
+            Laporan dibuat otomatis oleh <strong>Sistem Monitoring Service</strong>
+            &bull;
+            {{ $reportData['period']['date_from'] }} &rarr; {{ $reportData['period']['date_to'] }}
+            &bull;
+            Total <strong>{{ number_format($reportData['statistics']['total_checks'] ?? 0) }}</strong> data
+        </div>
     </div>
 
-    <!-- FOOTER -->
-    <div class="footer">
-        Laporan ini dibuat secara otomatis oleh Sistem Monitoring Service<br>
-        Halaman {{ $page ?? 1 }} dari {{ $pages ?? 1 }}
-    </div>
 </body>
 </html>

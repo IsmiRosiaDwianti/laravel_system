@@ -18,6 +18,7 @@ class ContactController extends Controller
         $totalContacts = Contact::count();
         $totalActive = Contact::where('is_active', true)->count();
         $totalInactive = Contact::where('is_active', false)->count();
+        $maxContacts = 10; // Maksimal kontak yang diizinkan
         
         $contacts = Contact::orderBy('created_at', 'desc')
             ->paginate($perPage)
@@ -28,7 +29,8 @@ class ContactController extends Controller
             'totalContacts',
             'totalActive',
             'totalInactive',
-            'perPage'
+            'perPage',
+            'maxContacts'
         ));
     }
 
@@ -46,6 +48,16 @@ class ContactController extends Controller
     public function store(Request $request)
     {
         try {
+            // 🔥 CEK APAKAH SUDAH MENCAPAI BATAS MAKSIMAL (10 KONTAK)
+            $currentCount = Contact::count();
+            $maxContacts = 10;
+            
+            if ($currentCount >= $maxContacts) {
+                return redirect()
+                    ->route('contacts')
+                    ->with('error', '❌ Batas maksimal kontak adalah ' . $maxContacts . ' kontak. Anda sudah memiliki ' . $currentCount . ' kontak.');
+            }
+
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'phone' => 'required|string|max:15|unique:contacts,phone',
@@ -60,7 +72,7 @@ class ContactController extends Controller
 
             return redirect()
                 ->route('contacts')
-                ->with('success', 'Kontak "' . $contact->name . '" berhasil ditambahkan');
+                ->with('success', '✅ Kontak "' . $contact->name . '" berhasil ditambahkan');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()
@@ -114,7 +126,7 @@ class ContactController extends Controller
 
             return redirect()
                 ->route('contacts')
-                ->with('success', 'Kontak "' . $contact->name . '" berhasil diupdate');
+                ->with('success', '✅ Kontak "' . $contact->name . '" berhasil diupdate');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()
@@ -141,7 +153,7 @@ class ContactController extends Controller
 
             return redirect()
                 ->route('contacts')
-                ->with('success', 'Kontak "' . $contactName . '" berhasil dihapus');
+                ->with('success', '✅ Kontak "' . $contactName . '" berhasil dihapus');
 
         } catch (\Exception $e) {
             return redirect()
@@ -201,5 +213,25 @@ class ContactController extends Controller
                 'message' => 'Gagal mencari data: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * API: Get contacts limit info
+     * GET /api/contacts/limit
+     */
+    public function getLimitInfo()
+    {
+        $currentCount = Contact::count();
+        $maxContacts = 10;
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'current' => $currentCount,
+                'max' => $maxContacts,
+                'remaining' => max(0, $maxContacts - $currentCount),
+                'can_add' => $currentCount < $maxContacts
+            ]
+        ]);
     }
 }

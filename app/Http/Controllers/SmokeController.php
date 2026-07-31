@@ -80,15 +80,23 @@ class SmokeController extends Controller
             ->reverse()
             ->values();
 
-        // ==================== LOGS UNTUK TABEL ====================
+        // ==================== 🔥 LOGS UNTUK TABEL (DENGAN SORTIR) ====================
         $perPage = $request->input('perPage', 10);
-        $page = $request->input('page', 1);
-        
+        $sort = $request->input('sort', 'created_at');
+        $direction = $request->input('direction', 'desc');
+
+        // 🔥 VALIDASI SORT UNTUK MENCEGAH SQL INJECTION
+        $allowedSorts = ['id', 'created_at', 'smoke_value', 'status', 'message', 'updated_at'];
+        $sort = in_array($sort, $allowedSorts) ? $sort : 'created_at';
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'desc';
+
+        // 🔥 AMBIL SEMUA LOG DARI DATABASE
         $allLogs = SmokeLog::with('device')
             ->whereIn('status', ['NORMAL', 'WARNING', 'DANGER'])
-            ->orderBy('created_at', 'desc')
+            ->orderBy($sort, $direction)
             ->get();
-        
+
+        // 🔥 FILTER: HANYA TAMPILKAN PERUBAHAN STATUS
         $filteredLogs = [];
         $lastStatus = null;
         
@@ -100,6 +108,9 @@ class SmokeController extends Controller
         }
         
         $totalFiltered = count($filteredLogs);
+        
+        // 🔥 PAGINATION MANUAL (KARENA FILTER)
+        $page = $request->input('page', 1);
         $offset = ($page - 1) * $perPage;
         $paginatedLogs = array_slice($filteredLogs, $offset, $perPage);
         
@@ -108,7 +119,10 @@ class SmokeController extends Controller
             $totalFiltered,
             $perPage,
             $page,
-            ['path' => $request->url(), 'query' => $request->query()]
+            [
+                'path' => $request->url(),
+                'query' => $request->query()
+            ]
         );
         $smokeLogs->setCollection(collect($paginatedLogs));
 
@@ -564,5 +578,53 @@ class SmokeController extends Controller
             'OFFLINE' => 'offline',
         ];
         return $classes[$status] ?? 'normal';
+    }
+
+    /**
+     * ============================================================
+     *  📤 EXPORT CSV
+     * ============================================================
+     */
+    public function export(Request $request)
+    {
+        $sort = $request->input('sort', 'created_at');
+        $direction = $request->input('direction', 'desc');
+        
+        $allowedSorts = ['id', 'created_at', 'smoke_value', 'status', 'message'];
+        $sort = in_array($sort, $allowedSorts) ? $sort : 'created_at';
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'desc';
+        
+        $logs = SmokeLog::with('device')
+            ->orderBy($sort, $direction)
+            ->get();
+        
+        $filename = 'smoke_logs_' . Carbon::now()->format('Y-m-d_H-i-s') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+        
+        $callback = function() use ($logs) {
+            $file = fopen('php://output', 'w');
+            
+            // Header CSV
+            fputcsv($file, ['ID', 'Tanggal', 'Nilai Asap', 'Status', 'Keterangan']);
+            
+            // Data
+            foreach ($logs as $log) {
+                fputcsv($file, [
+                    $log->id,
+                    $log->created_at->setTimezone('Asia/Jakarta')->format('d/m/Y H:i:s'),
+                    $log->smoke_value ?? 0,
+                    $log->status ?? 'NORMAL',
+                    $log->message ?? '-',
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
     }
 }

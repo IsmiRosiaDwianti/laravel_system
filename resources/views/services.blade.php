@@ -6,6 +6,69 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
+@php
+    // 🔥 AMBIL PARAMETER SORTING DARI URL
+    $sortBy = request('sort_by', 'created_at');
+    $sortOrder = request('sort_order', 'desc');
+    $sortUptime = request('sort_by_uptime', '');
+    $sortUptimeOrder = request('sort_uptime_order', 'desc');
+    $showArchived = request('show_archived', false);
+    
+    // 🔥 FUNGSI HELP UNTUK SORT LINK
+    function sortLink($field, $label, $currentSort, $currentOrder, $isUptime = false) {
+        if ($isUptime) {
+            $currentField = 'uptime';
+            $newOrder = ($currentSort == $currentField && $currentOrder == 'desc') ? 'asc' : 'desc';
+            $isActive = ($currentSort == $currentField);
+            $url = request()->fullUrlWithQuery([
+                'sort_by_uptime' => $currentField,
+                'sort_uptime_order' => $newOrder,
+                'page' => 1,
+                'show_archived' => request('show_archived', false)
+            ]);
+        } else {
+            // 🔥 Untuk 'no' - sort berdasarkan 'created_at' 
+            $actualField = ($field === 'no') ? 'created_at' : $field;
+            
+            $isActive = ($currentSort == $actualField);
+            $newOrder = ($isActive && $currentOrder == 'desc') ? 'asc' : 'desc';
+            
+            $url = request()->fullUrlWithQuery([
+                'sort_by' => $actualField,
+                'sort_order' => $newOrder,
+                'page' => 1,
+                'show_archived' => request('show_archived', false)
+            ]);
+        }
+        
+        $currentDirection = '';
+        if ($isActive) {
+            $currentDirection = ($currentOrder == 'desc') ? 'desc' : 'asc';
+        }
+        
+        $upActive = ($isActive && $currentDirection == 'asc');
+        $downActive = ($isActive && $currentDirection == 'desc');
+        
+        $upColor = $upActive ? '#4f46e5' : 'var(--text-muted-service)';
+        $downColor = $downActive ? '#4f46e5' : 'var(--text-muted-service)';
+        $upWeight = $upActive ? '700' : '400';
+        $downWeight = $downActive ? '700' : '400';
+        $upOpacity = $upActive ? '1' : '0.4';
+        $downOpacity = $downActive ? '1' : '0.4';
+        
+        $activeClass = $isActive ? 'active' : '';
+        $textColor = $isActive ? 'color:#4f46e5;' : '';
+        
+        return "<a href=\"{$url}\" class=\"sort-link {$activeClass}\" style=\"text-decoration:none;display:inline-flex;align-items:center;gap:4px;{$textColor}\">
+            <span>{$label}</span>
+            <span style=\"display:inline-flex;align-items:center;gap:1px;font-size:12px;margin-left:2px;\">
+                <span style=\"transition:all 0.2s ease;color:{$upColor};font-weight:{$upWeight};opacity:{$upOpacity};\">↑</span>
+                <span style=\"transition:all 0.2s ease;color:{$downColor};font-weight:{$downWeight};opacity:{$downOpacity};\">↓</span>
+            </span>
+        </a>";
+    }
+@endphp
+
 <style>
     /* ================= ROOT VARIABLES ================= */
     :root {
@@ -34,9 +97,11 @@
         --border-table-service: #f1f4f8;
         --shadow-service: rgba(0, 0, 0, 0.04);
         --shadow-hover-service: rgba(0, 0, 0, 0.08);
+        --bg-archived: #fef3c7;
+        --border-archived: #f59e0b;
     }
 
-    /* Dark mode override dari layout utama */
+    /* Dark mode override */
     [data-theme="dark"] {
         --bg-service: #0f172a;
         --bg-card-service: #1e293b;
@@ -54,6 +119,8 @@
         --border-info-box-service: #3b82f6;
         --text-info-box-service: #93c5fd;
         --bg-delete-modal-service: #1e293b;
+        --bg-archived: #2d1a0f;
+        --border-archived: #d97706;
         
         --text-service: #e2e8f0;
         --text-secondary-service: #94a3b8;
@@ -64,6 +131,89 @@
         --shadow-service: rgba(0, 0, 0, 0.2);
         --shadow-hover-service: rgba(0, 0, 0, 0.3);
     }
+
+    /* ================= SORTING INDICATOR ================= */
+    .sort-link {
+        color: var(--text-muted-service);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: color 0.2s ease;
+        cursor: pointer;
+    }
+    .sort-link:hover {
+        color: var(--text-service);
+    }
+    .sort-link.active {
+        color: #4f46e5;
+        font-weight: 600;
+    }
+
+    [data-theme="dark"] .sort-link.active {
+        color: #818cf8;
+    }
+
+    /* ================= DOWNLOAD PERIOD DISABLED ================= */
+    .period-btn.disabled {
+        opacity: 0.4 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+        position: relative;
+    }
+    .period-btn.disabled::after {
+        content: ' 🔒';
+        font-size: 10px;
+    }
+
+    /* ============================================================ */
+    /* 🔥 TAMBAHAN CSS: DATE VALIDATION STYLES */
+    /* ============================================================ */
+    .download-date-range .date-group input.error {
+        border-color: #dc2626 !important;
+        background: #fef2f2 !important;
+    }
+
+    .download-date-range .date-group input.valid {
+        border-color: #10b981 !important;
+    }
+
+    .date-error-message {
+        color: #dc2626;
+        font-size: 12px;
+        margin-top: 4px;
+        animation: fadeIn 0.3s ease;
+    }
+
+    [data-theme="dark"] .download-date-range .date-group input.error {
+        background: #7f1d1d !important;
+        border-color: #f87171 !important;
+    }
+
+    /* ================= SERVICE AGE INFO ================= */
+    #serviceAgeInfo {
+        transition: all 0.3s ease;
+    }
+
+    #serviceAgeInfo .age-badge {
+        display: inline-block;
+        background: #4f46e5;
+        color: white;
+        padding: 2px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 6px;
+    }
+
+    #serviceAgeInfo .age-badge.new {
+        background: #10b981;
+    }
+
+    #serviceAgeInfo .age-badge.old {
+        background: #f59e0b;
+    }
+    /* ============================================================ */
 
     /* ================= STYLE UTAMA ================= */
     * {
@@ -172,7 +322,6 @@
         z-index: 1;
     }
 
-    /* 🔥 STYLE UNTUK WA INTERVAL DROPDOWN */
     .wa-interval-wrapper {
         display: flex;
         align-items: center;
@@ -257,7 +406,39 @@
         height: 18px;
     }
 
-    /* ================= AUTO REFRESH TIMER (POJOK) ================= */
+    .btn-archive {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+    }
+    .btn-archive:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+    .btn-archive.active {
+        background: #f59e0b;
+        color: #1e293b;
+        border-color: #f59e0b;
+    }
+    .btn-archive.active:hover {
+        background: #d97706;
+    }
+    [data-theme="dark"] .btn-archive.active {
+        color: #e2e8f0;
+    }
+
     .auto-refresh-timer {
         position: fixed;
         bottom: 20px;
@@ -305,7 +486,6 @@
         50% { opacity: 0.3; }
     }
 
-    /* ================= TOAST ================= */
     .toast-container {
         position: fixed;
         top: 24px;
@@ -363,7 +543,6 @@
         to { transform: translateX(120%); opacity: 0; }
     }
 
-    /* ================= STATS ================= */
     .stats-bar {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -427,7 +606,6 @@
         transition: color 0.3s ease;
     }
 
-    /* ================= UPTIME ================= */
     .uptime-value { font-size: 16px; font-weight: 700; transition: color 0.3s ease; }
     .uptime-value.green { color: #059669; }
     .uptime-value.yellow { color: #d97706; }
@@ -451,7 +629,6 @@
     .uptime-bar .uptime-fill.yellow { background: #d97706; }
     .uptime-bar .uptime-fill.red { background: #dc2626; }
 
-    /* ================= SEARCH BOX ================= */
     .search-wrapper {
         display: flex;
         align-items: center;
@@ -549,7 +726,6 @@
         transform: translateY(-1px);
     }
 
-    /* ================= SEARCH STATUS BAR ================= */
     .search-status {
         display: none;
         padding: 10px 16px;
@@ -600,7 +776,6 @@
         100% { transform: rotate(360deg); }
     }
 
-    /* ================= TABLE ================= */
     .table-container {
         background: var(--bg-card-service);
         border-radius: 14px;
@@ -647,7 +822,6 @@
     }
     .table-header .table-info strong { color: var(--text-service); }
 
-    /* ===== PAGINATION & PERPAGE ===== */
     .table-header-right {
         display: flex;
         align-items: center;
@@ -708,6 +882,7 @@
         top: 0;
         z-index: 10;
         transition: all 0.3s ease;
+        white-space: nowrap;
     }
 
     .table-container tbody td {
@@ -721,7 +896,6 @@
     .table-container tbody tr:last-child td { border-bottom: none; }
     .table-container tbody tr:hover { background: var(--bg-hover-service); }
 
-    /* ================= SERVICE INFO ================= */
     .service-info {
         display: flex;
         align-items: center;
@@ -782,65 +956,78 @@
         transition: all 0.3s ease;
     }
 
-    /* ================= STATUS BADGE ================= */
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    border: 1px solid;
-    transition: all 0.3s ease;
-}
-.status-badge .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-}
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        border: 1px solid;
+        transition: all 0.3s ease;
+    }
+    .status-badge .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
 
-.status-badge.up {
-    background: #d1fae5;
-    color: #065f46;
-    border-color: #6ee7b7;
-}
-.status-badge.up .status-dot {
-    background: #059669;
-    /* ✅ EFFECT DIBUANG */
-}
+    .status-badge.up {
+        background: #d1fae5;
+        color: #065f46;
+        border-color: #6ee7b7;
+    }
+    .status-badge.up .status-dot {
+        background: #059669;
+    }
 
-.status-badge.down {
-    background: #fee2e2;
-    color: #991b1b;
-    border-color: #fca5a5;
-}
-.status-badge.down .status-dot {
-    background: #dc2626;
-    /* ✅ EFFECT DIBUANG */
-}
+    .status-badge.down {
+        background: #fee2e2;
+        color: #991b1b;
+        border-color: #fca5a5;
+    }
+    .status-badge.down .status-dot {
+        background: #dc2626;
+    }
 
-.status-badge.warning {
-    background: #fef3c7;
-    color: #92400e;
-    border-color: #fcd34d;
-}
-.status-badge.warning .status-dot {
-    background: #d97706;
-    /* ✅ EFFECT DIBUANG */
-}
+    .status-badge.warning {
+        background: #fef3c7;
+        color: #92400e;
+        border-color: #fcd34d;
+    }
+    .status-badge.warning .status-dot {
+        background: #d97706;
+    }
 
-.status-badge.unknown {
-    background: var(--bg-hover-service);
-    color: var(--text-muted-service);
-    border-color: var(--border-service);
-}
-.status-badge.unknown .status-dot {
-    background: var(--text-muted-service);
-}
+    .status-badge.unknown {
+        background: var(--bg-hover-service);
+        color: var(--text-muted-service);
+        border-color: var(--border-service);
+    }
+    .status-badge.unknown .status-dot {
+        background: var(--text-muted-service);
+    }
+
+    .badge-archived {
+        display: inline-block;
+        background: #f59e0b;
+        color: #1e293b;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-left: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    [data-theme="dark"] .badge-archived {
+        background: #d97706;
+        color: #e2e8f0;
+    }
 
     .service-no {
         font-weight: 600;
@@ -852,7 +1039,6 @@
         transition: color 0.3s ease;
     }
 
-    /* ================= BUTTONS ================= */
     .action-buttons {
         display: flex;
         gap: 6px;
@@ -889,6 +1075,66 @@
     .btn-delete { background: #dc2626; }
     .btn-delete:hover { background: #b91c1c; }
 
+    .btn-archive-action {
+        background: #6b7280;
+        color: white;
+        padding: 6px 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .btn-archive-action:hover {
+        background: #4b5563;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-unarchive {
+        background: #059669;
+        color: white;
+        padding: 6px 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .btn-unarchive:hover {
+        background: #047857;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+
+    .btn-force-delete {
+        background: #dc2626;
+        color: white;
+        padding: 6px 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .btn-force-delete:hover {
+        background: #b91c1c;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+
     .btn-check {
         background: #7c3aed;
         color: white;
@@ -914,7 +1160,6 @@
         transform: none;
     }
 
-    /* ================= PAGINATION ================= */
     .pagination-wrapper {
         padding: 16px 24px 20px;
         border-top: 1px solid var(--border-table-service);
@@ -976,7 +1221,6 @@
         color: var(--text-muted-service);
     }
 
-    /* ================= CUSTOM MODAL ================= */
     .custom-modal-overlay {
         display: none;
         position: fixed;
@@ -1127,7 +1371,6 @@
         box-shadow: none !important;
     }
 
-    /* ================= MODAL FORM ================= */
     .modal-overlay {
         display: none;
         position: fixed;
@@ -1250,7 +1493,6 @@
         box-shadow: none !important;
     }
 
-    /* ================= DETAIL ================= */
     .detail-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -1419,7 +1661,6 @@
         border-radius: 10px;
     }
 
-    /* ================= DOWNLOAD MODAL ================= */
     .download-service-info {
         background: var(--bg-detail-service);
         border-radius: 10px;
@@ -1462,17 +1703,17 @@
         transition: all 0.2s ease;
         font-family: inherit;
     }
-    .period-btn:hover {
+    .period-btn:hover:not(.disabled) {
         border-color: #059669;
         color: #059669;
     }
-    .period-btn.active {
+    .period-btn.active:not(.disabled) {
         border-color: #059669;
         background: #ecfdf5;
         color: #065f46;
         font-weight: 600;
     }
-    [data-theme="dark"] .period-btn.active {
+    [data-theme="dark"] .period-btn.active:not(.disabled) {
         background: #064e3b;
         color: #6ee7b7;
     }
@@ -1516,7 +1757,6 @@
         --date-picker-filter: invert(1);
     }
 
-    /* ================= FORM DALAM MODAL ================= */
     .modal-body .form-group { margin-bottom: 18px; }
     .modal-body .form-group label {
         display: block;
@@ -1577,7 +1817,6 @@
         gap: 4px;
     }
 
-    /* ================= BUTTONS MODAL ================= */
     .btn-submit-modal {
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
         color: white;
@@ -1663,7 +1902,6 @@
         transform: none !important;
     }
 
-    /* ================= EMPTY STATE ================= */
     .empty-state {
         text-align: center;
         padding: 60px 20px;
@@ -1711,7 +1949,6 @@
         box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
     }
 
-    /* ================= ANIMATIONS ================= */
     @keyframes fadeIn {
         from { opacity: 0; }
         to { opacity: 1; }
@@ -1741,7 +1978,6 @@
     .stat-item:nth-child(3) { animation-delay: 0.15s; }
     .stat-item:nth-child(4) { animation-delay: 0.20s; }
 
-    /* ================= SEARCH HIGHLIGHT ================= */
     mark {
         background: #fbbf24;
         padding: 0 2px;
@@ -1754,7 +1990,29 @@
         color: #0f172a;
     }
 
-    /* ================= RESPONSIVE ================= */
+    @keyframes highlightRow {
+        0% { background-color: rgba(79, 70, 229, 0.15); }
+        100% { background-color: transparent; }
+    }
+
+    .table-container tbody tr.updating {
+        animation: highlightRow 0.8s ease;
+    }
+
+    .uptime-fill {
+        transition: width 0.5s ease !important;
+    }
+
+    @keyframes spinRefresh {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .spin {
+        display: inline-block;
+        animation: spinRefresh 0.8s linear infinite;
+    }
+
     @media (max-width: 1024px) {
         .stats-bar { grid-template-columns: repeat(2, 1fr); }
         .detail-grid { grid-template-columns: 1fr; }
@@ -1881,23 +2139,24 @@
 
 <!-- ================= DATA SERVICE UNTUK INSTANT EDIT ================= -->
 <script>
-    // 🔥 SIMPAN DATA SEMUA SERVICE DALAM JAVASCRIPT (INSTANT ACCESS)
-    const servicesMap = {};
+    var servicesMap = {};
     @foreach($services as $service)
-        servicesMap[{{ $service->id }}] = {
-            id: {{ $service->id }},
-            name: '{{ addslashes($service->name) }}',
-            target: '{{ addslashes($service->target) }}',
-            type: '{{ $service->type ?? 'http' }}'
-        };
+        servicesMap[{{ $service->id }}] = {!! json_encode([
+            'id' => $service->id,
+            'name' => $service->name,
+            'target' => $service->target,
+            'type' => $service->type ?? 'http',
+            'is_archived' => (bool) $service->is_archived
+        ]) !!};
     @endforeach
+    
+    console.log('✅ servicesMap loaded:', Object.keys(servicesMap).length, 'services');
 </script>
 
 <div class="service-container">
-    <!-- ================= TOAST CONTAINER ================= -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- ================= CUSTOM CONFIRM MODAL ================= -->
+    <!-- ================= CUSTOM CONFIRM MODALS ================= -->
     <div class="custom-modal-overlay" id="customConfirmModal">
         <div class="custom-modal">
             <div class="custom-modal-header">
@@ -1915,6 +2174,60 @@
         </div>
     </div>
 
+    <div class="custom-modal-overlay" id="archiveConfirmModal">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="modal-icon warning" id="archiveConfirmIcon">📦</div>
+                <h3 id="archiveConfirmTitle">Konfirmasi Arsip</h3>
+                <p id="archiveConfirmMessage">Apakah Anda yakin?</p>
+            </div>
+            <div class="custom-modal-body">
+                <p id="archiveConfirmDetail" style="font-size: 14px; color: var(--text-secondary-service); text-align: center;"></p>
+            </div>
+            <div class="custom-modal-footer">
+                <button class="btn-modal btn-cancel" onclick="closeArchiveConfirmModal()">✕ Batal</button>
+                <button class="btn-modal btn-confirm" id="archiveConfirmBtn" onclick="executeArchiveConfirm()" style="background: #d97706; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);">📦 Ya, Arsipkan</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-modal-overlay" id="unarchiveConfirmModal">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="modal-icon success" id="unarchiveConfirmIcon">↩️</div>
+                <h3 id="unarchiveConfirmTitle">Konfirmasi Pulihkan</h3>
+                <p id="unarchiveConfirmMessage">Apakah Anda yakin?</p>
+            </div>
+            <div class="custom-modal-body">
+                <p id="unarchiveConfirmDetail" style="font-size: 14px; color: var(--text-secondary-service); text-align: center;"></p>
+            </div>
+            <div class="custom-modal-footer">
+                <button class="btn-modal btn-cancel" onclick="closeUnarchiveConfirmModal()">✕ Batal</button>
+                <button class="btn-modal btn-confirm" id="unarchiveConfirmBtn" onclick="executeUnarchiveConfirm()" style="background: #059669; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);">↩️ Ya, Pulihkan</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-modal-overlay" id="forceDeleteConfirmModal">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="modal-icon danger" id="forceDeleteConfirmIcon">🗑️</div>
+                <h3 id="forceDeleteConfirmTitle">⚠️ Hapus Permanen</h3>
+                <p id="forceDeleteConfirmMessage">Service akan dihapus secara permanen!</p>
+            </div>
+            <div class="custom-modal-body">
+                <p id="forceDeleteConfirmDetail" style="font-size: 14px; color: var(--text-secondary-service); text-align: center;"></p>
+                <div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px 16px; margin-top: 12px; color: #991b1b; font-size: 13px;">
+                    ⚠️ <strong>Peringatan!</strong> Semua data log akan hilang dan tidak bisa dikembalikan!
+                </div>
+            </div>
+            <div class="custom-modal-footer">
+                <button class="btn-modal btn-cancel" onclick="closeForceDeleteConfirmModal()">✕ Batal</button>
+                <button class="btn-modal btn-confirm" id="forceDeleteConfirmBtn" onclick="executeForceDeleteConfirm()" style="background: #dc2626; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);">🗑️ Ya, Hapus Permanen</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= HEADER ================= -->
     <div class="service-header">
         <div class="header-left">
@@ -1925,25 +2238,29 @@
             </div>
         </div>
         <div class="header-actions">
-            <!-- 🔥 WA INTERVAL DROPDOWN (GLOBAL) -->
             <div class="wa-interval-wrapper">
                 <span class="wa-label">
                     <span class="wa-icon">📱</span> WA Interval:
                 </span>
                 <select id="waInterval" onchange="changeWaInterval(this.value)">
-    <option value="0" {{ ($waInterval ?? 5) == 0 ? 'selected' : '' }}>🚨 Kirim Langsung</option>
-    <option value="5" {{ ($waInterval ?? 5) == 5 ? 'selected' : '' }}>⏱️ 5 Menit </option>
-    <option value="10" {{ ($waInterval ?? 5) == 10 ? 'selected' : '' }}>⏱️ 10 Menit</option>
-    <option value="15" {{ ($waInterval ?? 5) == 15 ? 'selected' : '' }}>⏱️ 15 Menit</option>
-    <option value="20" {{ ($waInterval ?? 5) == 20 ? 'selected' : '' }}>⏱️ 20 Menit</option>
-    <option value="30" {{ ($waInterval ?? 5) == 30 ? 'selected' : '' }}>⏱️ 30 Menit</option>
-    <option value="60" {{ ($waInterval ?? 5) == 60 ? 'selected' : '' }}>⏰ 1 Jam</option>
-    <option value="120" {{ ($waInterval ?? 5) == 120 ? 'selected' : '' }}>⏰ 2 Jam</option>
-    <option value="240" {{ ($waInterval ?? 5) == 240 ? 'selected' : '' }}>⏰ 4 Jam</option>
-    <option value="480" {{ ($waInterval ?? 5) == 480 ? 'selected' : '' }}>⏰ 8 Jam</option>
-    <option value="1440" {{ ($waInterval ?? 5) == 1440 ? 'selected' : '' }}>⏰ 24 Jam</option>
-</select>
+                    <option value="0" {{ ($waInterval ?? 5) == 0 ? 'selected' : '' }}>🚨 Kirim Langsung</option>
+                    <option value="5" {{ ($waInterval ?? 5) == 5 ? 'selected' : '' }}>⏱️ 5 Menit</option>
+                    <option value="10" {{ ($waInterval ?? 5) == 10 ? 'selected' : '' }}>⏱️ 10 Menit</option>
+                    <option value="15" {{ ($waInterval ?? 5) == 15 ? 'selected' : '' }}>⏱️ 15 Menit</option>
+                    <option value="20" {{ ($waInterval ?? 5) == 20 ? 'selected' : '' }}>⏱️ 20 Menit</option>
+                    <option value="30" {{ ($waInterval ?? 5) == 30 ? 'selected' : '' }}>⏱️ 30 Menit</option>
+                    <option value="60" {{ ($waInterval ?? 5) == 60 ? 'selected' : '' }}>⏰ 1 Jam</option>
+                    <option value="120" {{ ($waInterval ?? 5) == 120 ? 'selected' : '' }}>⏰ 2 Jam</option>
+                    <option value="240" {{ ($waInterval ?? 5) == 240 ? 'selected' : '' }}>⏰ 4 Jam</option>
+                    <option value="480" {{ ($waInterval ?? 5) == 480 ? 'selected' : '' }}>⏰ 8 Jam</option>
+                    <option value="1440" {{ ($waInterval ?? 5) == 1440 ? 'selected' : '' }}>⏰ 24 Jam</option>
+                </select>
             </div>
+
+            <a href="{{ route('services', ['show_archived' => $showArchived ? 0 : 1]) }}" 
+               class="btn-archive {{ $showArchived ? 'active' : '' }}">
+                {{ $showArchived ? '📂 Kembali' : '📦 Arsip (' . ($totalArchived ?? 0) . ')' }}
+            </a>
 
             <button class="btn-primary" onclick="openCreateModal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -1978,10 +2295,17 @@
     <div class="table-container">
         <div class="table-header">
             <div class="header-left">
-                <h2>📋 Daftar Service</h2>
+                <h2>
+                    {{ $showArchived ? '📦 Daftar Service Diarsipkan' : '📋 Daftar Service' }}
+                    @if($showArchived)
+                        <span style="font-size: 12px; font-weight: 400; color: var(--text-muted-service); margin-left: 8px;">
+                            ({{ $services->total() }} service diarsipkan)
+                        </span>
+                    @endif
+                </h2>
             </div>
             
-            <!-- ================= SEARCH BOX ================= -->
+            @if(!$showArchived)
             <div class="search-wrapper">
                 <div class="search-input-wrap">
                     <span class="search-icon">🔍</span>
@@ -1995,8 +2319,10 @@
                 <button onclick="searchServices()" class="btn-search" id="btnSearch">🔍 Cari</button>
                 <button onclick="resetSearch()" class="btn-reset">↺ Reset</button>
             </div>
+            @endif
 
             <div class="table-header-right">
+                @if(!$showArchived)
                 <div class="perpage-selector">
                     <label for="perPage">Tampilkan:</label>
                     <select id="perPage" onchange="changePerPage(this.value)">
@@ -2007,30 +2333,34 @@
                     </select>
                     <span>data</span>
                 </div>
+                @endif
                 <span class="table-info" id="tableInfo">
                     Menampilkan <strong>{{ $services->firstItem() ?? 0 }}</strong> - <strong>{{ $services->lastItem() ?? 0 }}</strong> dari <strong>{{ $services->total() }}</strong> service
                 </span>
             </div>
         </div>
 
-        <!-- ================= SEARCH STATUS BAR ================= -->
+        @if(!$showArchived)
         <div class="search-status" id="searchStatus">
             <div class="status-spinner"></div>
             <span class="status-text" id="searchStatusText">🔍 Sedang mencari...</span>
             <button class="status-cancel" onclick="cancelSearch()" title="Batalkan pencarian">✕</button>
         </div>
+        @endif
 
         <div class="table-scroll">
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 50px;">#</th>
-                        <th>Nama Service</th>
+                        <th style="width: 50px;">{!! sortLink('no', 'No', $sortBy, $sortOrder) !!}</th>
+                        <th>{!! sortLink('name', 'Nama Service', $sortBy, $sortOrder) !!}</th>
                         <th>Target</th>
-                        <th style="width: 110px;">Status</th>
-                        <th style="width: 100px;">Uptime 30d</th>
-                        <th style="width: 150px;">Terakhir Diperiksa</th>
-                        <th style="width: 280px;">Aksi</th>
+                        <th style="width: 110px;">{!! sortLink('last_status', 'Status', $sortBy, $sortOrder) !!}</th>
+                        <th style="width: 100px;">{!! sortLink(null, 'Uptime 30d', $sortUptime, $sortUptimeOrder, true) !!}</th>
+                        @if(!$showArchived)
+                            <th style="width: 150px;">{!! sortLink('last_check_at', 'Terakhir Diperiksa', $sortBy, $sortOrder) !!}</th>
+                        @endif
+                        <th style="width: {{ $showArchived ? '220px' : '280px' }};">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -2044,14 +2374,20 @@
                             $lastChecked = $service->last_check_at ?? $service->updated_at;
                             $uptime = $service->uptime ?? 0;
                             $uptimeColor = $uptime >= 70 ? 'green' : ($uptime >= 50 ? 'yellow' : 'red');
+                            $isArchived = $service->is_archived ?? false;
                         @endphp
-                        <tr data-service-id="{{ $service->id }}">
+                        <tr data-service-id="{{ $service->id }}" data-nomor="{{ $no }}">
                             <td><span class="service-no">{{ $no }}</span></td>
                             <td>
                                 <div class="service-info">
                                     <div class="service-avatar {{ $colorClass }}">{{ $initials }}</div>
                                     <div>
-                                        <div class="service-name">{{ $service->name }}</div>
+                                        <div class="service-name">
+                                            {{ $service->name }}
+                                            @if($showArchived)
+                                                <span class="badge-archived">📦 ARSIP</span>
+                                            @endif
+                                        </div>
                                         <span class="service-type">{{ strtoupper($service->type ?? 'HTTP') }}</span>
                                     </div>
                                 </div>
@@ -2082,29 +2418,45 @@
                                     <div class="uptime-fill {{ $uptimeColor }}" style="width: {{ $uptime }}%;"></div>
                                 </div>
                             </td>
+                            @if(!$showArchived)
                             <td>
                                 <div style="font-size: 13px; color: var(--text-secondary-service); font-family: 'Courier New', monospace; font-weight: 600;" id="time-{{ $service->id }}">
                                     {{ $lastChecked ? \Carbon\Carbon::parse($lastChecked)->setTimezone('Asia/Jakarta')->format('H:i:s') : '-' }}
                                 </div>
                             </td>
+                            @endif
                             <td>
-                                <div class="action-buttons">
-                                    <button onclick="openDetailModal({{ $service->id }})" class="btn-action btn-detail" title="Detail">👁️</button>
-                                    <button onclick="openDownloadModal({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-download" title="Download PDF">📥</button>
-                                    <button onclick="openEditModal({{ $service->id }})" class="btn-action btn-edit" title="Edit">✏️</button>
-                                    <button onclick="confirmDelete({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-delete" title="Hapus">🗑️</button>
-                                    <button onclick="checkService({{ $service->id }})" class="btn-check" title="Check Now" id="checkBtn{{ $service->id }}">🔄</button>
-                                </div>
+                                @if($showArchived)
+                                    <div class="action-buttons">
+                                        <button onclick="confirmUnarchive({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-unarchive" title="Pulihkan service">↩️ Pulihkan</button>
+                                        <button onclick="confirmForceDelete({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-force-delete" title="Hapus permanen">🗑️ Hapus</button>
+                                    </div>
+                                @else
+                                    <div class="action-buttons">
+                                        <button onclick="openDetailModal({{ $service->id }})" class="btn-action btn-detail" title="Detail">👁️</button>
+                                        <button onclick="openDownloadModal({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-download" title="Download PDF">📥</button>
+                                        <button onclick="openEditModal({{ $service->id }})" class="btn-action btn-edit" title="Edit">✏️</button>
+                                        <button onclick="confirmArchive({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-archive-action" title="Arsipkan service">📦 Arsip</button>
+                                        <button onclick="confirmDelete({{ $service->id }}, '{{ addslashes($service->name) }}')" class="btn-action btn-delete" title="Hapus">🗑️</button>
+                                        <button onclick="checkService({{ $service->id }})" class="btn-check" title="Check Now" id="checkBtn{{ $service->id }}">🔄</button>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7">
+                            <td colspan="{{ $showArchived ? '7' : '7' }}">
                                 <div class="empty-state">
-                                    <span class="empty-icon">📭</span>
-                                    <h3>Belum Ada Service</h3>
-                                    <p>Mulai dengan menambahkan service pertama Anda</p>
-                                    <button onclick="openCreateModal()" class="btn-empty-primary">+ Tambah Service</button>
+                                    <span class="empty-icon">{{ $showArchived ? '📭' : '📭' }}</span>
+                                    <h3>{{ $showArchived ? 'Tidak Ada Service Diarsipkan' : 'Belum Ada Service' }}</h3>
+                                    <p>
+                                        {{ $showArchived ? 'Semua service aktif. Tidak ada yang diarsipkan.' : 'Mulai dengan menambahkan service pertama Anda' }}
+                                    </p>
+                                    @if($showArchived)
+                                        <a href="{{ route('services') }}" class="btn-empty-primary">📂 Kembali ke Service Aktif</a>
+                                    @else
+                                        <button onclick="openCreateModal()" class="btn-empty-primary">+ Tambah Service</button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -2223,31 +2575,62 @@
                 </div>
             </div>
 
+            <div id="downloadNotice" style="background: var(--bg-info-box-service); border: 1px solid var(--border-info-box-service); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--text-info-box-service);">
+                📌 <strong>Info:</strong> Memuat informasi service...
+            </div>
+
             <div class="form-group">
                 <label>Periode Laporan</label>
                 <div class="download-period" id="periodSelector">
-                    <button class="period-btn active" data-period="7" onclick="selectPeriod(this, 7)">7 Hari</button>
+                    <button class="period-btn" data-period="7" onclick="selectPeriod(this, 7)">7 Hari</button>
                     <button class="period-btn" data-period="14" onclick="selectPeriod(this, 14)">14 Hari</button>
                     <button class="period-btn" data-period="30" onclick="selectPeriod(this, 30)">30 Hari</button>
                     <button class="period-btn" data-period="60" onclick="selectPeriod(this, 60)">60 Hari</button>
                     <button class="period-btn" data-period="90" onclick="selectPeriod(this, 90)">90 Hari</button>
                 </div>
-                <div class="helper-text">Pilih rentang waktu laporan</div>
+                <div class="helper-text">Pilih rentang waktu laporan (periode yang tidak tersedia akan otomatis dinonaktifkan)</div>
             </div>
 
             <div class="form-group">
                 <label>Tanggal Kustom</label>
+                
+                {{-- 🔥 TAMPILKAN INFO UMUR SERVICE --}}
+                <div id="serviceAgeInfo" style="background: var(--bg-info-box-service); border: 1px solid var(--border-info-box-service); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--text-info-box-service); display: none;">
+                    <span id="serviceAgeText">Memuat informasi service...</span>
+                </div>
+                
                 <div class="download-date-range">
                     <div class="date-group">
-                        <label>Dari</label>
-                        <input type="date" id="dateFrom">
+                        <label>Dari Tanggal <span class="required" style="color: #dc2626;">*</span></label>
+                        <input 
+                            type="date" 
+                            id="dateFrom" 
+                            class="date-input"
+                            min="" 
+                            max=""
+                            required
+                        >
+                        <div class="date-error-message" style="display: none; color: #dc2626; font-size: 12px; margin-top: 4px;"></div>
                     </div>
                     <div class="date-group">
-                        <label>Sampai</label>
-                        <input type="date" id="dateTo">
+                        <label>Sampai Tanggal <span class="required" style="color: #dc2626;">*</span></label>
+                        <input 
+                            type="date" 
+                            id="dateTo" 
+                            class="date-input"
+                            min="" 
+                            max=""
+                            required
+                        >
+                        <div class="date-error-message" style="display: none; color: #dc2626; font-size: 12px; margin-top: 4px;"></div>
                     </div>
                 </div>
-                <div class="helper-text">Atau pilih tanggal secara manual</div>
+                <div class="helper-text">
+                    📅 Pilih rentang tanggal sesuai kebutuhan. 
+                    <span style="color: var(--text-secondary-service);">
+                        <strong>Catatan:</strong> Tanggal otomatis dibatasi sesuai umur service (tidak bisa sebelum service dibuat).
+                    </span>
+                </div>
             </div>
 
             <div id="downloadLoading" style="display: none; text-align: center; padding: 20px;">
@@ -2330,985 +2713,1527 @@
     </div>
 </div>
 
+<!-- ================= SCRIPT UTAMA ================= -->
 <script>
-    // ================= CONFIRM MODAL =================
-    let confirmCallback = null;
-    let confirmData = null;
-
-    function confirmDelete(id, name) {
-        confirmData = { id: id, name: name };
-        document.getElementById('confirmIcon').className = 'modal-icon danger';
-        document.getElementById('confirmIcon').textContent = '🗑️';
-        document.getElementById('confirmTitle').textContent = 'Hapus Service';
-        document.getElementById('confirmMessage').textContent = 'Apakah Anda yakin ingin menghapus service ini?';
-        document.getElementById('confirmDetail').innerHTML = 'Service <span class="highlight-name">' + name + '</span> akan dihapus secara permanen.';
-        document.getElementById('confirmBtn').textContent = '🗑️ Ya, Hapus';
-        document.getElementById('confirmBtn').className = 'btn-modal btn-confirm';
-        document.getElementById('customConfirmModal').classList.add('active');
-        document.body.style.overflow = 'hidden';
-        
-        confirmCallback = function() {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/services/' + id;
-            form.innerHTML = `
-                <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="_method" value="DELETE">
-            `;
-            document.body.appendChild(form);
-            form.submit();
-        };
-    }
-
-    function closeConfirmModal() {
-        document.getElementById('customConfirmModal').classList.remove('active');
-        document.body.style.overflow = '';
-        confirmCallback = null;
-        confirmData = null;
-    }
-
-    function executeConfirm() {
-        if (confirmCallback) {
-            confirmCallback();
-        }
-        closeConfirmModal();
-    }
-
-    // ================= 🔥 WA INTERVAL (GLOBAL) =================
-    function changeWaInterval(value) {
-        let url = new URL(window.location.href);
-        url.searchParams.set('wa_interval', value);
-        url.searchParams.set('page', '1');
-        window.location.href = url.toString();
-    }
-
-    // ================= AUTO REFRESH TIMER =================
-    (function() {
-        'use strict';
-        
-        const REFRESH_INTERVAL = 30;
-        let seconds = REFRESH_INTERVAL;
-        let countdownElement = document.getElementById('countdownTimer');
-        let refreshTimer = null;
-        let isReloading = false;
-        
-        function updateCountdown() {
-            if (isNaN(seconds) || seconds < 0) {
-                seconds = REFRESH_INTERVAL;
-            }
-            
-            seconds--;
-            
-            if (seconds < 0) {
-                seconds = REFRESH_INTERVAL;
-            }
-            
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            
-            if (countdownElement) {
-                const timeString = `${mins}:${secs.toString().padStart(2, '0')}`;
-                countdownElement.textContent = timeString;
-                countdownElement.className = 'countdown';
-                
-                if (seconds < 10) {
-                    countdownElement.classList.add('danger');
-                } else if (seconds < 30) {
-                    countdownElement.classList.add('warning');
-                }
-            }
-            
-            if (seconds <= 0 && !isReloading) {
-                isReloading = true;
-                window.location.href = window.location.pathname + '?_=' + Date.now();
-            }
-        }
-        
-        function startCountdown() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-                refreshTimer = null;
-            }
-            
-            seconds = REFRESH_INTERVAL;
-            isReloading = false;
-            updateCountdown();
-            refreshTimer = setInterval(updateCountdown, 1000);
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            startCountdown();
-        });
-        
-        document.addEventListener('modalOpened', function() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-                refreshTimer = null;
-            }
-        });
-        
-        document.addEventListener('modalClosed', function() {
-            if (!refreshTimer) {
-                startCountdown();
-            }
-        });
-    })();
-
-    // ================= 🔥 AJAX POLLING =================
-    (function() {
-        'use strict';
-        
-        let pollingInterval = null;
-        let isPolling = false;
-
-        function fetchLatestStatus() {
-    if (isPolling) return;
-    isPolling = true;
-    
-    fetch('/api/services/status?_=' + Date.now(), {
-        headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            data.services.forEach(service => {
-                const badge = document.getElementById('status-' + service.id);
-                if (badge) {
-                    const status = service.last_status || 'UNKNOWN';
-                    const statusLower = status.toLowerCase();
-                    badge.className = `status-badge ${statusLower}`;
-                    badge.innerHTML = `<span class="status-dot"></span> ${status}`;
-                }
-                
-                const timeEl = document.getElementById('time-' + service.id);
-                if (timeEl && service.last_check_at) {
-                    timeEl.textContent = service.last_check_at;
-                }
-            });
-        }
-    })
-    .catch(error => {
-        console.log('Status poll error:', error);
-    })
-    .finally(() => {
-        isPolling = false;
-    });
+// ================= FUNGSI FORMAT TANGGAL LOKAL =================
+function formatDateLocal(date) {
+    var year = date.getFullYear();
+    var month = String(date.getMonth() + 1).padStart(2, '0');
+    var day = String(date.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
 }
 
-        function startPolling() {
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-                pollingInterval = null;
-            }
-            pollingInterval = setInterval(fetchLatestStatus, 5000);
-            setTimeout(fetchLatestStatus, 2000);
-        }
+function parseDateLocal(dateStr) {
+    var parts = dateStr.split('-');
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+}
 
-        function stopPolling() {
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-                pollingInterval = null;
-            }
-        }
+// ================= CONFIRM DELETE MODAL =================
+var confirmCallback = null;
+var confirmData = null;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            startPolling();
-        });
+function confirmDelete(id, name) {
+    confirmData = { id: id, name: name };
+    document.getElementById('confirmIcon').className = 'modal-icon danger';
+    document.getElementById('confirmIcon').textContent = '🗑️';
+    document.getElementById('confirmTitle').textContent = 'Hapus Service';
+    document.getElementById('confirmMessage').textContent = 'Apakah Anda yakin ingin menghapus service ini?';
+    document.getElementById('confirmDetail').innerHTML = 'Service <span class="highlight-name">' + name + '</span> akan dihapus secara permanen.';
+    document.getElementById('confirmBtn').textContent = '🗑️ Ya, Hapus';
+    document.getElementById('confirmBtn').className = 'btn-modal btn-confirm';
+    document.getElementById('confirmBtn').style.background = '#dc2626';
+    document.getElementById('confirmBtn').style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.25)';
+    document.getElementById('customConfirmModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    confirmCallback = function() {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/services/' + id;
+        form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="_method" value="DELETE">';
+        document.body.appendChild(form);
+        form.submit();
+    };
+}
 
-        document.addEventListener('modalOpened', function() {
-            stopPolling();
-        });
+function closeConfirmModal() {
+    document.getElementById('customConfirmModal').classList.remove('active');
+    document.body.style.overflow = '';
+    confirmCallback = null;
+    confirmData = null;
+}
 
-        document.addEventListener('modalClosed', function() {
-            startPolling();
-        });
-    })();
-
-    // ================= SEARCH STATUS FUNCTIONS =================
-    function showSearchStatus(text, showSpinner = true) {
-        const status = document.getElementById('searchStatus');
-        const textEl = document.getElementById('searchStatusText');
-        const spinner = status.querySelector('.status-spinner');
-        
-        textEl.textContent = text;
-        spinner.style.display = showSpinner ? 'block' : 'none';
-        status.classList.add('active');
+function executeConfirm() {
+    if (confirmCallback) {
+        confirmCallback();
     }
+    closeConfirmModal();
+}
 
-    function hideSearchStatus() {
-        const status = document.getElementById('searchStatus');
-        status.classList.remove('active');
+// ================= CONFIRM ARCHIVE MODAL =================
+var archiveCallback = null;
+var archiveData = null;
+
+function confirmArchive(id, name) {
+    archiveData = { id: id, name: name };
+    document.getElementById('archiveConfirmIcon').className = 'modal-icon warning';
+    document.getElementById('archiveConfirmIcon').textContent = '📦';
+    document.getElementById('archiveConfirmTitle').textContent = 'Arsipkan Service';
+    document.getElementById('archiveConfirmMessage').textContent = 'Service akan diarsipkan dan tidak muncul di dashboard utama';
+    document.getElementById('archiveConfirmDetail').innerHTML = 'Service <span class="highlight-name">' + name + '</span> akan diarsipkan.<br><small style="color: var(--text-muted-service);">Service tetap dimonitoring tapi tidak muncul di dashboard dan tidak kirim WA.</small>';
+    document.getElementById('archiveConfirmBtn').textContent = '📦 Ya, Arsipkan';
+    document.getElementById('archiveConfirmBtn').className = 'btn-modal btn-confirm';
+    document.getElementById('archiveConfirmBtn').style.background = '#d97706';
+    document.getElementById('archiveConfirmBtn').style.boxShadow = '0 4px 12px rgba(217, 119, 6, 0.25)';
+    document.getElementById('archiveConfirmModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    archiveCallback = function() {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/services/' + id + '/archive';
+        form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
+        document.body.appendChild(form);
+        form.submit();
+    };
+}
+
+function closeArchiveConfirmModal() {
+    document.getElementById('archiveConfirmModal').classList.remove('active');
+    document.body.style.overflow = '';
+    archiveCallback = null;
+    archiveData = null;
+}
+
+function executeArchiveConfirm() {
+    if (archiveCallback) {
+        archiveCallback();
     }
+    closeArchiveConfirmModal();
+}
 
-    function cancelSearch() {
-        clearTimeout(searchTimeout);
-        hideSearchStatus();
-        document.getElementById('searchService').value = '';
-        resetSearch();
-        showToast('info', 'Info', 'Pencarian dibatalkan');
+// ================= CONFIRM UNARCHIVE MODAL =================
+var unarchiveCallback = null;
+var unarchiveData = null;
+
+function confirmUnarchive(id, name) {
+    unarchiveData = { id: id, name: name };
+    document.getElementById('unarchiveConfirmIcon').className = 'modal-icon success';
+    document.getElementById('unarchiveConfirmIcon').textContent = '↩️';
+    document.getElementById('unarchiveConfirmTitle').textContent = 'Pulihkan Service';
+    document.getElementById('unarchiveConfirmMessage').textContent = 'Service akan dipulihkan dari arsip';
+    document.getElementById('unarchiveConfirmDetail').innerHTML = 'Service <span class="highlight-name">' + name + '</span> akan dipulihkan dan muncul kembali di dashboard utama.';
+    document.getElementById('unarchiveConfirmBtn').textContent = '↩️ Ya, Pulihkan';
+    document.getElementById('unarchiveConfirmBtn').className = 'btn-modal btn-confirm';
+    document.getElementById('unarchiveConfirmBtn').style.background = '#059669';
+    document.getElementById('unarchiveConfirmBtn').style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.25)';
+    document.getElementById('unarchiveConfirmModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    unarchiveCallback = function() {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/services/' + id + '/unarchive';
+        form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
+        document.body.appendChild(form);
+        form.submit();
+    };
+}
+
+function closeUnarchiveConfirmModal() {
+    document.getElementById('unarchiveConfirmModal').classList.remove('active');
+    document.body.style.overflow = '';
+    unarchiveCallback = null;
+    unarchiveData = null;
+}
+
+function executeUnarchiveConfirm() {
+    if (unarchiveCallback) {
+        unarchiveCallback();
     }
+    closeUnarchiveConfirmModal();
+}
 
-    // ================= VARIABEL GLOBAL =================
-    let currentDetailId = null;
-    let currentDownloadId = null;
-    let selectedPeriod = 7;
-    let searchTimeout = null;
-    let isSearching = false;
+// ================= CONFIRM FORCE DELETE MODAL =================
+var forceDeleteCallback = null;
+var forceDeleteData = null;
 
-    // ================= SEARCH SERVICES (AJAX) =================
-    function searchServices() {
-        const query = document.getElementById('searchService').value.trim();
-        
-        if (query.length === 0) {
-            hideSearchStatus();
-            showToast('warning', 'Peringatan!', 'Masukkan kata kunci pencarian');
+function confirmForceDelete(id, name) {
+    forceDeleteData = { id: id, name: name };
+    document.getElementById('forceDeleteConfirmIcon').className = 'modal-icon danger';
+    document.getElementById('forceDeleteConfirmIcon').textContent = '🗑️';
+    document.getElementById('forceDeleteConfirmTitle').textContent = '⚠️ Hapus Permanen';
+    document.getElementById('forceDeleteConfirmMessage').textContent = 'Service akan dihapus secara permanen!';
+    document.getElementById('forceDeleteConfirmDetail').innerHTML = 'Service <span class="highlight-name">' + name + '</span> akan dihapus permanen.<br><small style="color: #dc2626; font-weight: 600;">Semua data log akan hilang dan tidak bisa dikembalikan!</small>';
+    document.getElementById('forceDeleteConfirmBtn').textContent = '🗑️ Ya, Hapus Permanen';
+    document.getElementById('forceDeleteConfirmBtn').className = 'btn-modal btn-confirm';
+    document.getElementById('forceDeleteConfirmBtn').style.background = '#dc2626';
+    document.getElementById('forceDeleteConfirmBtn').style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.25)';
+    document.getElementById('forceDeleteConfirmModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    forceDeleteCallback = function() {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/services/' + id + '/force-delete';
+        form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="_method" value="DELETE">';
+        document.body.appendChild(form);
+        form.submit();
+    };
+}
+
+function closeForceDeleteConfirmModal() {
+    document.getElementById('forceDeleteConfirmModal').classList.remove('active');
+    document.body.style.overflow = '';
+    forceDeleteCallback = null;
+    forceDeleteData = null;
+}
+
+function executeForceDeleteConfirm() {
+    if (forceDeleteCallback) {
+        forceDeleteCallback();
+    }
+    closeForceDeleteConfirmModal();
+}
+
+// ================= WA INTERVAL =================
+function changeWaInterval(value) {
+    var url = new URL(window.location.href);
+    url.searchParams.set('wa_interval', value);
+    url.searchParams.set('page', '1');
+    window.location.href = url.toString();
+}
+
+// ================= AUTO REFRESH (PERBAIKAN - TANPA KEDIP, MODAL AMAN) =================
+(function() {
+    'use strict';
+    
+    var REFRESH_INTERVAL = 30;
+    var countdownElement = document.getElementById('countdownTimer');
+    var seconds = REFRESH_INTERVAL;
+    var isUpdating = false;
+    var refreshTimer = null;
+
+    // 1. FETCH DATA (TIDAK PERNAH DIBATALKAN OLEH MODAL)
+    function fetchLatestData() {
+        if (isUpdating) {
+            console.log('⏸️ Skip refresh - sedang update');
             return;
         }
         
-        if (isSearching) {
-            showToast('info', 'Info', 'Pencarian sedang berlangsung...');
-            return;
-        }
+        isUpdating = true;
         
-        isSearching = true;
-        const btnSearch = document.getElementById('btnSearch');
+        var currentPage = new URLSearchParams(window.location.search).get('page') || 1;
+        var perPage = document.getElementById('perPage')?.value || 10;
+        var showArchived = window.location.search.includes('show_archived=1') ? 1 : 0;
+        var sortBy = new URLSearchParams(window.location.search).get('sort_by') || 'created_at';
+        var sortOrder = new URLSearchParams(window.location.search).get('sort_order') || 'desc';
         
-        showSearchStatus('🔍 Sedang mencari "' + query + '"...');
-        btnSearch.disabled = true;
-        btnSearch.textContent = '⏳';
+        var url = '/services/data?_=' + Date.now() + 
+            '&perPage=' + perPage +
+            '&page=' + currentPage +
+            '&show_archived=' + showArchived +
+            '&sort_by=' + sortBy +
+            '&sort_order=' + sortOrder;
         
-        fetch(`/services/search?q=${encodeURIComponent(query)}&_=${Date.now()}`, {
+        fetch(url, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json',
                 'Cache-Control': 'no-cache'
             }
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            isSearching = false;
-            btnSearch.disabled = false;
-            btnSearch.textContent = '🔍 Cari';
-            
-            if (data.success) {
-                renderSearchResult(data.data, data.pagination, query);
-                hideSearchStatus();
-                showToast('success', 'Berhasil!', `Ditemukan ${data.data.length} data untuk "${query}"`);
-            } else {
-                hideSearchStatus();
-                showToast('error', 'Gagal!', data.message || 'Gagal mencari data');
-                window.location.reload();
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.success && data.data) {
+                // 🔥 PERBAIKAN: Update Data Tanpa Menimpa DOM (Smooth)
+                updateDataSmooth(data.data);
+                updateStats(data.data.statistics);
+                updatePaginationInfo(data.data.pagination);
             }
         })
-        .catch(error => {
-            isSearching = false;
-            btnSearch.disabled = false;
-            btnSearch.textContent = '🔍 Cari';
-            hideSearchStatus();
-            showToast('error', 'Error!', 'Terjadi kesalahan: ' + error.message);
-            window.location.reload();
+        .catch(function(error) {
+            console.log('⚠️ Refresh error:', error.message);
+        })
+        .finally(function() {
+            isUpdating = false;
         });
     }
 
-    function resetSearch() {
-        document.getElementById('searchService').value = '';
-        hideSearchStatus();
-        window.location.href = window.location.pathname + '?_=' + Date.now();
-    }
-
-    function renderSearchResult(services, pagination, query) {
-        const tbody = document.getElementById('tableBody');
-        const info = document.getElementById('tableInfo');
-        const paginationWrapper = document.getElementById('paginationWrapper');
+    // 2. UPDATE DATA SMOOTH (HANYA MENGUBAH TEKS, TIDAK MENGHAPUS MODAL)
+    function updateDataSmooth(data) {
+        if (!data || !data.services) return;
         
-        if (!tbody) return;
-        
-        if (services.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7">
-                        <div class="empty-state">
-                            <span class="empty-icon">🔍</span>
-                            <h3>Service Tidak Ditemukan</h3>
-                            <p>Tidak ada service yang sesuai dengan "<strong>${query}</strong>"</p>
-                            <button onclick="resetSearch()" class="btn-empty-primary">↺ Reset Pencarian</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            if (info) info.innerHTML = 'Menampilkan <strong>0</strong> - <strong>0</strong> dari <strong>0</strong> service';
-            if (paginationWrapper) paginationWrapper.style.display = 'none';
-            return;
-        }
-        
-        let html = '';
-        const colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6', 'color-7', 'color-8'];
-        
-        services.forEach((service, index) => {
-            const colorClass = colors[index % colors.length];
-            const initials = service.name.substring(0, 2).toUpperCase();
-            const statusLabel = service.last_status || 'UNKNOWN';
-            const uptime = service.uptime || 0;
-            const uptimeColor = uptime >= 70 ? 'green' : (uptime >= 50 ? 'yellow' : 'red');
-            const no = index + 1;
-            
-            let displayName = service.name;
-            let displayTarget = service.target;
-            
-            if (query) {
-                const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                displayName = service.name.replace(regex, '<mark>$1</mark>');
-                displayTarget = service.target.replace(regex, '<mark>$1</mark>');
+        data.services.forEach(function(service) {
+            // Update Status Badge
+            var badge = document.getElementById('status-' + service.id);
+            if (badge) {
+                var status = service.last_status || 'UNKNOWN';
+                var statusLower = status.toLowerCase();
+                badge.className = 'status-badge ' + statusLower;
+                badge.innerHTML = '<span class="status-dot"></span> ' + status;
             }
             
-            html += `
-                <tr data-service-id="${service.id}">
-                    <td><span class="service-no">${no}</span></td>
-                    <td>
-                        <div class="service-info">
-                            <div class="service-avatar ${colorClass}">${initials}</div>
-                            <div>
-                                <div class="service-name">${displayName}</div>
-                                <span class="service-type">${(service.type || 'HTTP').toUpperCase()}</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td><span class="service-target">${displayTarget}</span></td>
-                    <td>
-                        ${statusLabel == 'UP' ? `<span class="status-badge up" id="status-${service.id}"><span class="status-dot"></span> UP</span>` : 
-                          statusLabel == 'DOWN' ? `<span class="status-badge down" id="status-${service.id}"><span class="status-dot"></span> DOWN</span>` :
-                          statusLabel == 'WARNING' ? `<span class="status-badge warning" id="status-${service.id}"><span class="status-dot"></span> WARNING</span>` :
-                          `<span class="status-badge unknown" id="status-${service.id}"><span class="status-dot"></span> UNKNOWN</span>`}
-                    </td>
-                    <td>
-                        <div class="uptime-value ${uptimeColor}">${Number(uptime).toFixed(2)}%</div>
-                        <div class="uptime-bar">
-                            <div class="uptime-fill ${uptimeColor}" style="width: ${uptime}%;"></div>
-                        </div>
-                    </td>
-                    <td>
-                        <div style="font-size: 13px; color: var(--text-secondary-service); font-family: 'Courier New', monospace; font-weight: 600;" id="time-${service.id}">
-                            ${service.last_check_at || '-'}
-                        </div>
-                    </td>
-                    <td>
-                        <div class="action-buttons">
-                            <button onclick="openDetailModal(${service.id})" class="btn-action btn-detail" title="Detail">👁️</button>
-                            <button onclick="openDownloadModal(${service.id}, '${service.name.replace(/'/g, "\\'")}')" class="btn-action btn-download" title="Download PDF">📥</button>
-                            <button onclick="openEditModal(${service.id})" class="btn-action btn-edit" title="Edit">✏️</button>
-                            <button onclick="confirmDelete(${service.id}, '${service.name.replace(/'/g, "\\'")}')" class="btn-action btn-delete" title="Hapus">🗑️</button>
-                            <button onclick="checkService(${service.id})" class="btn-check" title="Check Now" id="checkBtn${service.id}">🔄</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            // Update Waktu
+            var timeEl = document.getElementById('time-' + service.id);
+            if (timeEl && service.last_check_at) {
+                var time = service.last_check_at;
+                if (time.includes(' ')) time = time.split(' ')[1];
+                if (timeEl.textContent !== time) {
+                    timeEl.textContent = time;
+                }
+            }
+            
+            // Update Uptime
+            var rowEl = document.querySelector('#tableBody tr[data-service-id="' + service.id + '"]');
+            if (rowEl) {
+                var uptimeValue = rowEl.querySelector('.uptime-value');
+                var uptimeBar = rowEl.querySelector('.uptime-fill');
+                
+                if (uptimeValue && service.uptime !== undefined) {
+                    var uptime = Number(service.uptime).toFixed(2);
+                    var uptimeColor = uptime >= 70 ? 'green' : (uptime >= 50 ? 'yellow' : 'red');
+                    
+                    if (uptimeValue.textContent !== uptime + '%') {
+                        uptimeValue.textContent = uptime + '%';
+                        uptimeValue.className = 'uptime-value ' + uptimeColor;
+                        if (uptimeBar) {
+                            uptimeBar.style.width = uptime + '%';
+                            uptimeBar.className = 'uptime-fill ' + uptimeColor;
+                        }
+                    }
+                }
+            }
         });
+    }
+
+    function updateStats(stats) {
+        if (!stats) return;
+        var totalEl = document.querySelector('.stat-number.purple');
+        var upEl = document.querySelector('.stat-number.green');
+        var warningEl = document.querySelector('.stat-number.yellow');
+        var downEl = document.querySelector('.stat-number.red');
         
-        tbody.innerHTML = html;
-        
-        if (info && pagination) {
-            info.innerHTML = `Menampilkan <strong>${pagination.from || 0}</strong> - <strong>${pagination.to || 0}</strong> dari <strong>${pagination.total || 0}</strong> service`;
-        }
-        
-        if (paginationWrapper) {
-            paginationWrapper.style.display = 'flex';
-            paginationWrapper.innerHTML = `
-                <div class="pagination-info">
-                    Menampilkan <strong>${pagination.from || 0}</strong> - <strong>${pagination.to || 0}</strong> dari <strong>${pagination.total || 0}</strong> data
-                </div>
-                <div class="pagination-links">
-                    ${pagination.prev_page_url ? `<a href="#" onclick="loadPage('${pagination.prev_page_url}')" class="page-link">‹</a>` : `<span class="page-link disabled">‹</span>`}
-                    <span class="page-link active">${pagination.current_page || 1}</span>
-                    ${pagination.next_page_url ? `<a href="#" onclick="loadPage('${pagination.next_page_url}')" class="page-link">›</a>` : `<span class="page-link disabled">›</span>`}
-                </div>
-            `;
+        if (totalEl && stats.total !== undefined) totalEl.textContent = stats.total;
+        if (upEl && stats.up !== undefined) upEl.textContent = stats.up;
+        if (warningEl && stats.warning !== undefined) warningEl.textContent = stats.warning;
+        if (downEl && stats.down !== undefined) downEl.textContent = stats.down;
+    }
+
+    function updatePaginationInfo(pagination) {
+        if (!pagination) return;
+        var infoEl = document.getElementById('tableInfo');
+        if (infoEl) {
+            var newHtml = 'Menampilkan <strong>' + (pagination.from || 0) + '</strong> - <strong>' + (pagination.to || 0) + '</strong> dari <strong>' + (pagination.total || 0) + '</strong> service';
+            if (infoEl.innerHTML !== newHtml) {
+                infoEl.innerHTML = newHtml;
+            }
         }
     }
 
-    function loadPage(url) {
-        showToast('info', 'Info', 'Fitur pagination pada hasil pencarian akan segera hadir');
+    // 3. COUNTDOWN (JALAN TERUS MENERUS, TIDAK MACET)
+    function updateCountdown() {
+        seconds--;
+        if (seconds < 0) {
+            seconds = REFRESH_INTERVAL;
+            fetchLatestData(); // 🔥 Panggil update, tidak peduli modal terbuka/tidak
+        }
+        
+        if (countdownElement) {
+            var mins = Math.floor(seconds / 60);
+            var secs = seconds % 60;
+            var timeString = mins + ':' + secs.toString().padStart(2, '0');
+            countdownElement.textContent = timeString;
+            countdownElement.className = 'countdown';
+            
+            if (seconds < 10) countdownElement.classList.add('danger');
+            else if (seconds < 30) countdownElement.classList.add('warning');
+        }
     }
 
-    // ================= EVENT LISTENER =================
+    // 4. START TIMER
+    function startTimer() {
+        if (refreshTimer) {
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+        }
+        seconds = REFRESH_INTERVAL;
+        updateCountdown();
+        refreshTimer = setInterval(updateCountdown, 1000);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-        @if(session('success'))
-            showToast('success', 'Berhasil!', '{{ session('success') }}');
-        @endif
-        @if(session('error'))
-            showToast('error', 'Gagal!', '{{ session('error') }}');
-        @endif
-        @if(session('warning'))
-            showToast('warning', 'Peringatan!', '{{ session('warning') }}');
-        @endif
-        @if(session('info'))
-            showToast('info', 'Info', '{{ session('info') }}');
-        @endif
+        startTimer();
+        setTimeout(fetchLatestData, 5000);
+    });
+})();
 
-        const today = new Date();
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        document.getElementById('dateFrom').value = weekAgo.toISOString().split('T')[0];
-        document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+// ================= SEARCH STATUS FUNCTIONS =================
+function showSearchStatus(text, showSpinner) {
+    if (showSpinner === undefined) showSpinner = true;
+    var status = document.getElementById('searchStatus');
+    var textEl = document.getElementById('searchStatusText');
+    var spinner = status.querySelector('.status-spinner');
+    
+    textEl.textContent = text;
+    spinner.style.display = showSpinner ? 'block' : 'none';
+    status.classList.add('active');
+}
 
-        const typeSelect = document.getElementById('modal_type');
-        if (typeSelect) {
-            typeSelect.addEventListener('change', function() {
-                updateHelperText(this.value);
-            });
-            updateHelperText(typeSelect.value);
+function hideSearchStatus() {
+    var status = document.getElementById('searchStatus');
+    status.classList.remove('active');
+}
+
+function cancelSearch() {
+    clearTimeout(searchTimeout);
+    hideSearchStatus();
+    document.getElementById('searchService').value = '';
+    resetSearch();
+    showToast('info', 'Info', 'Pencarian dibatalkan');
+}
+
+// ================= VARIABEL GLOBAL =================
+var currentDetailId = null;
+var currentDownloadId = null;
+var selectedPeriod = 7;
+var searchTimeout = null;
+var isSearching = false;
+
+// ================= SEARCH SERVICES =================
+function searchServices() {
+    var query = document.getElementById('searchService').value.trim();
+    
+    if (query.length === 0) {
+        hideSearchStatus();
+        showToast('warning', 'Peringatan!', 'Masukkan kata kunci pencarian');
+        return;
+    }
+    
+    if (isSearching) {
+        showToast('info', 'Info', 'Pencarian sedang berlangsung...');
+        return;
+    }
+    
+    isSearching = true;
+    var btnSearch = document.getElementById('btnSearch');
+    
+    showSearchStatus('🔍 Sedang mencari "' + query + '"...');
+    btnSearch.disabled = true;
+    btnSearch.textContent = '⏳';
+    
+    fetch('/services/search?q=' + encodeURIComponent(query) + '&_=' + Date.now(), {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
         }
-
-        const searchInput = document.getElementById('searchService');
-        if (searchInput) {
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    searchServices();
-                }
-            });
-            
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                const query = this.value.trim();
-                
-                if (query.length === 0) {
-                    hideSearchStatus();
-                    resetSearch();
-                    return;
-                }
-                
-                if (query.length >= 2) {
-                    showSearchStatus('✍️ Mengetik...', false);
-                    searchTimeout = setTimeout(function() {
-                        searchServices();
-                    }, 800);
-                } else {
-                    hideSearchStatus();
-                }
-            });
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        return response.json();
+    })
+    .then(function(data) {
+        isSearching = false;
+        btnSearch.disabled = false;
+        btnSearch.textContent = '🔍 Cari';
+        
+        if (data.success) {
+            renderSearchResult(data.data, data.pagination, query);
+            hideSearchStatus();
+            showToast('success', 'Berhasil!', 'Ditemukan ' + data.data.length + ' data untuk "' + query + '"');
+        } else {
+            hideSearchStatus();
+            showToast('error', 'Gagal!', data.message || 'Gagal mencari data');
+            window.location.reload();
+        }
+    })
+    .catch(function(error) {
+        isSearching = false;
+        btnSearch.disabled = false;
+        btnSearch.textContent = '🔍 Cari';
+        hideSearchStatus();
+        showToast('error', 'Error!', 'Terjadi kesalahan: ' + error.message);
+        window.location.reload();
+    });
+}
 
-        document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+function resetSearch() {
+    document.getElementById('searchService').value = '';
+    hideSearchStatus();
+    window.location.href = window.location.pathname + '?_=' + Date.now();
+}
+
+function renderSearchResult(services, pagination, query) {
+    var tbody = document.getElementById('tableBody');
+    var info = document.getElementById('tableInfo');
+    var paginationWrapper = document.getElementById('paginationWrapper');
+    
+    if (!tbody) return;
+    
+    if (services.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><span class="empty-icon">🔍</span><h3>Service Tidak Ditemukan</h3><p>Tidak ada service yang sesuai dengan "<strong>' + query + '</strong>"</p><button onclick="resetSearch()" class="btn-empty-primary">↺ Reset Pencarian</button></div></td></tr>';
+        if (info) info.innerHTML = 'Menampilkan <strong>0</strong> - <strong>0</strong> dari <strong>0</strong> service';
+        if (paginationWrapper) paginationWrapper.style.display = 'none';
+        return;
+    }
+    
+    var html = '';
+    var colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6', 'color-7', 'color-8'];
+    
+    services.forEach(function(service, index) {
+        var colorClass = colors[index % colors.length];
+        var initials = service.name.substring(0, 2).toUpperCase();
+        var statusLabel = service.last_status || 'UNKNOWN';
+        var uptime = service.uptime || 0;
+        var uptimeColor = uptime >= 70 ? 'green' : (uptime >= 50 ? 'yellow' : 'red');
+        var no = index + 1;
+        
+        var displayName = service.name;
+        var displayTarget = service.target;
+        
+        if (query) {
+            var regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            displayName = service.name.replace(regex, '<mark>$1</mark>');
+            displayTarget = service.target.replace(regex, '<mark>$1</mark>');
+        }
+        
+        var statusHtml = '';
+        if (statusLabel == 'UP') {
+            statusHtml = '<span class="status-badge up" id="status-' + service.id + '"><span class="status-dot"></span> UP</span>';
+        } else if (statusLabel == 'DOWN') {
+            statusHtml = '<span class="status-badge down" id="status-' + service.id + '"><span class="status-dot"></span> DOWN</span>';
+        } else if (statusLabel == 'WARNING') {
+            statusHtml = '<span class="status-badge warning" id="status-' + service.id + '"><span class="status-dot"></span> WARNING</span>';
+        } else {
+            statusHtml = '<span class="status-badge unknown" id="status-' + service.id + '"><span class="status-dot"></span> UNKNOWN</span>';
+        }
+        
+        html += '<tr data-service-id="' + service.id + '">' +
+            '<td><span class="service-no">' + no + '</span></td>' +
+            '<td><div class="service-info"><div class="service-avatar ' + colorClass + '">' + initials + '</div><div><div class="service-name">' + displayName + '</div><span class="service-type">' + (service.type || 'HTTP').toUpperCase() + '</span></div></div></td>' +
+            '<td><span class="service-target">' + displayTarget + '</span></td>' +
+            '<td>' + statusHtml + '</td>' +
+            '<td><div class="uptime-value ' + uptimeColor + '">' + Number(uptime).toFixed(2) + '%</div><div class="uptime-bar"><div class="uptime-fill ' + uptimeColor + '" style="width: ' + uptime + '%;"></div></div></td>' +
+            '<td><div style="font-size: 13px; color: var(--text-secondary-service); font-family: \'Courier New\', monospace; font-weight: 600;" id="time-' + service.id + '">' + (service.last_check_at || '-') + '</div></td>' +
+            '<td><div class="action-buttons"><button onclick="openDetailModal(' + service.id + ')" class="btn-action btn-detail" title="Detail">👁️</button><button onclick="openDownloadModal(' + service.id + ', \'' + service.name.replace(/'/g, "\\'") + '\')" class="btn-action btn-download" title="Download PDF">📥</button><button onclick="openEditModal(' + service.id + ')" class="btn-action btn-edit" title="Edit">✏️</button><button onclick="confirmDelete(' + service.id + ', \'' + service.name.replace(/'/g, "\\'") + '\')" class="btn-action btn-delete" title="Hapus">🗑️</button><button onclick="checkService(' + service.id + ')" class="btn-check" title="Check Now" id="checkBtn' + service.id + '">🔄</button></div></td></tr>';
+    });
+    
+    tbody.innerHTML = html;
+    
+    if (info && pagination) {
+        info.innerHTML = 'Menampilkan <strong>' + (pagination.from || 0) + '</strong> - <strong>' + (pagination.to || 0) + '</strong> dari <strong>' + (pagination.total || 0) + '</strong> service';
+    }
+    
+    if (paginationWrapper) {
+        paginationWrapper.style.display = 'flex';
+        var prevLink = pagination.prev_page_url ? '<a href="#" onclick="loadPage(\'' + pagination.prev_page_url + '\')" class="page-link">‹</a>' : '<span class="page-link disabled">‹</span>';
+        var nextLink = pagination.next_page_url ? '<a href="#" onclick="loadPage(\'' + pagination.next_page_url + '\')" class="page-link">›</a>' : '<span class="page-link disabled">›</span>';
+        paginationWrapper.innerHTML = '<div class="pagination-info">Menampilkan <strong>' + (pagination.from || 0) + '</strong> - <strong>' + (pagination.to || 0) + '</strong> dari <strong>' + (pagination.total || 0) + '</strong> data</div><div class="pagination-links">' + prevLink + '<span class="page-link active">' + (pagination.current_page || 1) + '</span>' + nextLink + '</div>';
+    }
+}
+
+function loadPage(url) {
+    showToast('info', 'Info', 'Fitur pagination pada hasil pencarian akan segera hadir');
+}
+
+// ================= EVENT LISTENER =================
+document.addEventListener('DOMContentLoaded', function() {
+    @if(session('success'))
+        showToast('success', 'Berhasil!', '{{ session('success') }}');
+    @endif
+    @if(session('error'))
+        showToast('error', 'Gagal!', '{{ session('error') }}');
+    @endif
+    @if(session('warning'))
+        showToast('warning', 'Peringatan!', '{{ session('warning') }}');
+    @endif
+    @if(session('info'))
+        showToast('info', 'Info', '{{ session('info') }}');
+    @endif
+
+    // 🔥 PERBAIKAN: PAKAI FORMAT LOKAL
+    var today = new Date();
+    var weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    document.getElementById('dateFrom').value = formatDateLocal(weekAgo);
+    document.getElementById('dateTo').value = formatDateLocal(today);
+
+    var typeSelect = document.getElementById('modal_type');
+    if (typeSelect) {
+        typeSelect.addEventListener('change', function() {
+            updateHelperText(this.value);
+        });
+        updateHelperText(typeSelect.value);
+    }
+
+    var searchInput = document.getElementById('searchService');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
                 e.preventDefault();
-                document.getElementById('searchService').focus();
-                document.getElementById('searchService').select();
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                document.getElementById('searchService').focus();
-                document.getElementById('searchService').select();
+                searchServices();
             }
         });
-    });
-
-    // ================= TOAST =================
-    function showToast(type, title, message) {
-        const container = document.getElementById('toastContainer');
-        const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-
-        const existingToasts = container.querySelectorAll('.toast');
-        for (let toast of existingToasts) {
-            const msgEl = toast.querySelector('.toast-message');
-            if (msgEl && msgEl.textContent === message) {
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            var query = this.value.trim();
+            
+            if (query.length === 0) {
+                hideSearchStatus();
+                resetSearch();
                 return;
             }
-        }
-
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.innerHTML = `
-            <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-            <div class="toast-content">
-                <div class="toast-title">${title}</div>
-                <div class="toast-message">${message}</div>
-            </div>
-            <button class="toast-close" onclick="this.closest('.toast').remove()">&times;</button>
-        `;
-
-        container.appendChild(toast);
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.classList.add('hide');
-                setTimeout(() => toast.remove(), 400);
-            }
-        }, 5000);
-    }
-
-    // ================= HELPER TEXT =================
-    function updateHelperText(type) {
-        const targetInput = document.getElementById('modal_target');
-        const helperText = targetInput?.parentElement?.querySelector('.helper-text');
-        
-        if (!targetInput || !helperText) return;
-        
-        if (type === 'ping') {
-            targetInput.placeholder = 'Contoh: 192.168.1.1 atau 8.8.8.8';
-            helperText.textContent = 'Masukkan alamat IP (contoh: 192.168.1.1)';
-        } else {
-            targetInput.placeholder = 'Contoh: https://example.com atau http://localhost';
-            helperText.textContent = 'URL lengkap dengan protocol (http:// atau https://)';
-        }
-    }
-
-    // ================= CHECK SERVICE =================
-    function checkService(id) {
-        const btn = document.getElementById('checkBtn' + id);
-        
-        if (!navigator.onLine) {
-            showToast('error', 'Jaringan Terputus!', 'Tidak ada koneksi internet. Periksa router/modem Anda.');
-            return;
-        }
-        
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = '⏳';
-        }
-        
-        showToast('info', 'Memproses...', '🔄 Sedang mengecek service...');
-        
-        fetch(`/services/${id}/check?_=${Date.now()}`, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Cache-Control': 'no-cache'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('success', '✅ Berhasil!', data.message || 'Service berhasil di-check');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showToast('error', '❌ Gagal!', data.message || 'Gagal check service');
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = '🔄';
-                }
-            }
-        })
-        .catch(error => {
-            showToast('error', '❌ Error!', 'Terjadi kesalahan: ' + error.message);
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = '🔄';
-            }
-        });
-    }
-
-    // ================= PERPAGE =================
-    function changePerPage(value) {
-        let url = new URL(window.location.href);
-        url.searchParams.set('perPage', value);
-        url.searchParams.set('page', '1');
-        window.location.href = url.toString() + '&_=' + Date.now();
-    }
-
-    // ================= DETAIL MODAL =================
-    function openDetailModal(id) {
-        currentDetailId = id;
-        const modal = document.getElementById('detailModal');
-        const body = document.getElementById('detailModalBody');
-        body.innerHTML = `<div style="text-align: center; padding: 40px 0; color: var(--text-secondary-service);"><span style="font-size: 32px; display: block; margin-bottom: 8px;">⏳</span><p>Memuat data...</p></div>`;
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        document.dispatchEvent(new Event('modalOpened'));
-        fetchDetailData(id);
-    }
-
-    function fetchDetailData(id) {
-        fetch(`/services/${id}/detail?_=${Date.now()}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderDetail(data.data);
-            } else {
-                document.getElementById('detailModalBody').innerHTML = `
-                    <div style="text-align: center; padding: 40px 0; color: #dc2626;">
-                        <span style="font-size: 32px; display: block; margin-bottom: 8px;">❌</span>
-                        <p>Gagal memuat data service</p>
-                        <p style="font-size: 13px; color: var(--text-secondary-service);">${data.message || 'Terjadi kesalahan'}</p>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            document.getElementById('detailModalBody').innerHTML = `
-                <div style="text-align: center; padding: 40px 0; color: #dc2626;">
-                    <span style="font-size: 32px; display: block; margin-bottom: 8px;">❌</span>
-                    <p>Gagal memuat data</p>
-                    <p style="font-size: 13px; color: var(--text-secondary-service);">${error.message}</p>
-                </div>
-            `;
-        });
-    }
-
-    
-   function renderDetail(service) {
-    const body = document.getElementById('detailModalBody');
-    document.getElementById('detailModalTitle').textContent = `📊 Detail Service: ${service.name}`;
-
-    const statusClass = service.last_status?.toLowerCase() || 'unknown';
-    const statusBadge = service.last_status || 'UNKNOWN';
-    
-    const responseCode = service.last_code ?? '-';
-    const responseTime = service.last_response_time ?? 0;
-    
-    const timeClass = responseTime < 1 ? 'fast' : (responseTime < 3 ? 'medium' : 'slow');
-    const codeClass = responseCode < 400 ? 'success' : (responseCode < 500 ? 'warning' : 'error');
-    
-    const action = service.last_action || '-';
-    const message = service.last_message || '-';
-    
-    const isNoAction = action === '-';
-    const isEmptyAction = action.includes('kosong') || action.includes('EMPTY');
-    const isEmptyPage = message.includes('konten kosong') || message.includes('EMPTY_RESPONSE');
-
-    const messageClass = isEmptyPage ? 'empty-message' : '';
-    const actionClass = isEmptyAction ? 'empty-action' : (isNoAction ? 'no-action' : '');
-    const actionBadgeText = isEmptyAction ? '📄 ' + action : action;
-
-    body.innerHTML = `
-        <div class="detail-grid">
-            <div class="detail-item"><div class="detail-label">Nama Service</div><div class="detail-value">${service.name}</div></div>
-            <div class="detail-item"><div class="detail-label">Tipe</div><div class="detail-value">${service.type?.toUpperCase() || '-'}</div></div>
-            <div class="detail-item full-width"><div class="detail-label">Target URL / IP</div><div class="detail-value" style="font-family: 'SF Mono', 'Courier New', monospace; font-size: 14px; word-break: break-all;">${service.target}</div></div>
-            <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}"><span class="status-dot"></span> ${statusBadge}</span></div></div>
-            <div class="detail-item"><div class="detail-label">Response Code</div><div class="detail-value"><span class="response-code ${codeClass}">${responseCode}</span></div></div>
-            <div class="detail-item"><div class="detail-label">Response Time</div><div class="detail-value"><span class="response-time ${timeClass}">${Number(responseTime).toFixed(2)} <span style="font-size: 12px; color: var(--text-muted-service);">s</span></span></div></div>
-            <div class="detail-item full-width"><div class="detail-label">Pesan</div><div class="detail-message ${messageClass}">${message}</div></div>
-            <!-- 🔥 BARIS INI DIHAPUS / DIKOMENTARI -->
-            <!-- <div class="detail-action"><div class="detail-label">🔧 Tindakan yang Disarankan</div><div class="detail-value"><span class="action-badge ${actionClass}">${actionBadgeText}</span></div></div> -->
-            <div class="detail-item full-width" style="background: var(--bg-detail-alt-service); border-color: var(--border-service);"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: var(--text-secondary-service);"><span><strong>ID:</strong> ${service.id}</span><span><strong>Terakhir Check:</strong> ${service.last_check_at || '-'}</span><span><strong>Dibuat:</strong> ${service.created_at || '-'}</span><span><strong>Diupdate:</strong> ${service.updated_at || '-'}</span></div></div>
-        </div>
-    `;
-}
-
-    function refreshDetail() {
-        if (currentDetailId) {
-            const btn = document.getElementById('refreshDetailBtn');
-            btn.innerHTML = `<span class="spin">🔄</span> Memuat...`;
-            btn.disabled = true;
             
-            fetchDetailData(currentDetailId);
-            
-            setTimeout(() => {
-                btn.innerHTML = '🔄 Refresh';
-                btn.disabled = false;
-            }, 1000);
-        }
-    }
-
-    function closeDetailModal() {
-        document.getElementById('detailModal').classList.remove('active');
-        document.body.style.overflow = '';
-        currentDetailId = null;
-        document.dispatchEvent(new Event('modalClosed'));
-    }
-
-    // ================= DOWNLOAD MODAL =================
-    function openDownloadModal(id, name) {
-        currentDownloadId = id;
-        const modal = document.getElementById('downloadModal');
-        document.getElementById('downloadModalTitle').textContent = '📥 Download Laporan PDF';
-        document.getElementById('downloadServiceName').textContent = name;
-        
-        fetch(`/services/${id}/detail?_=${Date.now()}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('downloadServiceTarget').textContent = `🎯 ${data.data.target}`;
-                document.getElementById('downloadServiceType').textContent = `📌 ${data.data.type?.toUpperCase() || 'HTTP'}`;
-            }
-        })
-        .catch(() => {
-            document.getElementById('downloadServiceTarget').textContent = '🎯 -';
-            document.getElementById('downloadServiceType').textContent = '📌 -';
-        });
-        
-        document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelector('.period-btn[data-period="7"]').classList.add('active');
-        selectedPeriod = 7;
-        
-        const today = new Date();
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        document.getElementById('dateFrom').value = weekAgo.toISOString().split('T')[0];
-        document.getElementById('dateTo').value = today.toISOString().split('T')[0];
-        
-        document.getElementById('downloadLoading').style.display = 'none';
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        document.dispatchEvent(new Event('modalOpened'));
-    }
-
-    function selectPeriod(element, days) {
-        document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
-        element.classList.add('active');
-        selectedPeriod = days;
-        
-        const today = new Date();
-        const pastDate = new Date();
-        pastDate.setDate(pastDate.getDate() - days);
-        document.getElementById('dateFrom').value = pastDate.toISOString().split('T')[0];
-        document.getElementById('dateTo').value = today.toISOString().split('T')[0];
-    }
-
-    function downloadReport() {
-        const dateFrom = document.getElementById('dateFrom').value;
-        const dateTo = document.getElementById('dateTo').value;
-        
-        if (!dateFrom || !dateTo) {
-            showToast('warning', 'Peringatan!', 'Silakan pilih periode laporan terlebih dahulu');
-            return;
-        }
-        
-        if (new Date(dateFrom) > new Date(dateTo)) {
-            showToast('warning', 'Peringatan!', 'Tanggal awal tidak boleh lebih besar dari tanggal akhir');
-            return;
-        }
-        
-        const btn = document.getElementById('btnDownloadNow');
-        const loading = document.getElementById('downloadLoading');
-        
-        btn.disabled = true;
-        btn.textContent = '⏳ Memproses...';
-        loading.style.display = 'block';
-        
-        const url = `/services/${currentDownloadId}/download-report?` + new URLSearchParams({
-            date_from: dateFrom,
-            date_to: dateTo,
-            format: 'pdf',
-            _: Date.now()
-        });
-        
-        window.open(url, '_blank');
-        
-        setTimeout(() => {
-            btn.disabled = false;
-            btn.textContent = '📥 Download PDF';
-            loading.style.display = 'none';
-            showToast('success', 'Berhasil!', 'Laporan PDF berhasil diunduh');
-        }, 3000);
-    }
-
-    function closeDownloadModal() {
-        document.getElementById('downloadModal').classList.remove('active');
-        document.body.style.overflow = '';
-        currentDownloadId = null;
-        document.dispatchEvent(new Event('modalClosed'));
-    }
-
-    // ================= CREATE / EDIT MODAL =================
-    function openCreateModal() {
-        const modal = document.getElementById('serviceModal');
-        const form = document.getElementById('serviceForm');
-        const closeBtn = document.getElementById('modalCloseBtn');
-        const cancelBtn = document.getElementById('btnCancelModal');
-        const submitBtn = document.getElementById('btnSubmitModal');
-        
-        closeBtn.disabled = false;
-        cancelBtn.disabled = false;
-        submitBtn.disabled = false;
-        submitBtn.textContent = '💾 Simpan Service';
-        submitBtn.className = 'btn-submit-modal';
-        
-        form.reset();
-        document.getElementById('serviceId').value = '';
-        document.getElementById('formMethod').value = 'POST';
-        form.action = '{{ route('services.store') }}';
-        
-        document.getElementById('modal_type').value = 'http';
-        updateHelperText('http');
-        
-        document.getElementById('modalTitle').textContent = 'Tambah Service';
-        document.getElementById('modalIcon').textContent = '➕';
-        document.getElementById('modalIcon').style.background = 'linear-gradient(135deg, #4f46e5, #7c3aed)';
-        
-        document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
-        document.querySelectorAll('.error-message').forEach(el => el.remove());
-        
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        document.dispatchEvent(new Event('modalOpened'));
-        setTimeout(() => document.getElementById('modal_name').focus(), 100);
-    }
-
-    function openEditModal(id) {
-        const modal = document.getElementById('serviceModal');
-        const submitBtn = document.getElementById('btnSubmitModal');
-        const cancelBtn = document.getElementById('btnCancelModal');
-        const closeBtn = document.getElementById('modalCloseBtn');
-        
-        const service = servicesMap[id];
-        
-        if (!service) {
-            showToast('error', 'Gagal!', 'Data service tidak ditemukan');
-            return;
-        }
-        
-        document.getElementById('modalTitle').textContent = 'Edit Service';
-        document.getElementById('modalIcon').textContent = '✏️';
-        document.getElementById('modalIcon').style.background = 'linear-gradient(135deg, #d97706, #b45309)';
-        
-        submitBtn.disabled = false;
-        submitBtn.textContent = '💾 Update Service';
-        submitBtn.className = 'btn-submit-modal edit-mode';
-        cancelBtn.disabled = false;
-        closeBtn.disabled = false;
-        
-        document.getElementById('modal_name').value = service.name;
-        document.getElementById('modal_target').value = service.target;
-        document.getElementById('modal_type').value = service.type || 'http';
-        document.getElementById('serviceId').value = service.id;
-        document.getElementById('formMethod').value = 'PUT';
-        document.getElementById('serviceForm').action = `/services/${service.id}`;
-        
-        updateHelperText(service.type || 'http');
-        
-        document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
-        document.querySelectorAll('.error-message').forEach(el => el.remove());
-        
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        document.dispatchEvent(new Event('modalOpened'));
-        
-        setTimeout(() => document.getElementById('modal_name').focus(), 100);
-    }
-
-    function closeModal() {
-        document.getElementById('modalCloseBtn').disabled = false;
-        document.getElementById('btnCancelModal').disabled = false;
-        document.getElementById('btnSubmitModal').disabled = false;
-        
-        document.getElementById('serviceModal').classList.remove('active');
-        document.body.style.overflow = '';
-        document.dispatchEvent(new Event('modalClosed'));
-    }
-
-    function submitForm() {
-        const form = document.getElementById('serviceForm');
-        const submitBtn = document.getElementById('btnSubmitModal');
-        const cancelBtn = document.getElementById('btnCancelModal');
-        const closeBtn = document.getElementById('modalCloseBtn');
-        const name = document.getElementById('modal_name');
-        const target = document.getElementById('modal_target');
-        const type = document.getElementById('modal_type');
-        const serviceId = document.getElementById('serviceId').value;
-        
-        let hasError = false;
-        
-        if (name.value.trim() === '') {
-            showFieldError(name, 'Nama service wajib diisi');
-            hasError = true;
-        } else if (name.value.length < 3) {
-            showFieldError(name, 'Nama minimal 3 karakter');
-            hasError = true;
-        } else {
-            removeFieldError(name);
-        }
-        
-        if (target.value.trim() === '') {
-            showFieldError(target, 'Target wajib diisi');
-            hasError = true;
-        } else if (type.value !== 'ping') {
-            if (!/^https?:\/\/.+/i.test(target.value.trim())) {
-                showFieldError(target, 'URL harus diawali dengan http:// atau https://');
-                hasError = true;
+            if (query.length >= 2) {
+                showSearchStatus('✍️ Mengetik...', false);
+                searchTimeout = setTimeout(function() {
+                    searchServices();
+                }, 800);
             } else {
-                removeFieldError(target);
+                hideSearchStatus();
             }
-        } else {
-            removeFieldError(target);
-        }
-        
-        if (hasError) {
-            const firstError = document.querySelector('.form-control.error');
-            if (firstError) {
-                firstError.focus();
-            }
-            return;
-        }
-        
-        submitBtn.disabled = true;
-        submitBtn.textContent = '⏳ Menyimpan...';
-        cancelBtn.disabled = true;
-        closeBtn.disabled = true;
-        
-        form.submit();
+        });
     }
 
-    function showFieldError(input, message) {
-        input.classList.add('error');
-        let errorDiv = input.parentElement.querySelector('.error-message');
-        if (!errorDiv) {
-            errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.style.marginTop = '4px';
-            input.parentElement.appendChild(errorDiv);
-        }
-        errorDiv.innerHTML = '⚠️ ' + message;
-    }
-
-    function removeFieldError(input) {
-        input.classList.remove('error');
-        const errorDiv = input.parentElement.querySelector('.error-message');
-        if (errorDiv) errorDiv.remove();
-    }
-
-    // ================= KEYBOARD SHORTCUTS =================
     document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            document.getElementById('searchService').focus();
+            document.getElementById('searchService').select();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('searchService').focus();
+            document.getElementById('searchService').select();
+        }
         if (e.key === 'Escape') {
             closeModal();
             closeDetailModal();
             closeDownloadModal();
             closeConfirmModal();
+            closeArchiveConfirmModal();
+            closeUnarchiveConfirmModal();
+            closeForceDeleteConfirmModal();
             hideSearchStatus();
         }
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            const modal = document.getElementById('serviceModal');
-            if (modal.classList.contains('active')) {
-                e.preventDefault();
-                submitForm();
+    });
+});
+
+// ================= TOAST =================
+function showToast(type, title, message) {
+    var container = document.getElementById('toastContainer');
+    var icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+
+    var existingToasts = container.querySelectorAll('.toast');
+    for (var i = 0; i < existingToasts.length; i++) {
+        var msgEl = existingToasts[i].querySelector('.toast-message');
+        if (msgEl && msgEl.textContent === message) {
+            return;
+        }
+    }
+
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.innerHTML = '<span class="toast-icon">' + (icons[type] || 'ℹ️') + '</span><div class="toast-content"><div class="toast-title">' + title + '</div><div class="toast-message">' + message + '</div></div><button class="toast-close" onclick="this.closest(\'.toast\').remove()">&times;</button>';
+
+    container.appendChild(toast);
+    setTimeout(function() {
+        if (toast.parentNode) {
+            toast.classList.add('hide');
+            setTimeout(function() { toast.remove(); }, 400);
+        }
+    }, 5000);
+}
+
+// ================= HELPER TEXT =================
+function updateHelperText(type) {
+    var targetInput = document.getElementById('modal_target');
+    var helperText = targetInput?.parentElement?.querySelector('.helper-text');
+    
+    if (!targetInput || !helperText) return;
+    
+    if (type === 'ping') {
+        targetInput.placeholder = 'Contoh: 192.168.1.1 atau 8.8.8.8';
+        helperText.textContent = 'Masukkan alamat IP (contoh: 192.168.1.1)';
+    } else {
+        targetInput.placeholder = 'Contoh: https://example.com atau http://localhost';
+        helperText.textContent = 'URL lengkap dengan protocol (http:// atau https://)';
+    }
+}
+
+// ================= CHECK SERVICE =================
+function checkService(id) {
+    var btn = document.getElementById('checkBtn' + id);
+    
+    if (!navigator.onLine) {
+        showToast('error', 'Jaringan Terputus!', 'Tidak ada koneksi internet. Periksa router/modem Anda.');
+        return;
+    }
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳';
+    }
+    
+    showToast('info', 'Memproses...', '🔄 Sedang mengecek service...');
+    
+    fetch('/services/' + id + '/check?_=' + Date.now(), {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Cache-Control': 'no-cache'
+        }
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast('success', '✅ Berhasil!', data.message || 'Service berhasil di-check');
+            setTimeout(function() { location.reload(); }, 1000);
+        } else {
+            showToast('error', '❌ Gagal!', data.message || 'Gagal check service');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '🔄';
             }
         }
-    });
-
-    // ================= REAL-TIME VALIDATION =================
-    document.getElementById('modal_name').addEventListener('input', function() {
-        if (this.value.trim() !== '' && this.value.length >= 3) {
-            this.classList.remove('error');
-            removeFieldError(this);
+    })
+    .catch(function(error) {
+        showToast('error', '❌ Error!', 'Terjadi kesalahan: ' + error.message);
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🔄';
         }
     });
+}
 
-    document.getElementById('modal_target').addEventListener('input', function() {
-        if (this.value.trim() !== '') {
-            this.classList.remove('error');
-            removeFieldError(this);
+// ================= PERPAGE =================
+function changePerPage(value) {
+    var url = new URL(window.location.href);
+    url.searchParams.set('perPage', value);
+    url.searchParams.set('page', '1');
+    window.location.href = url.toString() + '&_=' + Date.now();
+}
+
+// ================= DETAIL MODAL =================
+function openDetailModal(id) {
+    currentDetailId = id;
+    var modal = document.getElementById('detailModal');
+    var body = document.getElementById('detailModalBody');
+    body.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-secondary-service);"><span style="font-size: 32px; display: block; margin-bottom: 8px;">⏳</span><p>Memuat data...</p></div>';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.dispatchEvent(new Event('modalOpened'));
+    fetchDetailData(id);
+}
+
+function fetchDetailData(id) {
+    fetch('/services/' + id + '/detail?_=' + Date.now(), {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+        }
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            renderDetail(data.data);
+        } else {
+            document.getElementById('detailModalBody').innerHTML = '<div style="text-align: center; padding: 40px 0; color: #dc2626;"><span style="font-size: 32px; display: block; margin-bottom: 8px;">❌</span><p>Gagal memuat data service</p><p style="font-size: 13px; color: var(--text-secondary-service);">' + (data.message || 'Terjadi kesalahan') + '</p></div>';
+        }
+    })
+    .catch(function(error) {
+        document.getElementById('detailModalBody').innerHTML = '<div style="text-align: center; padding: 40px 0; color: #dc2626;"><span style="font-size: 32px; display: block; margin-bottom: 8px;">❌</span><p>Gagal memuat data</p><p style="font-size: 13px; color: var(--text-secondary-service);">' + error.message + '</p></div>';
+    });
+}
+
+function renderDetail(service) {
+    var body = document.getElementById('detailModalBody');
+    document.getElementById('detailModalTitle').textContent = '📊 Detail Service: ' + service.name;
+
+    var statusClass = service.last_status?.toLowerCase() || 'unknown';
+    var statusBadge = service.last_status || 'UNKNOWN';
+    
+    var responseCode = service.last_code ?? '-';
+    var responseTime = service.last_response_time ?? 0;
+    
+    var timeClass = responseTime < 1 ? 'fast' : (responseTime < 3 ? 'medium' : 'slow');
+    var codeClass = responseCode < 400 ? 'success' : (responseCode < 500 ? 'warning' : 'error');
+    
+    var action = service.last_action || '-';
+    var message = service.last_message || '-';
+    
+    var isEmptyPage = message.includes('konten kosong') || message.includes('EMPTY_RESPONSE');
+    var messageClass = isEmptyPage ? 'empty-message' : '';
+
+    body.innerHTML = '<div class="detail-grid">' +
+        '<div class="detail-item"><div class="detail-label">Nama Service</div><div class="detail-value">' + service.name + '</div></div>' +
+        '<div class="detail-item"><div class="detail-label">Tipe</div><div class="detail-value">' + (service.type?.toUpperCase() || '-') + '</div></div>' +
+        '<div class="detail-item full-width"><div class="detail-label">Target URL / IP</div><div class="detail-value" style="font-family: \'SF Mono\', \'Courier New\', monospace; font-size: 14px; word-break: break-all;">' + service.target + '</div></div>' +
+        '<div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ' + statusClass + '"><span class="status-dot"></span> ' + statusBadge + '</span></div></div>' +
+        '<div class="detail-item"><div class="detail-label">Response Code</div><div class="detail-value"><span class="response-code ' + codeClass + '">' + responseCode + '</span></div></div>' +
+        '<div class="detail-item"><div class="detail-label">Response Time</div><div class="detail-value"><span class="response-time ' + timeClass + '">' + Number(responseTime).toFixed(2) + ' <span style="font-size: 12px; color: var(--text-muted-service);">s</span></span></div></div>' +
+        '<div class="detail-item full-width"><div class="detail-label">Pesan</div><div class="detail-message ' + messageClass + '">' + message + '</div></div>' +
+        '<div class="detail-item full-width" style="background: var(--bg-detail-alt-service); border-color: var(--border-service);"><div class="detail-label">Informasi Tambahan</div><div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: var(--text-secondary-service);"><span><strong>ID:</strong> ' + service.id + '</span><span><strong>Terakhir Check:</strong> ' + (service.last_check_at || '-') + '</span><span><strong>Dibuat:</strong> ' + (service.created_at || '-') + '</span><span><strong>Diupdate:</strong> ' + (service.updated_at || '-') + '</span></div></div>' +
+        '</div>';
+}
+
+function refreshDetail() {
+    if (currentDetailId) {
+        var btn = document.getElementById('refreshDetailBtn');
+        btn.innerHTML = '<span class="spin">🔄</span> Memuat...';
+        btn.disabled = true;
+        
+        fetchDetailData(currentDetailId);
+        
+        setTimeout(function() {
+            btn.innerHTML = '🔄 Refresh';
+            btn.disabled = false;
+        }, 1000);
+    }
+}
+
+function closeDetailModal() {
+    document.getElementById('detailModal').classList.remove('active');
+    document.body.style.overflow = '';
+    currentDetailId = null;
+    document.dispatchEvent(new Event('modalClosed'));
+}
+
+// ================= DOWNLOAD MODAL =================
+var downloadServiceData = null;
+
+function openDownloadModal(id, name) {
+    currentDownloadId = id;
+    var modal = document.getElementById('downloadModal');
+    document.getElementById('downloadModalTitle').textContent = '📥 Download Laporan PDF';
+    document.getElementById('downloadServiceName').textContent = name;
+    document.getElementById('downloadServiceTarget').textContent = '🎯 Memuat...';
+    document.getElementById('downloadServiceType').textContent = '📌 Memuat...';
+    
+    var ageInfo = document.getElementById('serviceAgeInfo');
+    var ageText = document.getElementById('serviceAgeText');
+    ageInfo.style.display = 'block';
+    ageText.innerHTML = '⏳ Memuat informasi service...';
+    
+    var notice = document.getElementById('downloadNotice');
+    notice.innerHTML = '⏳ Memuat informasi service...';
+    
+    fetch('/services/' + id + '/detail?_=' + Date.now(), {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+        }
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            document.getElementById('downloadServiceTarget').textContent = '🎯 ' + data.data.target;
+            document.getElementById('downloadServiceType').textContent = '📌 ' + (data.data.type?.toUpperCase() || 'HTTP');
+            
+            // 🔥 PERBAIKAN: HITUNG SELISIH TANGGAL (BUKAN JAM)
+            var createdAt = new Date(data.data.created_at);
+            var today = new Date();
+
+            // 🔥 FUNGSI HITUNG SELISIH TANGGAL YANG BENAR
+            function getDateDiffInDays(date1, date2) {
+                // Reset ke 00:00:00 untuk menghitung hari
+                var d1 = new Date(date1);
+                d1.setHours(0, 0, 0, 0);
+                var d2 = new Date(date2);
+                d2.setHours(0, 0, 0, 0);
+                
+                // Hitung selisih dalam milidetik
+                var diffTime = d2.getTime() - d1.getTime();
+                // Konversi ke hari
+                return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            }
+
+            // 🔥 HITUNG UMUR SERVICE DALAM HARI (BERDASARKAN TANGGAL)
+            var ageInDays = getDateDiffInDays(createdAt, today);
+            
+            // 🔥 HARI YANG TERSEDIA = ageInDays + 1 (termasuk hari ini)
+            var availableDays = ageInDays + 1;
+            
+            // 🔥 MAX DAYS = min(availableDays, 90)
+            var maxDays = Math.min(availableDays, 90);
+            
+            // 🔥 LOG UNTUK DEBUG
+            console.log('=== DOWNLOAD MODAL DEBUG ===');
+            console.log('Service dibuat:', data.data.created_at);
+            console.log('Hari ini:', formatDateLocal(today));
+            console.log('Age in days (selisih TANGGAL):', ageInDays);
+            console.log('Available days (termasuk hari ini):', availableDays);
+            console.log('Max days (dibatasi 90):', maxDays);
+            
+            var ageTextDisplay = '';
+            if (ageInDays < 1) {
+                ageTextDisplay = '🆕 Baru ditambahkan <strong>hari ini</strong>';
+            } else if (ageInDays === 1) {
+                ageTextDisplay = '📆 Berusia <strong>1 hari</strong> (dibuat kemarin)';
+            } else {
+                ageTextDisplay = '📆 Berusia <strong>' + ageInDays + ' hari</strong>';
+            }
+            
+            var ageInfo = document.getElementById('serviceAgeInfo');
+            var ageTextEl = document.getElementById('serviceAgeText');
+            ageTextEl.innerHTML = '📌 <strong>Info Service:</strong> ' + ageTextDisplay + 
+                ' | Dibuat: <strong>' + data.data.created_at + '</strong>' +
+                ' | Data tersedia: <strong>' + availableDays + ' hari</strong>';
+            ageInfo.style.display = 'block';
+            
+            var dateFromInput = document.getElementById('dateFrom');
+            var dateToInput = document.getElementById('dateTo');
+            
+            // 🔥 PAKAI FORMAT LOKAL
+            var minDate = formatDateLocal(createdAt);
+            var maxDate = formatDateLocal(today);
+            
+            dateFromInput.setAttribute('min', minDate);
+            dateFromInput.setAttribute('max', maxDate);
+            dateToInput.setAttribute('min', minDate);
+            dateToInput.setAttribute('max', maxDate);
+            
+            var defaultDays = Math.min(7, Math.max(1, maxDays));
+            var periodStart = new Date(today);
+            periodStart.setDate(periodStart.getDate() - defaultDays);
+            
+            // Reset periodStart ke 00:00:00
+            periodStart.setHours(0, 0, 0, 0);
+            var createdAtDate = new Date(createdAt);
+            createdAtDate.setHours(0, 0, 0, 0);
+            
+            if (periodStart < createdAtDate) {
+                periodStart = new Date(createdAtDate);
+            }
+            
+            dateFromInput.value = formatDateLocal(periodStart);
+            dateToInput.value = maxDate;
+            
+            var periodBtns = document.querySelectorAll('.period-btn');
+            var availablePeriods = [];
+            
+            periodBtns.forEach(function(btn) {
+                var days = parseInt(btn.getAttribute('data-period'));
+                // 🔥 GUNAKAN availableDays
+                var isAvailable = days <= availableDays;
+                
+                if (isAvailable) {
+                    availablePeriods.push(days);
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                    btn.style.pointerEvents = 'auto';
+                    btn.classList.remove('disabled');
+                    btn.title = days + ' hari terakhir (✅ tersedia)';
+                } else {
+                    btn.style.opacity = '0.4';
+                    btn.style.cursor = 'not-allowed';
+                    btn.style.pointerEvents = 'none';
+                    btn.classList.add('disabled');
+                    btn.title = '❌ Periode ' + days + ' hari belum tersedia (hanya ' + availableDays + ' hari data tersedia)';
+                }
+                
+                if (days === defaultDays) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            var availableText = availablePeriods.length > 0 ? availablePeriods.join(', ') + ' hari' : 'Belum ada periode yang tersedia';
+            notice.innerHTML = '📌 <strong>Info:</strong> Service ini memiliki data dari <strong>' + 
+                minDate + '</strong> sampai <strong>' + maxDate + '</strong>.<br>' +
+                '📊 Total <strong>' + availableDays + ' hari</strong> data tersedia.<br>' +
+                '✅ Periode tersedia: <strong>' + availableText + '</strong>';
+            
+            // 🔥 SIMPAN DATA LENGKAP
+            downloadServiceData = {
+                createdAt: createdAt,
+                ageInDays: ageInDays,
+                availableDays: availableDays,
+                maxDays: maxDays,
+                minDate: minDate,
+                maxDate: maxDate,
+                serviceName: name,
+                minDateObj: createdAtDate,
+                maxDateObj: today
+            };
+            
+            setTimeout(validateDateRange, 100);
+        }
+    })
+    .catch(function(error) {
+        document.getElementById('downloadServiceTarget').textContent = '🎯 -';
+        document.getElementById('downloadServiceType').textContent = '📌 -';
+        notice.innerHTML = '❌ Gagal memuat informasi service: ' + error.message;
+        var ageInfo = document.getElementById('serviceAgeInfo');
+        var ageTextEl = document.getElementById('serviceAgeText');
+        ageTextEl.innerHTML = '❌ Gagal memuat informasi service';
+    });
+    
+    var periodBtns = document.querySelectorAll('.period-btn');
+    for (var i = 0; i < periodBtns.length; i++) {
+        periodBtns[i].classList.remove('active');
+    }
+    
+    // 🔥 PAKAI FORMAT LOKAL
+    var today = new Date();
+    var weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    document.getElementById('dateFrom').value = formatDateLocal(weekAgo);
+    document.getElementById('dateTo').value = formatDateLocal(today);
+    
+    document.getElementById('downloadLoading').style.display = 'none';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.dispatchEvent(new Event('modalOpened'));
+}
+// ============================================================ */
+// 🔥 TAMBAHAN: VALIDASI REAL-TIME TANGGAL
+// ============================================================ */
+
+function validateDateRange() {
+    var dateFrom = document.getElementById('dateFrom');
+    var dateTo = document.getElementById('dateTo');
+    var btnDownload = document.getElementById('btnDownloadNow');
+    
+    console.log('=== VALIDATE DATE RANGE ===');
+    console.log('dateFrom value:', dateFrom.value);
+    console.log('dateTo value:', dateTo.value);
+    console.log('downloadServiceData:', downloadServiceData);
+    
+    if (!downloadServiceData || !dateFrom.value || !dateTo.value) {
+        if (btnDownload) {
+            btnDownload.disabled = true;
+            btnDownload.title = '❌ Isi tanggal terlebih dahulu';
+        }
+        console.log('❌ Data tidak lengkap');
+        return;
+    }
+    
+    // 🔥 PERBAIKAN: Bandingkan sebagai STRING (format YYYY-MM-DD)
+    var fromDateStr = dateFrom.value;
+    var toDateStr = dateTo.value;
+    var minDateStr = downloadServiceData.minDate;
+    var maxDateStr = downloadServiceData.maxDate;
+    
+    console.log('fromDateStr:', fromDateStr);
+    console.log('toDateStr:', toDateStr);
+    console.log('minDateStr:', minDateStr);
+    console.log('maxDateStr:', maxDateStr);
+    
+    var hasError = false;
+    var errorMessages = [];
+    
+    // 🔥 VALIDASI TANGGAL AWAL (bandingkan string)
+    if (fromDateStr < minDateStr) {
+        dateFrom.style.borderColor = '#dc2626';
+        dateFrom.style.background = '#fef2f2';
+        showDateError(dateFrom, '⚠️ Minimal tanggal: ' + minDateStr + ' (tanggal service dibuat)');
+        hasError = true;
+        errorMessages.push('Tanggal awal tidak boleh sebelum ' + minDateStr);
+        console.log('❌ fromDate < minDate');
+    } else if (fromDateStr > maxDateStr) {
+        dateFrom.style.borderColor = '#dc2626';
+        dateFrom.style.background = '#fef2f2';
+        showDateError(dateFrom, '⚠️ Maksimal tanggal: ' + maxDateStr + ' (hari ini)');
+        hasError = true;
+        errorMessages.push('Tanggal awal tidak boleh melebihi ' + maxDateStr);
+        console.log('❌ fromDate > maxDate');
+    } else {
+        dateFrom.style.borderColor = '#10b981';
+        dateFrom.style.background = '';
+        removeDateError(dateFrom);
+        console.log('✅ fromDate valid');
+    }
+    
+    // 🔥 VALIDASI TANGGAL AKHIR (bandingkan string)
+    if (toDateStr < minDateStr) {
+        dateTo.style.borderColor = '#dc2626';
+        dateTo.style.background = '#fef2f2';
+        showDateError(dateTo, '⚠️ Minimal tanggal: ' + minDateStr + ' (tanggal service dibuat)');
+        hasError = true;
+        errorMessages.push('Tanggal akhir tidak boleh sebelum ' + minDateStr);
+        console.log('❌ toDate < minDate');
+    } else if (toDateStr > maxDateStr) {
+        dateTo.style.borderColor = '#dc2626';
+        dateTo.style.background = '#fef2f2';
+        showDateError(dateTo, '⚠️ Maksimal tanggal: ' + maxDateStr + ' (hari ini)');
+        hasError = true;
+        errorMessages.push('Tanggal akhir tidak boleh melebihi ' + maxDateStr);
+        console.log('❌ toDate > maxDate');
+    } else if (toDateStr < fromDateStr) {
+        dateTo.style.borderColor = '#dc2626';
+        dateTo.style.background = '#fef2f2';
+        showDateError(dateTo, '⚠️ Tidak boleh kurang dari tanggal awal');
+        hasError = true;
+        errorMessages.push('Tanggal akhir harus >= tanggal awal');
+        console.log('❌ toDate < fromDate');
+    } else {
+        dateTo.style.borderColor = '#10b981';
+        dateTo.style.background = '';
+        removeDateError(dateTo);
+        console.log('✅ toDate valid');
+    }
+    
+    // 🔥 UPDATE TOMBOL DOWNLOAD
+    if (btnDownload) {
+        btnDownload.disabled = hasError;
+        if (hasError) {
+            btnDownload.title = '❌ ' + errorMessages.join('; ');
+            console.log('❌ Tombol DISABLED karena:', errorMessages);
+        } else {
+            btnDownload.disabled = false;
+            btnDownload.title = '📥 Download PDF';
+            btnDownload.style.opacity = '1';
+            btnDownload.style.cursor = 'pointer';
+            console.log('✅✅✅ Tombol ENABLED!');
+        }
+    }
+    
+    // 🔥 TAMPILKAN RINGKASAN PERIODE
+    if (!hasError && toDateStr >= fromDateStr) {
+        // Hitung selisih hari dari string
+        var fromParts = fromDateStr.split('-');
+        var toParts = toDateStr.split('-');
+        var fromDateObj = new Date(fromParts[0], fromParts[1] - 1, fromParts[2]);
+        var toDateObj = new Date(toParts[0], toParts[1] - 1, toParts[2]);
+        var diffDays = Math.floor((toDateObj.getTime() - fromDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        
+        var notice = document.getElementById('downloadNotice');
+        if (notice) {
+            notice.innerHTML = '✅ <strong>Periode valid:</strong> ' + 
+                fromDateStr + ' sampai ' + toDateStr + 
+                ' (' + diffDays + ' hari)' +
+                ' | Service berusia ' + downloadServiceData.ageInDays + ' hari';
+        }
+    }
+    
+    console.log('=== VALIDASI SELESAI ===');
+    console.log('Hasil error:', hasError);
+    console.log('Tombol disabled:', btnDownload ? btnDownload.disabled : 'btn null');
+}
+
+function showDateError(input, message) {
+    var parent = input.parentElement;
+    var errorDiv = parent.querySelector('.date-error-message');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'date-error-message';
+        errorDiv.style.cssText = 'color: #dc2626; font-size: 12px; margin-top: 4px;';
+        parent.appendChild(errorDiv);
+    }
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function removeDateError(input) {
+    var parent = input.parentElement;
+    var errorDiv = parent.querySelector('.date-error-message');
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
+    }
+}
+
+// ============================================================ */
+
+function selectPeriod(element, days) {
+    if (element.classList.contains('disabled') || element.style.pointerEvents === 'none') {
+        var msg = '❌ Periode ' + days + ' hari belum tersedia.';
+        if (downloadServiceData) {
+            msg += ' Service ini baru memiliki ' + downloadServiceData.availableDays + ' hari data.';
+        }
+        showToast('warning', 'Periode Tidak Tersedia', msg);
+        return;
+    }
+    
+    var periodBtns = document.querySelectorAll('.period-btn');
+    for (var i = 0; i < periodBtns.length; i++) {
+        periodBtns[i].classList.remove('active');
+    }
+    element.classList.add('active');
+    selectedPeriod = days;
+    
+    var today = new Date();
+    var pastDate = new Date(today);
+    pastDate.setDate(pastDate.getDate() - days);
+    
+    if (downloadServiceData && pastDate < downloadServiceData.createdAt) {
+        pastDate = new Date(downloadServiceData.createdAt);
+        showToast('info', 'Info', '📅 Tanggal awal disesuaikan dengan tanggal service dibuat (' + 
+            formatDateLocal(pastDate) + ')');
+    }
+    
+    // 🔥 PERBAIKAN: PAKAI FORMAT LOKAL
+    document.getElementById('dateFrom').value = formatDateLocal(pastDate);
+    document.getElementById('dateTo').value = formatDateLocal(today);
+    
+    validateDateRange();
+}
+
+function downloadReport() {
+    var dateFrom = document.getElementById('dateFrom').value;
+    var dateTo = document.getElementById('dateTo').value;
+    
+    if (!dateFrom || !dateTo) {
+        showToast('warning', 'Peringatan!', 'Silakan pilih periode laporan terlebih dahulu');
+        return;
+    }
+    
+    // 🔥 PERBAIKAN: Bandingkan sebagai STRING (YYYY-MM-DD) - lebih aman
+    var todayStr = formatDateLocal(new Date());
+    
+    console.log('📥 Download Report:');
+    console.log('dateFrom:', dateFrom);
+    console.log('dateTo:', dateTo);
+    console.log('todayStr:', todayStr);
+    
+    // 🔥 CEK TANGGAL AWAL vs AKHIR
+    if (dateFrom > dateTo) {
+        showToast('warning', 'Peringatan!', '📅 Tanggal awal tidak boleh lebih besar dari tanggal akhir');
+        return;
+    }
+    
+    // 🔥 PERBAIKAN: HAPUS VALIDASI INI ATAU COMMENT
+    // if (dateTo > todayStr) {
+    //     showToast('warning', 'Peringatan!', '📅 Tanggal akhir tidak boleh melebihi hari ini');
+    //     return;
+    // }
+    
+    // 🔥 ATAU UBAH JADI PERINGATAN SAJA (TIDAK MENGHENTIKAN)
+    if (dateTo > todayStr) {
+        console.log('⚠️ Peringatan: Tanggal akhir melebihi hari ini, tapi tetap diproses');
+        showToast('info', 'Info', '📅 Data akan diproses sesuai yang tersedia.');
+        // LANJUTKAN PROSES! JANGAN RETURN!
+    }
+    
+    // 🔥 CEK APAKAH ADA DATA DI DATABASE (Controller yang handle)
+    if (downloadServiceData) {
+        var minDate = downloadServiceData.minDate;
+        var maxDate = downloadServiceData.maxDate;
+        
+        if (dateFrom < minDate) {
+            showToast('warning', 'Periode Tidak Valid', 
+                '❌ Service "' + downloadServiceData.serviceName + '" dibuat pada ' + minDate + 
+                '.\n📅 Tidak ada data sebelum tanggal tersebut.\n\n💡 Silakan pilih tanggal dari ' + minDate + ' sampai ' + maxDate);
+            return;
+        }
+        
+        if (dateTo > maxDate) {
+            showToast('warning', 'Periode Tidak Valid', 
+                '❌ Service "' + downloadServiceData.serviceName + '" baru memiliki ' + downloadServiceData.availableDays + 
+                ' hari data.\n📅 Data hanya tersedia sampai ' + maxDate + 
+                '.\n\n💡 Silakan pilih tanggal dari ' + minDate + ' sampai ' + maxDate);
+            return;
+        }
+    }
+    
+    var btn = document.getElementById('btnDownloadNow');
+    var loading = document.getElementById('downloadLoading');
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Memproses...';
+    loading.style.display = 'block';
+    
+    var url = '/services/' + currentDownloadId + '/download-report?' + new URLSearchParams({
+        date_from: dateFrom,
+        date_to: dateTo,
+        format: 'pdf',
+        _: Date.now()
+    });
+    
+    var newWindow = window.open(url, '_blank');
+    if (!newWindow) {
+        showToast('warning', 'Perhatian!', 'Browser Anda memblokir popup. Izinkan popup untuk mendownload PDF.');
+        btn.disabled = false;
+        btn.textContent = '📥 Download PDF';
+        loading.style.display = 'none';
+        return;
+    }
+    
+    setTimeout(function() {
+        btn.disabled = false;
+        btn.textContent = '📥 Download PDF';
+        loading.style.display = 'none';
+        showToast('success', 'Berhasil!', '📄 Laporan PDF berhasil diunduh');
+    }, 3000);
+}
+
+function closeDownloadModal() {
+    document.getElementById('downloadModal').classList.remove('active');
+    document.body.style.overflow = '';
+    currentDownloadId = null;
+    downloadServiceData = null;
+    document.dispatchEvent(new Event('modalClosed'));
+}
+
+// ================= EVENT LISTENER UNTUK VALIDASI REAL-TIME =================
+document.addEventListener('DOMContentLoaded', function() {
+    var dateFrom = document.getElementById('dateFrom');
+    var dateTo = document.getElementById('dateTo');
+    
+    if (dateFrom) {
+        dateFrom.addEventListener('change', validateDateRange);
+        dateFrom.addEventListener('input', validateDateRange);
+        dateFrom.addEventListener('blur', validateDateRange);
+    }
+    
+    if (dateTo) {
+        dateTo.addEventListener('change', validateDateRange);
+        dateTo.addEventListener('input', validateDateRange);
+        dateTo.addEventListener('blur', validateDateRange);
+    }
+});
+
+// ================= CREATE / EDIT MODAL =================
+function openCreateModal() {
+    var modal = document.getElementById('serviceModal');
+    var form = document.getElementById('serviceForm');
+    var closeBtn = document.getElementById('modalCloseBtn');
+    var cancelBtn = document.getElementById('btnCancelModal');
+    var submitBtn = document.getElementById('btnSubmitModal');
+    
+    closeBtn.disabled = false;
+    cancelBtn.disabled = false;
+    submitBtn.disabled = false;
+    submitBtn.textContent = '💾 Simpan Service';
+    submitBtn.className = 'btn-submit-modal';
+    
+    form.reset();
+    document.getElementById('serviceId').value = '';
+    document.getElementById('formMethod').value = 'POST';
+    form.action = '{{ route('services.store') }}';
+    
+    document.getElementById('modal_type').value = 'http';
+    updateHelperText('http');
+    
+    document.getElementById('modalTitle').textContent = 'Tambah Service';
+    document.getElementById('modalIcon').textContent = '➕';
+    document.getElementById('modalIcon').style.background = 'linear-gradient(135deg, #4f46e5, #7c3aed)';
+    
+    var errorEls = document.querySelectorAll('.form-control.error');
+    for (var i = 0; i < errorEls.length; i++) {
+        errorEls[i].classList.remove('error');
+    }
+    var msgEls = document.querySelectorAll('.error-message');
+    for (var j = 0; j < msgEls.length; j++) {
+        msgEls[j].remove();
+    }
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.dispatchEvent(new Event('modalOpened'));
+    setTimeout(function() { document.getElementById('modal_name').focus(); }, 100);
+}
+
+function openEditModal(id) {
+    if (typeof servicesMap === 'undefined') {
+        showToast('error', 'Gagal!', 'Data service tidak tersedia. Silakan refresh halaman.');
+        return;
+    }
+    
+    var service = servicesMap[id];
+    
+    if (!service) {
+        showToast('error', 'Gagal!', 'Data service tidak ditemukan');
+        return;
+    }
+    
+    var modal = document.getElementById('serviceModal');
+    var submitBtn = document.getElementById('btnSubmitModal');
+    var cancelBtn = document.getElementById('btnCancelModal');
+    var closeBtn = document.getElementById('modalCloseBtn');
+    
+    document.getElementById('modalTitle').textContent = 'Edit Service';
+    document.getElementById('modalIcon').textContent = '✏️';
+    document.getElementById('modalIcon').style.background = 'linear-gradient(135deg, #d97706, #b45309)';
+    
+    submitBtn.disabled = false;
+    submitBtn.textContent = '💾 Update Service';
+    submitBtn.className = 'btn-submit-modal edit-mode';
+    cancelBtn.disabled = false;
+    closeBtn.disabled = false;
+    
+    document.getElementById('modal_name').value = service.name;
+    document.getElementById('modal_target').value = service.target;
+    document.getElementById('modal_type').value = service.type || 'http';
+    document.getElementById('serviceId').value = service.id;
+    document.getElementById('formMethod').value = 'PUT';
+    document.getElementById('serviceForm').action = '/services/' + service.id;
+    
+    updateHelperText(service.type || 'http');
+    
+    var errorEls = document.querySelectorAll('.form-control.error');
+    for (var i = 0; i < errorEls.length; i++) {
+        errorEls[i].classList.remove('error');
+    }
+    var msgEls = document.querySelectorAll('.error-message');
+    for (var j = 0; j < msgEls.length; j++) {
+        msgEls[j].remove();
+    }
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.dispatchEvent(new Event('modalOpened'));
+    
+    setTimeout(function() { document.getElementById('modal_name').focus(); }, 100);
+}
+
+function closeModal() {
+    document.getElementById('modalCloseBtn').disabled = false;
+    document.getElementById('btnCancelModal').disabled = false;
+    document.getElementById('btnSubmitModal').disabled = false;
+    
+    document.getElementById('serviceModal').classList.remove('active');
+    document.body.style.overflow = '';
+    document.dispatchEvent(new Event('modalClosed'));
+}
+
+function submitForm() {
+    var form = document.getElementById('serviceForm');
+    var submitBtn = document.getElementById('btnSubmitModal');
+    var cancelBtn = document.getElementById('btnCancelModal');
+    var closeBtn = document.getElementById('modalCloseBtn');
+    var name = document.getElementById('modal_name');
+    var target = document.getElementById('modal_target');
+    var type = document.getElementById('modal_type');
+    var serviceId = document.getElementById('serviceId').value;
+    
+    var hasError = false;
+    
+    if (name.value.trim() === '') {
+        showFieldError(name, 'Nama service wajib diisi');
+        hasError = true;
+    } else if (name.value.length < 3) {
+        showFieldError(name, 'Nama minimal 3 karakter');
+        hasError = true;
+    } else {
+        removeFieldError(name);
+    }
+    
+    if (target.value.trim() === '') {
+        showFieldError(target, 'Target wajib diisi');
+        hasError = true;
+    } else if (type.value !== 'ping') {
+        if (!/^https?:\/\/.+/i.test(target.value.trim())) {
+            showFieldError(target, 'URL harus diawali dengan http:// atau https://');
+            hasError = true;
+        } else {
+            removeFieldError(target);
+        }
+    } else {
+        removeFieldError(target);
+    }
+    
+    if (hasError) {
+        var firstError = document.querySelector('.form-control.error');
+        if (firstError) {
+            firstError.focus();
+        }
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Menyimpan...';
+    cancelBtn.disabled = true;
+    closeBtn.disabled = true;
+    
+    form.submit();
+}
+
+function showFieldError(input, message) {
+    input.classList.add('error');
+    var errorDiv = input.parentElement.querySelector('.error-message');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.style.marginTop = '4px';
+        input.parentElement.appendChild(errorDiv);
+    }
+    errorDiv.innerHTML = '⚠️ ' + message;
+}
+
+function removeFieldError(input) {
+    input.classList.remove('error');
+    var errorDiv = input.parentElement.querySelector('.error-message');
+    if (errorDiv) errorDiv.remove();
+}
+
+// ================= REAL-TIME VALIDATION =================
+document.getElementById('modal_name').addEventListener('input', function() {
+    if (this.value.trim() !== '' && this.value.length >= 3) {
+        this.classList.remove('error');
+        removeFieldError(this);
+    }
+});
+
+document.getElementById('modal_target').addEventListener('input', function() {
+    if (this.value.trim() !== '') {
+        this.classList.remove('error');
+        removeFieldError(this);
+    }
+});
+
+// ================= UPDATE NOMOR URUT =================
+function updateNomorUrut() {
+    var rows = document.querySelectorAll('#tableBody tr:not(.empty-row)');
+    var perPage = parseInt(document.getElementById('perPage')?.value || 10);
+    var currentPage = parseInt(new URLSearchParams(window.location.search).get('page') || 1);
+    var startNumber = (currentPage - 1) * perPage + 1;
+    
+    rows.forEach(function(row, index) {
+        var noSpan = row.querySelector('.service-no');
+        if (noSpan) {
+            var newNumber = startNumber + index;
+            noSpan.textContent = newNumber;
+            row.setAttribute('data-nomor', newNumber);
         }
     });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(updateNomorUrut, 300);
+    
+    document.querySelectorAll('.sort-link').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            setTimeout(updateNomorUrut, 500);
+        });
+    });
+});
+
+var originalRenderSearchResult = window.renderSearchResult;
+if (typeof originalRenderSearchResult === 'function') {
+    window.renderSearchResult = function(services, pagination, query) {
+        originalRenderSearchResult(services, pagination, query);
+        setTimeout(updateNomorUrut, 200);
+    };
+}
+
+if (window.MutationObserver) {
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                setTimeout(updateNomorUrut, 100);
+            }
+        });
+    });
+    
+    var tableBody = document.getElementById('tableBody');
+    if (tableBody) {
+        observer.observe(tableBody, {
+            childList: true,
+            subtree: true
+        });
+    }
+}
 </script>
 @endsection
